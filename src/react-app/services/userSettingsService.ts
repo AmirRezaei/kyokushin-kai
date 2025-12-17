@@ -1,9 +1,13 @@
 // File: ./src/services/userSettingsService.ts
 
+import {getApiBaseUrl} from '@/config/clientConfig';
 import type {GradeHistoryEntry, PersistedSettings} from '@/types/settings';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const SETTINGS_ENDPOINT = API_BASE_URL ? `${API_BASE_URL}/api/v1/settings` : '';
+const resolveSettingsEndpoint = () => {
+   const baseUrl = getApiBaseUrl();
+   return baseUrl ? `${baseUrl}/api/v1/settings` : '';
+};
+
 const DEFAULT_SETTINGS: PersistedSettings = {
    gradeHistory: [],
    trainedDays: 0,
@@ -20,7 +24,7 @@ const SKIP_COMBO_KEY = 'skipDeleteConfirmForCombo';
 
 let pendingSyncHandle: number | ReturnType<typeof setTimeout> | null = null;
 
-export const isSettingsSyncAvailable = Boolean(SETTINGS_ENDPOINT);
+export const isSettingsSyncAvailable = () => Boolean(resolveSettingsEndpoint());
 
 export const collectLocalPersistedSettings = (): PersistedSettings => {
    if (typeof window === 'undefined') {
@@ -61,7 +65,8 @@ export const applyPersistedSettingsToLocalStorage = (settings: PersistedSettings
 };
 
 export const fetchUserSettingsFromServer = async (tokenOverride?: string): Promise<PersistedSettings | null> => {
-   if (!SETTINGS_ENDPOINT) {
+   const endpoint = resolveSettingsEndpoint();
+   if (!endpoint) {
       return null;
    }
 
@@ -71,7 +76,7 @@ export const fetchUserSettingsFromServer = async (tokenOverride?: string): Promi
    }
 
    try {
-      const response = await fetch(SETTINGS_ENDPOINT, {
+      const response = await fetch(endpoint, {
          method: 'GET',
          headers: {
             Authorization: `Bearer ${token}`,
@@ -99,7 +104,8 @@ export const fetchUserSettingsFromServer = async (tokenOverride?: string): Promi
 };
 
 export const pushLocalSettingsToServer = async (tokenOverride?: string): Promise<boolean> => {
-   if (!SETTINGS_ENDPOINT) {
+   const endpoint = resolveSettingsEndpoint();
+   if (!endpoint) {
       return false;
    }
 
@@ -111,7 +117,7 @@ export const pushLocalSettingsToServer = async (tokenOverride?: string): Promise
    const settings = collectLocalPersistedSettings();
 
    try {
-      const response = await fetch(SETTINGS_ENDPOINT, {
+      const response = await fetch(endpoint, {
          method: 'PUT',
          headers: {
             'Content-Type': 'application/json',
@@ -141,7 +147,7 @@ export const hydrateSettingsFromServer = async (tokenOverride?: string): Promise
 };
 
 export const notifySettingsChanged = () => {
-   if (!isSettingsSyncAvailable || typeof window === 'undefined') {
+   if (!isSettingsSyncAvailable() || typeof window === 'undefined') {
       return;
    }
 

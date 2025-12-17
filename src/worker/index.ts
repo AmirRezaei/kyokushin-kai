@@ -6,6 +6,8 @@ import {createRemoteJWKSet, jwtVerify} from 'jose';
 type Bindings = {
   DB: D1Database;
   GOOGLE_CLIENT_ID: string;
+  VITE_GOOGLE_CLIENT_ID?: string;
+  VITE_API_BASE_URL?: string;
   ALLOWED_ORIGINS?: string;
 };
 
@@ -46,6 +48,15 @@ app.use(
 app.get('/api/v1/health', async c => {
   const dbOk = await c.env.DB.prepare('SELECT 1 as ok').first<{ok: number}>();
   return c.json({ok: true, db: dbOk?.ok === 1});
+});
+
+app.get('/api/v1/public-config', c => {
+  const requestUrl = new URL(c.req.url);
+  const payload = {
+    googleClientId: c.env.VITE_GOOGLE_CLIENT_ID ?? c.env.GOOGLE_CLIENT_ID ?? '',
+    apiBaseUrl: c.env.VITE_API_BASE_URL ?? requestUrl.origin,
+  };
+  return c.json(payload, 200);
 });
 
 app.get('/api/v1/settings', async c => {

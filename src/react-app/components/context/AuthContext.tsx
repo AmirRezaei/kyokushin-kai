@@ -2,13 +2,8 @@
 
 import React, {createContext, useContext, useEffect, useState, ReactNode} from 'react';
 
+import {getClientConfigSnapshot, loadClientConfig} from '@/config/clientConfig';
 import {hydrateSettingsFromServer, isSettingsSyncAvailable, pushLocalSettingsToServer} from '@/services/userSettingsService';
-
-// Ensure the Google Client ID is available
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-if (!GOOGLE_CLIENT_ID) {
-   console.warn('VITE_GOOGLE_CLIENT_ID is missing in environment variables.');
-}
 
 interface User {
    id: string;
@@ -30,7 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const syncUserSettings = async (token: string) => {
-   if (!isSettingsSyncAvailable || !token) {
+   if (!isSettingsSyncAvailable() || !token) {
       return;
    }
    try {
@@ -51,9 +46,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
    const [user, setUser] = useState<User | null>(null);
    const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
+   const [googleClientId, setGoogleClientId] = useState<string | null>(() => getClientConfigSnapshot().googleClientId ?? null);
+   const resolveClientId = React.useCallback(async (): Promise<string | null> => {
+      if (googleClientId) {
+         return googleClientId;
+      }
 
+      try {
+         const config = await loadClientConfig();
+         if (config.googleClientId) {
+            setGoogleClientId(config.googleClientId);
+            return config.googleClientId;
+         }
+      } catch (configError) {
+         console.warn('Unable to load Google client configuration', configError);
+      }
 
-
+      return null;
+   }, [googleClientId]);
 
    useEffect(() => {
       // Check for stored user data
@@ -74,6 +84,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       }
       setIsLoading(false);
    }, []);
+
+   useEffect(() => {
+      let isCancelled = false;
+      loadClientConfig()
+         .then(config => {
+            if (isCancelled) {
+               return;
+            }
+            if (config.googleClientId) {
+               setGoogleClientId(config.googleClientId);
+            } else if (!googleClientId) {
+               setError('Google Client ID is missing.');
+            }
+         })
+         .catch(loadError => {
+            if (isCancelled) {
+               return;
+            }
+            console.warn('Failed to load Google client configuration', loadError);
+            if (!googleClientId) {
+               setError('Google Client ID is missing.');
+            }
+         });
+
+      return () => {
+         isCancelled = true;
+      };
+   }, [googleClientId]);
 
    const handleCredentialResponse = React.useCallback(async (response: { credential: string }) => {
       try {
@@ -101,27 +139,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
    }, []);
 
    useEffect(() => {
-      const initializeGoogle = () => {
-         if (window.google?.accounts?.id && GOOGLE_CLIENT_ID) {
-            window.google.accounts.id.initialize({
-               client_id: GOOGLE_CLIENT_ID,
-               callback: handleCredentialResponse,
-               auto_select: false, // Start with false to avoid loops if that's the issue
-            });
-         }
-      };
-
-      initializeGoogle();
-   }, [handleCredentialResponse]);
-
-   const login = async () => {
-      if (!window.google?.accounts?.id) {
-         setError('Google authentication script is not loaded. Please refresh the page.');
+      if (!googleClientId) {
          return;
       }
-      console.log('GOOGLE_CLIENT_ID', GOOGLE_CLIENT_ID);
-      if (!GOOGLE_CLIENT_ID) {
+      if (!window.google?.accounts?.id) {
+         return;
+      }
+
+      window.google.accounts.id.initialize({
+         client_id: googleClientId,
+         callback: handleCredentialResponse,
+         auto_select: false,
+      });
+   }, [googleClientId, handleCredentialResponse]);
+
+   const login = async () => {
+      const clientId = await resolveClientId();
+      if (!clientId) {
          setError('Google Client ID is missing.');
+         return;
+      }
+      if (!window.google?.accounts?.id) {
+         setError('Google authentication script is not loaded. Please refresh the page.');
          return;
       }
 
@@ -129,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       
       // Always re-initialize to be safe before prompting
       window.google.accounts.id.initialize({
-         client_id: GOOGLE_CLIENT_ID,
+         client_id: clientId,
          callback: handleCredentialResponse,
       });
 
@@ -175,4 +214,3 @@ declare global {
       google: any;
    }
 }
-
