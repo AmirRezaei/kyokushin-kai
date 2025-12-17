@@ -19,5 +19,10 @@
 			"database_id": "5bcc0f7a-48fa-46b9-b25a-91d33e7a9293",
 			"migrations_dir": "src/worker/migrations"
 		}
-	]
+	],
+	"vars": {
+		"GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
+		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
+		"TEST": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com"
+	}
 }
