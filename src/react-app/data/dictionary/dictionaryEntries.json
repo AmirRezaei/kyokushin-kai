@@ -1,0 +1,3428 @@
+{
+  "dictionary": [
+    {
+      "id": "hai",
+      "japanese": "はい",
+      "romaji": "Hai",
+      "english": "Yes",
+      "swedish": "Ja",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "iee",
+      "japanese": "いいえ",
+      "romaji": "Iee",
+      "english": "No",
+      "swedish": "Nej",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "watashi",
+      "japanese": "私",
+      "romaji": "Watashi",
+      "english": "Me / I",
+      "swedish": "Mig / Jag",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "anata",
+      "japanese": "あなた",
+      "romaji": "Anata",
+      "english": "You",
+      "swedish": "Du",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "kare",
+      "japanese": "彼",
+      "romaji": "Kare",
+      "english": "Him",
+      "swedish": "Honom",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "doko",
+      "japanese": "どこ",
+      "romaji": "Doko",
+      "english": "Where",
+      "swedish": "Var",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "nan",
+      "japanese": "何",
+      "romaji": "Nan",
+      "english": "What",
+      "swedish": "Vad",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "dare",
+      "japanese": "誰",
+      "romaji": "Dare",
+      "english": "Who",
+      "swedish": "Vem",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "doshite",
+      "japanese": "どうして",
+      "romaji": "Doshite",
+      "english": "Why",
+      "swedish": "Varför",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "itsu",
+      "japanese": "いつ",
+      "romaji": "Itsu",
+      "english": "When",
+      "swedish": "När",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "do_ikaga",
+      "japanese": "どう",
+      "romaji": "Do/Ikaga",
+      "english": "How",
+      "swedish": "Hur",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "ikura",
+      "japanese": "いくら",
+      "romaji": "Ikura",
+      "english": "How many",
+      "swedish": "Hur många",
+      "categoryId": "general_vocabulary"
+    },
+    {
+      "id": "ohayo_gozaimasu",
+      "japanese": "おはようございます",
+      "romaji": "Ohayô gozaimasu",
+      "english": "Good morning",
+      "swedish": "God morgon",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "konnichiwa",
+      "japanese": "こんにちは",
+      "romaji": "Konnichiwa",
+      "english": "Hello/Good afternoon",
+      "swedish": "Hej/ God eftermiddag",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "konbanwa",
+      "japanese": "こんばんは",
+      "romaji": "Konbanwa",
+      "english": "Good evening",
+      "swedish": "God kväll",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "arigato_gozaimasu",
+      "japanese": "ありがとうございます",
+      "romaji": "Arigatô gozaimasu",
+      "english": "Thank you!",
+      "swedish": "Tack!",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "hajimemashite",
+      "japanese": "はじめまして",
+      "romaji": "Hajimemashite",
+      "english": "How do you do?",
+      "swedish": "Trevligt att träffas?",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "douzo_yoroshiku",
+      "japanese": "どうぞよろしく",
+      "romaji": "Douzo yoroshiku",
+      "english": "Nice to meet you!",
+      "swedish": "Trevligt att träffas!",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "dewa_mata",
+      "japanese": "ではまた",
+      "romaji": "Dewa mata",
+      "english": "See you later",
+      "swedish": "Vi ses senare",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "mata_ashita",
+      "japanese": "また明日",
+      "romaji": "Mata ashita",
+      "english": "See you tomorrow",
+      "swedish": "Vi ses imorgon",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "ja_mata",
+      "japanese": "じゃあまた",
+      "romaji": "Ja mata",
+      "english": "See ya! (less formal)",
+      "swedish": "Vi ses! (mindre formellt)",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "sayonara",
+      "japanese": "さようなら",
+      "romaji": "Sayonara",
+      "english": "Goodbye",
+      "swedish": "Adjö",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "shitsurei_shimasu",
+      "japanese": "失礼します",
+      "romaji": "Shitsurei shimasu",
+      "english": "I'm leaving (very formal)",
+      "swedish": "Jag går (väldigt formellt)",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "sumimasen",
+      "japanese": "すみません",
+      "romaji": "Sumimasen",
+      "english": "Excuse me",
+      "swedish": "Ursäkta mig",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "domo",
+      "japanese": "どうも",
+      "romaji": "Dômo",
+      "english": "Thanks!",
+      "swedish": "Tack!",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "domo_arigatou_gozaimashita",
+      "japanese": "どうもありがとうございました",
+      "romaji": "Dômo arigatou gozaimashita",
+      "english": "Thank you very much (very polite)",
+      "swedish": "Tack så mycket (väldigt artigt)",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "onegaishimasu",
+      "japanese": "お願いします",
+      "romaji": "Onegaishimasu",
+      "english": "Please",
+      "swedish": "Snälla",
+      "categoryId": "greetings_and_expressions"
+    },
+    {
+      "id": "osu",
+      "japanese": "オス",
+      "romaji": "Osu",
+      "english": "Patience and Determination. Comes from 'oshi shinobu' which means to never give up. It also comes from 'osu no seishin' which means perseverance under pressure. It is used among kyokushin practitioners to show respect or to say \"I understand\".",
+      "swedish": "Tålamod och beslutsamhet. Kommer från 'oshi shinobu' som betyder att aldrig ge upp. Det kommer också från 'osu no seishin' som betyder uthållighet under press. Det används bland kyokushin-utövare för att visa respekt eller säga \"Jag förstår\".",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "shinzen_ni_rei",
+      "japanese": "深禅に礼",
+      "romaji": "Shinzen ni rei",
+      "english": "Greeting to the ancestors",
+      "swedish": "Hälsning till förfäderna",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "shomen_ni_rei",
+      "japanese": "正面に礼",
+      "romaji": "Shomen ni rei",
+      "english": "Greeting in direction of the person standing in the place of honor (usually more elevated than the students)",
+      "swedish": "Hälsning i riktning mot personen som står i hederspositionen (vanligtvis mer upphöjd än eleverna)",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "mokuso",
+      "japanese": "黙想",
+      "romaji": "Mokuso",
+      "english": "Meditation (silent thought) / Close your eyes",
+      "swedish": "Meditation (tyst tanke) / Stäng ögonen",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "mokuso_yame",
+      "japanese": "黙想やめ",
+      "romaji": "Mokuso yame",
+      "english": "Open your eyes",
+      "swedish": "Öppna ögonen",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "mas_oyama_ni_rei",
+      "japanese": "マサ大山に礼",
+      "romaji": "Mas Oyama ni rei",
+      "english": "Greeting to Mas Oyama",
+      "swedish": "Hälsning till Mas Oyama",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "shihan_ni_rei",
+      "japanese": "師範に礼",
+      "romaji": "Shihan ni rei",
+      "english": "Greeting to the Shihan",
+      "swedish": "Hälsning till Shihan",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "sensei_ni_rei",
+      "japanese": "先生に礼",
+      "romaji": "Sensei ni rei",
+      "english": "Greeting to the teacher",
+      "swedish": "Hälsning till läraren",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "sempai_ni_rei",
+      "japanese": "先輩に礼",
+      "romaji": "Sempai ni rei",
+      "english": "Greeting to the assistant teacher",
+      "swedish": "Hälsning till assisterande läraren",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "otagai_ni_rei",
+      "japanese": "お互いに礼",
+      "romaji": "Otagai ni rei",
+      "english": "Greeting to the other students",
+      "swedish": "Hälsning till de andra eleverna",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "tatte_kudasai",
+      "japanese": "立ってください",
+      "romaji": "Tatte kudasai",
+      "english": "Stand on your feet (right foot first)",
+      "swedish": "Stå på fötterna (höger fot först)",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "osu_onegai_shimasu",
+      "japanese": "オスお願いします",
+      "romaji": "Osu onegai shimasu",
+      "english": "Courtesy call when start the class / to your practice partner",
+      "swedish": "Hövligt anrop när du börjar klassen / till din träningspartner",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "osu_arigato_gozaimashita",
+      "japanese": "オスありがとうございました",
+      "romaji": "Osu Arigato gozaimashita",
+      "english": "Thank you so much",
+      "swedish": "Tack så mycket",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "osu_shitsurei_shimasu",
+      "japanese": "オス失礼します",
+      "romaji": "Osu Shitsurei shimasu",
+      "english": "Excuse me",
+      "swedish": "Ursäkta mig",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "osu_shitsurei_shimashita",
+      "japanese": "オス失礼しました",
+      "romaji": "Osu Shitsurei shimashita",
+      "english": "I apologize",
+      "swedish": "Jag ber om ursäkt",
+      "categoryId": "greetings_and_salutes"
+    },
+    {
+      "id": "sosai",
+      "japanese": "総裁",
+      "romaji": "Sosai",
+      "english": "President",
+      "swedish": "President",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "kancho",
+      "japanese": "幹長",
+      "romaji": "Kancho",
+      "english": "Director",
+      "swedish": "Direktör",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "hanshi",
+      "japanese": "範士",
+      "romaji": "Hanshi",
+      "english": "Honorable Master",
+      "swedish": "Hedersmästare",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "shihan",
+      "japanese": "師範",
+      "romaji": "Shihan",
+      "english": "Grand Master (5th dan or more)",
+      "swedish": "Storkarriärmästare (5:e dan eller mer)",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "sensei",
+      "japanese": "先生",
+      "romaji": "Sensei",
+      "english": "School Master / Teacher (3rd dan or more)",
+      "swedish": "Skolmästare / Lärare (3:e dan eller mer)",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "sempai",
+      "japanese": "先輩",
+      "romaji": "Sempai",
+      "english": "Senior / Teacher's assistant",
+      "swedish": "Senior / Lärarassistent",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "shidoin",
+      "japanese": "指導員",
+      "romaji": "Shidoin",
+      "english": "Instructor",
+      "swedish": "Instruktör",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "karateka",
+      "japanese": "空手家",
+      "romaji": "Karateka",
+      "english": "Student",
+      "swedish": "Student",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "kohai",
+      "japanese": "後輩",
+      "romaji": "Kohai",
+      "english": "Junior student",
+      "swedish": "Juniorstudent",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "otagai",
+      "japanese": "お互い",
+      "romaji": "Otagai",
+      "english": "Each other / Other students",
+      "swedish": "Varandra / Andra elever",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "yudansha",
+      "japanese": "有段者",
+      "romaji": "Yudansha",
+      "english": "Black belt student",
+      "swedish": "Svart bälte student",
+      "categoryId": "titles_and_status"
+    },
+    {
+      "id": "honbu",
+      "japanese": "本部",
+      "romaji": "Honbu",
+      "english": "Head quarters",
+      "swedish": "Huvudkvarter",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "dojo",
+      "japanese": "道場",
+      "romaji": "Dojo",
+      "english": "Training Hall (Way place)",
+      "swedish": "Träningshall (Vägplats)",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "dogi_gi",
+      "japanese": "道着 (gi)",
+      "romaji": "Dogi (gi)",
+      "english": "Training clothes",
+      "swedish": "Träningskläder",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "obi",
+      "japanese": "帯",
+      "romaji": "Obi",
+      "english": "Belt",
+      "swedish": "Bälte",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "kyu2",
+      "japanese": "級",
+      "romaji": "Kyu",
+      "english": "Belt dash for lower belts (colored-belts)",
+      "swedish": "Bältesnivå för lägre bälten (färgade bälten)",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "dan",
+      "japanese": "段",
+      "romaji": "Dan",
+      "english": "Belt dash for black belts",
+      "swedish": "Bältesnivå för svart bälte",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "kuroi_obi",
+      "japanese": "黒い帯",
+      "romaji": "Kuroi obi",
+      "english": "Black belt",
+      "swedish": "Svart bälte",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "shodan_shinsa",
+      "japanese": "初段審査",
+      "romaji": "Shodan Shinsa",
+      "english": "Dan test / Black Belt test",
+      "swedish": "Dan-test / Svart bältestest",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "shokyu_shinsa",
+      "japanese": "初級審査",
+      "romaji": "Shokyu Shinsa",
+      "english": "Kyu Test / Color belt test",
+      "swedish": "Kyu-test / Färgbältestest",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "nyumon",
+      "japanese": "入門",
+      "romaji": "Nyumon",
+      "english": "Join to the Dojo",
+      "swedish": "Gå med i Dojon",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "hamon",
+      "japanese": "破門",
+      "romaji": "Hamon",
+      "english": "Excommunicate",
+      "swedish": "Exkommunicera",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "shonen_bu",
+      "japanese": "少年部",
+      "romaji": "Shonen bu",
+      "english": "Kids class",
+      "swedish": "Barnklass",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "jyoshi_bu",
+      "japanese": "女子部",
+      "romaji": "Jyoshi bu",
+      "english": "Ladies class",
+      "swedish": "Damerklass",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "ippan_bu",
+      "japanese": "一般部",
+      "romaji": "Ippan bu",
+      "english": "Regular adult class",
+      "swedish": "Regelbunden vuxenklass",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "sonen_bu",
+      "japanese": "総年部",
+      "romaji": "Sonen bu",
+      "english": "Senior class",
+      "swedish": "Seniorklass",
+      "categoryId": "places_and_clothing"
+    },
+    {
+      "id": "anza",
+      "japanese": "安座",
+      "romaji": "Anza",
+      "english": "Relaxed Sitting",
+      "swedish": "Avslappnad sittning",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "bunkai",
+      "japanese": "分解",
+      "romaji": "Bunkai",
+      "english": "Application (analysis)",
+      "swedish": "Tillämpning (analys)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "budo",
+      "japanese": "武道",
+      "romaji": "Budo",
+      "english": "Martial Way",
+      "swedish": "Martialiska Vägen",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "do",
+      "japanese": "道",
+      "romaji": "Do",
+      "english": "Path",
+      "swedish": "Väg",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "dojo_kun",
+      "japanese": "道場訓",
+      "romaji": "Dojo Kun",
+      "english": "Training Hall Oath",
+      "swedish": "Träningshallens ed",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "fukuso",
+      "japanese": "副装",
+      "romaji": "Fukuso",
+      "english": "Accouterment",
+      "swedish": "Tillbehör",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "fumiashi",
+      "japanese": "踏み足",
+      "romaji": "Fumiashi",
+      "english": "Step (with a change of feet)",
+      "swedish": "Steg (med byte av fötter)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "gasshukoku",
+      "japanese": "合衆国",
+      "romaji": "Gasshukoku",
+      "english": "United States",
+      "swedish": "Förenta staterna",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "goshin_jutsu",
+      "japanese": "護身術",
+      "romaji": "Goshin jutsu",
+      "english": "Self defense",
+      "swedish": "Självförsvar",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "hanmi",
+      "japanese": "半身",
+      "romaji": "Hanmi",
+      "english": "Upper body shifted angled to avoid direct strike and ready for your next move",
+      "swedish": "Överkroppen vinklad för att undvika direkt slag och redo för nästa drag",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "ibuki",
+      "japanese": "息吹",
+      "romaji": "Ibuki",
+      "english": "Forced Tension Breathing",
+      "swedish": "Tvingad spänningsandning",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "karate",
+      "japanese": "空手",
+      "romaji": "Karate",
+      "english": "Empty hand",
+      "swedish": "Tom hand",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kamaete",
+      "japanese": "構えて",
+      "romaji": "Kamaete",
+      "english": "Take Ready Position",
+      "swedish": "Ta beredskapsposition",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kata",
+      "japanese": "型",
+      "romaji": "Kata",
+      "english": "Form",
+      "swedish": "Form",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "ki",
+      "japanese": "気",
+      "romaji": "Ki",
+      "english": "Inner Energy",
+      "swedish": "Inre energi",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kiai",
+      "japanese": "気合",
+      "romaji": "Kiai",
+      "english": "Explosive Scream",
+      "swedish": "Explosivt skrik",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kiai_irete",
+      "japanese": "気合入れて",
+      "romaji": "Kiai Irete",
+      "english": "With Explosive Energy",
+      "swedish": "Med explosiv energi",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kihon",
+      "japanese": "基本",
+      "romaji": "Kihon",
+      "english": "Basics",
+      "swedish": "Grunder",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kihon_waza",
+      "japanese": "基本技",
+      "romaji": "Kihon waza",
+      "english": "Basic techniques",
+      "swedish": "Grundläggande tekniker",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kime",
+      "japanese": "気明",
+      "romaji": "Kime",
+      "english": "Focus",
+      "swedish": "Fokus",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kokusai",
+      "japanese": "国際",
+      "romaji": "Kokusai",
+      "english": "International",
+      "swedish": "Internationell",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kosa",
+      "japanese": "交差",
+      "romaji": "Kosa",
+      "english": "Switch (i.e. switch stance L to R or R to L)",
+      "swedish": "Byt (t.ex. byt ställning från vänster till höger eller höger till vänster)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kotai",
+      "japanese": "転体",
+      "romaji": "Kotai",
+      "english": "Switch (i.e. partners switch places in a drill)",
+      "swedish": "Byt (t.ex. partners byter plats i en drill)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kumite",
+      "japanese": "組手",
+      "romaji": "Kumite",
+      "english": "Combat",
+      "swedish": "Strid",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kyokushin",
+      "japanese": "極真",
+      "romaji": "Kyokushin",
+      "english": "Ultimate Truth",
+      "swedish": "Ultimata sanningen",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "yakusoku_kumite",
+      "japanese": "約束組手",
+      "romaji": "Yakusoku kumite",
+      "english": "Pre-arranged combat",
+      "swedish": "Förutbestämd strid",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "ippon_kumite",
+      "japanese": "一本組手",
+      "romaji": "Ippon kumite",
+      "english": "Pre-arranged combat / 1 block and 1 counter-attack (the two participants are standing at the same place)",
+      "swedish": "Förutbestämd strid / 1 block och 1 motattack (de två deltagarna står på samma plats)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "sanbon_kumite",
+      "japanese": "三本組手",
+      "romaji": "Sanbon kumite",
+      "english": "Pre-arranged combat / 3 blocks followed by 3 counter-attacks while the participants move straight.",
+      "swedish": "Förutbestämd strid / 3 block följt av 3 motattacker medan deltagarna rör sig rakt fram.",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "jiyu_kumite",
+      "japanese": "自由組手",
+      "romaji": "Jiyu kumite",
+      "english": "Free-sparring",
+      "swedish": "Fri sparring",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "jissen_kumite",
+      "japanese": "実戦組手",
+      "romaji": "Jissen kumite",
+      "english": "Full contact fighting",
+      "swedish": "Full kontaktstrid",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "maai",
+      "japanese": "間合い",
+      "romaji": "Maai",
+      "english": "Interval (between opponents)",
+      "swedish": "Intervall (mellan motståndare)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "makiwara",
+      "japanese": "巻き軸",
+      "romaji": "Makiwara",
+      "english": "Striking Post (straw wrapped)",
+      "swedish": "Slagstolpe (surt omhändertagen med halm)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "mugorei",
+      "japanese": "無語礼",
+      "romaji": "Mugorei",
+      "english": "No Counting (no commands)",
+      "swedish": "Ingen räkning (inga kommandon)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "mushin",
+      "japanese": "無心",
+      "romaji": "Mushin",
+      "english": "Without Thought (no mind)",
+      "swedish": "Utan tanke (ingen sinne)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "naore",
+      "japanese": "直れ",
+      "romaji": "Naore",
+      "english": "Return to Starting Position",
+      "swedish": "Återgå till startpositionen",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "nogare",
+      "japanese": "野晴れ",
+      "romaji": "Nogare",
+      "english": "Calm Controlled Breathing / Breathing technique - breath silently",
+      "swedish": "Lugn kontrollerad andning / Andningsteknik - andas tyst",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "okuriashi",
+      "japanese": "送り足",
+      "romaji": "Okuriashi",
+      "english": "Shuffle Step (sending foot)",
+      "swedish": "Skrittsteg (sändande fot)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "rei",
+      "japanese": "礼",
+      "romaji": "Rei",
+      "english": "Bow / Greeting / Homage",
+      "swedish": "Buga / Hälsning / Hävning",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "renmei",
+      "japanese": "連盟",
+      "romaji": "Renmei",
+      "english": "Federation",
+      "swedish": "Federation",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "renma",
+      "japanese": "錬磨",
+      "romaji": "Renma",
+      "english": "Polishing, Training",
+      "swedish": "Polering, Träning",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "renraku",
+      "japanese": "連絡",
+      "romaji": "Renraku",
+      "english": "Combinations",
+      "swedish": "Kombinationer",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "seishin",
+      "japanese": "精神",
+      "romaji": "Seishin",
+      "english": "Spirit",
+      "swedish": "Ande",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "tatte",
+      "japanese": "立て",
+      "romaji": "Tatte",
+      "english": "Stand up",
+      "swedish": "Stå upp",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "mawatte",
+      "japanese": "回って",
+      "romaji": "Mawatte",
+      "english": "Turn",
+      "swedish": "Vänd",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "hantai",
+      "japanese": "反対",
+      "romaji": "Hantai",
+      "english": "Opposite side",
+      "swedish": "Motsatt sida",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "yame",
+      "japanese": "止め",
+      "romaji": "Yame",
+      "english": "Stop",
+      "swedish": "Stoppa",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "yasume",
+      "japanese": "休め",
+      "romaji": "Yasume",
+      "english": "Rest, at Ease",
+      "swedish": "Vila, lugna ner dig",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "yoi",
+      "japanese": "用意",
+      "romaji": "Yoi",
+      "english": "Ready",
+      "swedish": "Redo",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "seiza",
+      "japanese": "正座",
+      "romaji": "Seiza",
+      "english": "Formal Kneeling (correct sitting)",
+      "swedish": "Formell knäböj (korrekt sittande)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "kamaete_on_guard",
+      "japanese": "構えて",
+      "romaji": "Kamaete",
+      "english": "On guard",
+      "swedish": "I beredskap",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "hajime",
+      "japanese": "始め",
+      "romaji": "Hajime",
+      "english": "Start",
+      "swedish": "Starta",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "ryu",
+      "japanese": "流",
+      "romaji": "Ryu",
+      "english": "Style (of karate)",
+      "swedish": "Stil (av karate)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "tameshiwari",
+      "japanese": "玉砕割り",
+      "romaji": "Tameshiwari",
+      "english": "Braking exercise / test (wood, cement, ice, baseball bat, etc)",
+      "swedish": "Bromsövning / test (trä, cement, is, basebollträ, etc)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "tanden",
+      "japanese": "丹田",
+      "romaji": "Tanden",
+      "english": "Center of Body (below navel)",
+      "swedish": "Kroppens centrum (under naveln)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "waza",
+      "japanese": "技",
+      "romaji": "Waza",
+      "english": "Technique(s)",
+      "swedish": "Teknik(er)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "zanshin",
+      "japanese": "残心",
+      "romaji": "Zanshin",
+      "english": "Remain Alert (remaining mind)",
+      "swedish": "Förbli alert (kvarvarande sinne)",
+      "categoryId": "basic_terminology"
+    },
+    {
+      "id": "jodan",
+      "japanese": "上段",
+      "romaji": "Jodan",
+      "english": "Upper Level",
+      "swedish": "Övre nivån",
+      "categoryId": "directions"
+    },
+    {
+      "id": "chudan",
+      "japanese": "中段",
+      "romaji": "Chudan",
+      "english": "Middle Level",
+      "swedish": "Mellannivån",
+      "categoryId": "directions"
+    },
+    {
+      "id": "gedan",
+      "japanese": "下段",
+      "romaji": "Gedan",
+      "english": "Lower Level",
+      "swedish": "Nedre nivån",
+      "categoryId": "directions"
+    },
+    {
+      "id": "age",
+      "japanese": "上げ",
+      "romaji": "Age",
+      "english": "Rising / While raising",
+      "swedish": "Stigande / När du höjer",
+      "categoryId": "directions"
+    },
+    {
+      "id": "happo",
+      "japanese": "八方",
+      "romaji": "Happo",
+      "english": "8 directions",
+      "swedish": "8 riktningar",
+      "categoryId": "directions"
+    },
+    {
+      "id": "hidari",
+      "japanese": "左",
+      "romaji": "Hidari",
+      "english": "Left",
+      "swedish": "Vänster",
+      "categoryId": "directions"
+    },
+    {
+      "id": "juji",
+      "japanese": "十字",
+      "romaji": "Juji",
+      "english": "Cross arm",
+      "swedish": "Korsarm",
+      "categoryId": "directions"
+    },
+    {
+      "id": "kake",
+      "japanese": "掛け",
+      "romaji": "Kake",
+      "english": "Hooked",
+      "swedish": "Krokig",
+      "categoryId": "directions"
+    },
+    {
+      "id": "mae",
+      "japanese": "前",
+      "romaji": "Mae",
+      "english": "Front, forward",
+      "swedish": "Framåt, framåt",
+      "categoryId": "directions"
+    },
+    {
+      "id": "mawashi",
+      "japanese": "回し",
+      "romaji": "Mawashi",
+      "english": "Round, Circular",
+      "swedish": "Rund, cirkulär",
+      "categoryId": "directions"
+    },
+    {
+      "id": "migi",
+      "japanese": "右",
+      "romaji": "Migi",
+      "english": "Right",
+      "swedish": "Höger",
+      "categoryId": "directions"
+    },
+    {
+      "id": "naname",
+      "japanese": "斜め",
+      "romaji": "Naname",
+      "english": "In diagonal, at 45 degrees",
+      "swedish": "Diagonalt, i 45 grader",
+      "categoryId": "directions"
+    },
+    {
+      "id": "oroshi",
+      "japanese": "降ろし",
+      "romaji": "Oroshi",
+      "english": "Descending / While going down",
+      "swedish": "Nedåtgående / När du går ner",
+      "categoryId": "directions"
+    },
+    {
+      "id": "sagari",
+      "japanese": "下がり",
+      "romaji": "Sagari",
+      "english": "While going backward",
+      "swedish": "När du går bakåt",
+      "categoryId": "directions"
+    },
+    {
+      "id": "sayu",
+      "japanese": "左右",
+      "romaji": "Sayu",
+      "english": "Left and right alternatively",
+      "swedish": "Vänster och höger växelvis",
+      "categoryId": "directions"
+    },
+    {
+      "id": "shita",
+      "japanese": "下",
+      "romaji": "Shita",
+      "english": "From below / down",
+      "swedish": "Från under / ner",
+      "categoryId": "directions"
+    },
+    {
+      "id": "shomen",
+      "japanese": "正面",
+      "romaji": "Shomen",
+      "english": "Front of Dojo",
+      "swedish": "Dojons framsida",
+      "categoryId": "directions"
+    },
+    {
+      "id": "soto",
+      "japanese": "外",
+      "romaji": "Soto",
+      "english": "From outside to inside, outside",
+      "swedish": "Från utsidan till insidan, utsidan",
+      "categoryId": "directions"
+    },
+    {
+      "id": "tobi",
+      "japanese": "飛び",
+      "romaji": "Tobi",
+      "english": "While jumping",
+      "swedish": "När du hoppar",
+      "categoryId": "directions"
+    },
+    {
+      "id": "naka_uchi",
+      "japanese": "中内",
+      "romaji": "Naka / Uchi",
+      "english": "From inside to outside, inside",
+      "swedish": "Från insidan till utsidan, insidan",
+      "categoryId": "directions"
+    },
+    {
+      "id": "ue",
+      "japanese": "上",
+      "romaji": "Ue",
+      "english": "Up",
+      "swedish": "Upp",
+      "categoryId": "directions"
+    },
+    {
+      "id": "ura",
+      "japanese": "裏",
+      "romaji": "Ura",
+      "english": "Reverse, Backward",
+      "swedish": "Omvänd, Bakåt",
+      "categoryId": "directions"
+    },
+    {
+      "id": "ushiro",
+      "japanese": "後ろ",
+      "romaji": "Ushiro",
+      "english": "Behind",
+      "swedish": "Bakom",
+      "categoryId": "directions"
+    },
+    {
+      "id": "yoko",
+      "japanese": "横",
+      "romaji": "Yoko",
+      "english": "On sides, from sides",
+      "swedish": "På sidorna, från sidorna",
+      "categoryId": "directions"
+    },
+    {
+      "id": "aka",
+      "japanese": "赤",
+      "romaji": "Aka",
+      "english": "Red",
+      "swedish": "Röd",
+      "categoryId": "colors"
+    },
+    {
+      "id": "shiro",
+      "japanese": "白",
+      "romaji": "Shiro",
+      "english": "White",
+      "swedish": "Vit",
+      "categoryId": "colors"
+    },
+    {
+      "id": "kiiro",
+      "japanese": "黄色",
+      "romaji": "Kiiro",
+      "english": "Yellow",
+      "swedish": "Gul",
+      "categoryId": "colors"
+    },
+    {
+      "id": "cha",
+      "japanese": "茶",
+      "romaji": "Cha",
+      "english": "Brown",
+      "swedish": "Brun",
+      "categoryId": "colors"
+    },
+    {
+      "id": "ao",
+      "japanese": "青",
+      "romaji": "Ao",
+      "english": "Blue",
+      "swedish": "Blå",
+      "categoryId": "colors"
+    },
+    {
+      "id": "midori",
+      "japanese": "緑",
+      "romaji": "Midori",
+      "english": "Green",
+      "swedish": "Grön",
+      "categoryId": "colors"
+    },
+    {
+      "id": "kuro",
+      "japanese": "黒",
+      "romaji": "Kuro",
+      "english": "Black",
+      "swedish": "Svart",
+      "categoryId": "colors"
+    },
+    {
+      "id": "seiken",
+      "japanese": "正拳",
+      "romaji": "Seiken",
+      "english": "Fist / Forefist (correct fist)",
+      "swedish": "Knuten näve / Framknuten näve (korrekt näve)",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "shuto",
+      "japanese": "手刀",
+      "romaji": "Shuto",
+      "english": "Knife hand",
+      "swedish": "Knivhand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "te",
+      "japanese": "手",
+      "romaji": "Te",
+      "english": "Hand",
+      "swedish": "Hand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "hiji_enpi",
+      "japanese": "肘・円斧",
+      "romaji": "Hiji / Enpi",
+      "english": "Elbow",
+      "swedish": "Armbåge",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "tetsui",
+      "japanese": "鉄腕",
+      "romaji": "Tetsui",
+      "english": "Hammer fist",
+      "swedish": "Hammarfist",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "koken",
+      "japanese": "虎拳",
+      "romaji": "Koken",
+      "english": "Arc fist",
+      "swedish": "Bågfist",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "uraken",
+      "japanese": "裏拳",
+      "romaji": "Uraken",
+      "english": "Reverse fist / Back hand",
+      "swedish": "Omvänd näve / Bakhand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "haisho",
+      "japanese": "背拳",
+      "romaji": "Haisho",
+      "english": "Backhand",
+      "swedish": "Bakhand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "haito",
+      "japanese": "背刀",
+      "romaji": "Haito",
+      "english": "Reverse knife hand",
+      "swedish": "Omvänd knivhand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "hiraken",
+      "japanese": "平拳",
+      "romaji": "Hiraken",
+      "english": "Flat Fist",
+      "swedish": "Platt näve",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "nukite",
+      "japanese": "突き手",
+      "romaji": "Nukite",
+      "english": "Finger tip strike",
+      "swedish": "Fingerstridsattack",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "nakayubi_ippon_ken",
+      "japanese": "中指一本拳",
+      "romaji": "Nakayubi Ippon Ken",
+      "english": "Middle Finger Knuckle Fist",
+      "swedish": "Mittfinger knogknuten näve",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "oyayubi_ippon_ken",
+      "japanese": "親指一本拳",
+      "romaji": "Oyayubi Ippon Ken",
+      "english": "Thumb Knuckle Fist",
+      "swedish": "Tummeknogknuten näve",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "shotei",
+      "japanese": "掌底",
+      "romaji": "Shotei",
+      "english": "Palm heel",
+      "swedish": "Handflata",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "kote",
+      "japanese": "小手",
+      "romaji": "Kote",
+      "english": "Forearm",
+      "swedish": "Underarm",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "ryutoken",
+      "japanese": "龍闘拳",
+      "romaji": "Ryutoken",
+      "english": "Dragon's Head Fist",
+      "swedish": "Drakhuvud näve",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "toho",
+      "japanese": "刀峰拳",
+      "romaji": "Toho",
+      "english": "Sword Peak Hand",
+      "swedish": "Svärdshuvud hand",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "sokuto",
+      "japanese": "側頭",
+      "romaji": "Sokuto",
+      "english": "Knife edge foot",
+      "swedish": "Knivkantig fot",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "haisoku",
+      "japanese": "背足",
+      "romaji": "Haisoku",
+      "english": "Instep",
+      "swedish": "Främre delen av foten",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "kakato",
+      "japanese": "踵",
+      "romaji": "Kakato",
+      "english": "Heel",
+      "swedish": "Häl",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "hiza",
+      "japanese": "膝",
+      "romaji": "Hiza",
+      "english": "Knee",
+      "swedish": "Knä",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "chusoku",
+      "japanese": "中足",
+      "romaji": "Chusoku",
+      "english": "Ball of the foot",
+      "swedish": "Fotens främre del",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "teisoku",
+      "japanese": "底足",
+      "romaji": "Teisoku",
+      "english": "Arch of the foot",
+      "swedish": "Fotvalv",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "sune",
+      "japanese": "すね",
+      "romaji": "Sune",
+      "english": "Shin",
+      "swedish": "Skensäck",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "tsumasaki",
+      "japanese": "つま先",
+      "romaji": "Tsumasaki",
+      "english": "Toe",
+      "swedish": "Tå",
+      "categoryId": "body_weapons_leg_foot"
+    },
+    {
+      "id": "zutsuki",
+      "japanese": "頭突き",
+      "romaji": "Zutsuki",
+      "english": "Head-butt",
+      "swedish": "Dumskott",
+      "categoryId": "body_weapons_others"
+    },
+    {
+      "id": "taiatari",
+      "japanese": "体当たり",
+      "romaji": "Taiatari",
+      "english": "Tackle",
+      "swedish": "Tackla",
+      "categoryId": "body_weapons_others"
+    },
+    {
+      "id": "jodan_neck_head",
+      "japanese": "上段（首と頭）",
+      "romaji": "Jodan (Neck and Head)",
+      "english": "Neck and Head",
+      "swedish": "Nacke och huvud",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "chudan_torso",
+      "japanese": "中段（胴体エリア）",
+      "romaji": "Chudan (Torso area)",
+      "english": "Torso area",
+      "swedish": "Torsoområde",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "gedan_groin_legs",
+      "japanese": "下段（鼠径と脚）",
+      "romaji": "Gedan (Groin and legs)",
+      "english": "Groin and legs",
+      "swedish": "Innanlår och ben",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "ago",
+      "japanese": "顎",
+      "romaji": "Ago",
+      "english": "Chin / Jaw",
+      "swedish": "Hakke / Käke",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "suigetsu_hara",
+      "japanese": "水月・腹",
+      "romaji": "Suigetsu / Hara",
+      "english": "Stomach / Solar Plexus",
+      "swedish": "Mage / Solar plexus",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kinteki_kin",
+      "japanese": "筋的（筋）",
+      "romaji": "Kinteki (kin)",
+      "english": "Groin",
+      "swedish": "Innanlår",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "me",
+      "japanese": "目",
+      "romaji": "Me",
+      "english": "Eye",
+      "swedish": "Öga",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "mune",
+      "japanese": "胸",
+      "romaji": "Mune",
+      "english": "Chest",
+      "swedish": "Bröst",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "ashi",
+      "japanese": "足",
+      "romaji": "Ashi",
+      "english": "Leg",
+      "swedish": "Ben",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "hana",
+      "japanese": "鼻",
+      "romaji": "Hana",
+      "english": "Nose",
+      "swedish": "Näsa",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "sakotsu",
+      "japanese": "鎖骨",
+      "romaji": "Sakotsu",
+      "english": "Clavicle / Collarbone",
+      "swedish": "Nyckelben / Halsben",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "hiza_knee",
+      "japanese": "膝（Knee）",
+      "romaji": "Hiza (Knee)",
+      "english": "Knee",
+      "swedish": "Knä",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "nodo",
+      "japanese": "喉",
+      "romaji": "Nodo",
+      "english": "Throat",
+      "swedish": "Hals",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "rokkotsu_abara",
+      "japanese": "六骨・阿波羅",
+      "romaji": "Rokkotsu / Abara",
+      "english": "Rib",
+      "swedish": "Revben",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kansetsu",
+      "japanese": "関節",
+      "romaji": "Kansetsu",
+      "english": "Joint",
+      "swedish": "Led",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "komekami",
+      "japanese": "麹神",
+      "romaji": "Komekami",
+      "english": "Temple",
+      "swedish": "Templet",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kata_shoulder",
+      "japanese": "肩（Kata）",
+      "romaji": "Kata (Shoulder)",
+      "english": "Shoulder",
+      "swedish": "Axel",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "momo",
+      "japanese": "もも",
+      "romaji": "Momo",
+      "english": "Thigh",
+      "swedish": "Lår",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kuchi",
+      "japanese": "口",
+      "romaji": "Kuchi",
+      "english": "Mouth",
+      "swedish": "Mun",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "hizo",
+      "japanese": "肘",
+      "romaji": "Hizo",
+      "english": "Spleen",
+      "swedish": "Mjälte",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "koshi",
+      "japanese": "腰",
+      "romaji": "Koshi",
+      "english": "Hip",
+      "swedish": "Höft",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "mimi",
+      "japanese": "耳",
+      "romaji": "Mimi",
+      "english": "Ear",
+      "swedish": "Öra",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kanzo",
+      "japanese": "肝臓",
+      "romaji": "Kanzo",
+      "english": "Liver",
+      "swedish": "Lever",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "sune_shin",
+      "japanese": "すね（Shin）",
+      "romaji": "Sune (Shin)",
+      "english": "Shin",
+      "swedish": "Skensäck",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kubi",
+      "japanese": "首",
+      "romaji": "Kubi",
+      "english": "Neck",
+      "swedish": "Hals",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "senaka_ushiro",
+      "japanese": "背中・後ろ",
+      "romaji": "Senaka / Ushiro",
+      "english": "Back",
+      "swedish": "Rygg",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kakato_heel",
+      "japanese": "踵（Heel）",
+      "romaji": "Kakato (Heel)",
+      "english": "Heel",
+      "swedish": "Häl",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "ganmen",
+      "japanese": "顔面",
+      "romaji": "Ganmen",
+      "english": "Face",
+      "swedish": "Ansikte",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "shinzo",
+      "japanese": "心臓",
+      "romaji": "Shinzo",
+      "english": "Heart",
+      "swedish": "Hjärta",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "fukurahagi",
+      "japanese": "ふくらはぎ",
+      "romaji": "Fukurahagi",
+      "english": "Calf",
+      "swedish": "Vad",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "jinchu",
+      "japanese": "人中",
+      "romaji": "Jinchu",
+      "english": "Spot between nose & mouth",
+      "swedish": "Fläck mellan näsa & mun",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "ude",
+      "japanese": "腕",
+      "romaji": "Ude",
+      "english": "Arms",
+      "swedish": "Armar",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "miken",
+      "japanese": "三蹴",
+      "romaji": "Miken",
+      "english": "Spot between eyes",
+      "swedish": "Fläck mellan ögonen",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "te_hand",
+      "japanese": "手（Hand）",
+      "romaji": "Te (Hand)",
+      "english": "Hand",
+      "swedish": "Hand",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "atama",
+      "japanese": "頭",
+      "romaji": "Atama",
+      "english": "Head",
+      "swedish": "Huvud",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "yubi",
+      "japanese": "指",
+      "romaji": "Yubi",
+      "english": "Finger",
+      "swedish": "Finger",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "tekubi",
+      "japanese": "手首",
+      "romaji": "Tekubi",
+      "english": "Wrist",
+      "swedish": "Handled",
+      "categoryId": "body_parts_target"
+    },
+    {
+      "id": "kobushi_ken",
+      "japanese": "拳・剣",
+      "romaji": "Kobushi / Ken",
+      "english": "Fist",
+      "swedish": "Näve",
+      "categoryId": "body_weapons_hand_arms"
+    },
+    {
+      "id": "tsuki",
+      "japanese": "突き",
+      "romaji": "Tsuki",
+      "english": "Punch (thrust)",
+      "swedish": "Slag (driv)",
+      "categoryId": "kihon_waza"
+    },
+    {
+      "id": "uchi",
+      "japanese": "打ち",
+      "romaji": "Uchi",
+      "english": "Strike",
+      "swedish": "Slag",
+      "categoryId": "kihon_waza"
+    },
+    {
+      "id": "uke",
+      "japanese": "受け",
+      "romaji": "Uke",
+      "english": "Block",
+      "swedish": "Blockera",
+      "categoryId": "kihon_waza"
+    },
+    {
+      "id": "geri",
+      "japanese": "蹴り",
+      "romaji": "Geri",
+      "english": "Kick",
+      "swedish": "Spark",
+      "categoryId": "kihon_waza"
+    },
+    {
+      "id": "heisoku_dachi",
+      "japanese": "閉足立ち",
+      "romaji": "Heisoku dachi",
+      "english": "Closed foot stance",
+      "swedish": "Stängd fotställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "musubi_dachi",
+      "japanese": "結び立ち",
+      "romaji": "Musubi dachi",
+      "english": "Open Foot (connected) Stance / Toes open & heels together",
+      "swedish": "Öppen fotställning (ansluten) / Tår öppna & hälar tillsammans",
+      "categoryId": "stances"
+    },
+    {
+      "id": "soto_hachiji_dachi",
+      "japanese": "外八字立ち",
+      "romaji": "Soto hachiji dachi",
+      "english": "Outer figure 8 stance",
+      "swedish": "Yttre figur 8-ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "moro_ashi_dachi",
+      "japanese": "諸足立ち",
+      "romaji": "Moro ashi dachi",
+      "english": "One Foot Forward (two-foot) Stance / Two legged parallel stance",
+      "swedish": "Ett fot framåt (två-fots) ställning / Tvåbent parallellt ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "kokutsu_dachi",
+      "japanese": "後屈立ち",
+      "romaji": "Kokutsu dachi",
+      "english": "Back leaning stance",
+      "swedish": "Bakåtlutad ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "kake_ashi_dachi",
+      "japanese": "掛け足立ち",
+      "romaji": "Kake ashi dachi",
+      "english": "Cross legs stance",
+      "swedish": "Korsade benställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "kiba_dachi",
+      "japanese": "騎馬立ち",
+      "romaji": "Kiba dachi",
+      "english": "Horse back riding stance",
+      "swedish": "Ryttarställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "tsuru_ashi_dachi",
+      "japanese": "鶴足立ち",
+      "romaji": "Tsuru ashi dachi",
+      "english": "Crane stance",
+      "swedish": "Tranställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "heiko_dachi",
+      "japanese": "平行立ち",
+      "romaji": "Heiko dachi",
+      "english": "Parallel stance",
+      "swedish": "Parallell ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "uchi_hachiji_dachi",
+      "japanese": "内八字立ち",
+      "romaji": "Uchi hachiji dachi",
+      "english": "Inner figure 8 stance",
+      "swedish": "Inre figur 8-ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "yoi_dachi_shizentai",
+      "japanese": "用意立ち／自然体",
+      "romaji": "Yoi Dachi / Shizentai",
+      "english": "Ready Stance",
+      "swedish": "Redo ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "fudo_dachi",
+      "japanese": "不動立ち",
+      "romaji": "Fudo dachi",
+      "english": "Immobile stance",
+      "swedish": "Orörlig ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "sanchin_dachi",
+      "japanese": "三戦立ち",
+      "romaji": "Sanchin dachi",
+      "english": "Three Point Stance / Basic practice stance",
+      "swedish": "Tre punkters ställning / Grundläggande övningsställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "neko_ashi_dachi",
+      "japanese": "猫足立ち",
+      "romaji": "Neko ashi dachi",
+      "english": "Cat stance",
+      "swedish": "Kattställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "zenkutsu_dachi",
+      "japanese": "前屈立ち",
+      "romaji": "Zenkutsu dachi",
+      "english": "Forward leaning stance",
+      "swedish": "Framåtlutad ställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "shiko_dachi",
+      "japanese": "四股立ち",
+      "romaji": "Shiko dachi",
+      "english": "Sumo stance",
+      "swedish": "Sumoställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "tsuru_ashi_dachi_crane",
+      "japanese": "鶴足立ち",
+      "romaji": "Tsuru Ashi Dachi",
+      "english": "Crane Stance",
+      "swedish": "Tranställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "kumite_dachi",
+      "japanese": "組手立ち",
+      "romaji": "Kumite Dachi",
+      "english": "Fighting Stance",
+      "swedish": "Stridställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "han_mi",
+      "japanese": "半身",
+      "romaji": "Han Mi",
+      "english": "Half Body Stance",
+      "swedish": "Halv kroppsställning",
+      "categoryId": "stances"
+    },
+    {
+      "id": "migi_ashi_mae",
+      "japanese": "右足前",
+      "romaji": "Migi Ashi Mae",
+      "english": "Right Foot Forward",
+      "swedish": "Höger fot framåt",
+      "categoryId": "stances"
+    },
+    {
+      "id": "hidari_ashi_mae",
+      "japanese": "左足前",
+      "romaji": "Hidari Ashi Mae",
+      "english": "Left Foot Forward",
+      "swedish": "Vänster fot framåt",
+      "categoryId": "stances"
+    },
+    {
+      "id": "seiken_chudan_jodan_tsuki",
+      "japanese": "正拳中段／上段突き",
+      "romaji": "Seiken chudan / Jodan tsuki",
+      "english": "Fist strike to the chudan / jodan",
+      "swedish": "Näveslag till chudan / jodan",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_ago_uchi",
+      "japanese": "正拳顎打ち",
+      "romaji": "Seiken ago uchi",
+      "english": "Fist strike to the chin",
+      "swedish": "Näveslag mot hakan",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_furi_uchi",
+      "japanese": "正拳振り打ち",
+      "romaji": "Seiken Furi Uchi",
+      "english": "Hook Strike",
+      "swedish": "Hookslag",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_oi_tsuki",
+      "japanese": "正拳追突き",
+      "romaji": "Seiken Oi Tsuki",
+      "english": "Lunge Punch",
+      "swedish": "Stötkniv",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_morote_tsuki",
+      "japanese": "正拳双手突き",
+      "romaji": "Seiken Morote Tsuki",
+      "english": "Two-Handed Punch",
+      "swedish": "Tvåhandskniv",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_gyaku_tsuki",
+      "japanese": "正拳逆突き",
+      "romaji": "Seiken Gyaku Tsuki",
+      "english": "Reverse Punch",
+      "swedish": "Omvänd punch",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_tate_tsuki",
+      "japanese": "正拳縦突き",
+      "romaji": "Seiken Tate Tsuki",
+      "english": "Vertical Punch",
+      "swedish": "Vertikal punch",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "seiken_jun_tsuki",
+      "japanese": "正拳順突き",
+      "romaji": "Seiken Jun Tsuki",
+      "english": "Side (corresponding) Punch",
+      "swedish": "Sidopunch (motsvarande)",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "uraken_ganmen_uchi",
+      "japanese": "裏拳顔面打ち",
+      "romaji": "Uraken ganmen uchi",
+      "english": "Back fist strike to the face",
+      "swedish": "Bakfist slag mot ansiktet",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "uraken_sayu_uchi",
+      "japanese": "裏拳左右打ち",
+      "romaji": "Uraken sayu uchi",
+      "english": "Back fist strike to the left & right opponents",
+      "swedish": "Bakfist slag mot vänster & höger motståndare",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "uraken_hizo_uchi",
+      "japanese": "裏拳肘打ち",
+      "romaji": "Uraken hizo uchi",
+      "english": "Back fist strike to side of the stomach",
+      "swedish": "Bakfist slag mot sidomeningen",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "uraken_oroshi_ganmen_uchi",
+      "japanese": "裏拳降ろし顔面打ち",
+      "romaji": "Uraken Oroshi Ganmen Uchi",
+      "english": "Descending Face Strike",
+      "swedish": "Nedåtgående ansiktsstöt",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "uraken_mawashi_uchi",
+      "japanese": "裏拳回し打ち",
+      "romaji": "Uraken mawashi uchi",
+      "english": "Back fist roundhouse strike to the temple",
+      "swedish": "Bakfist rundslag mot tinningen",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "shita_tsuki",
+      "japanese": "下突き",
+      "romaji": "Shita tsuki",
+      "english": "Flipped fist strike to the middle section",
+      "swedish": "Vänd näveslag mot mittenavsnittet",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "tetsui_oroshi_ganmen_uchi",
+      "japanese": "鉄拳降ろし顔面打ち",
+      "romaji": "Tetsui Oroshi Ganmen Uchi",
+      "english": "Descending Face Strike with hammer fist",
+      "swedish": "Nedåtgående ansiktsstöt med hammarefist",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "tetsui_komekami_uchi",
+      "japanese": "鉄拳髪神打ち",
+      "romaji": "Tetsui Komekami Uchi",
+      "english": "Temple Strike with hammer fist",
+      "swedish": "Tinningstöt med hammarefist",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "tetsui_hizo_uchi",
+      "japanese": "鉄拳肘打ち",
+      "romaji": "Tetsui Hizo Uchi",
+      "english": "Spleen Strike with hammer fist",
+      "swedish": "Mjältstöt med hammarefist",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "tetsui_mae_yoko_uchi",
+      "japanese": "鉄拳前横打ち",
+      "romaji": "Tetsui Mae Yoko Uchi",
+      "english": "Forward Side Strike with hammer fist",
+      "swedish": "Framåtslag med hammarefist",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "tetsui_yoko_uchi",
+      "japanese": "鉄拳横打ち",
+      "romaji": "Tetsui Yoko Uchi",
+      "english": "Side Strike with hammer fist",
+      "swedish": "Sidostöt med hammarefist",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "enpi",
+      "japanese": "円斧",
+      "romaji": "Enpi",
+      "english": "Elbow strike",
+      "swedish": "Armbågsstöt",
+      "categoryId": "punching_techniques"
+    },
+    {
+      "id": "shuto_ganmen_uchi",
+      "japanese": "手刀顔面打ち",
+      "romaji": "Shuto ganmen uchi",
+      "english": "Shuto strike to the temple",
+      "swedish": "Shuto slag mot tinningen",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shuto_sakotsu_uchi",
+      "japanese": "手刀鎖骨打ち",
+      "romaji": "Shuto sakotsu uchi",
+      "english": "Shuto strike to the collarbone",
+      "swedish": "Shuto slag mot nyckelbenet",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shuto_sakotsu_uchikomi",
+      "japanese": "手刀鎖骨打ち込み",
+      "romaji": "Shuto sakotsu uchikomi",
+      "english": "Shuto down strike to the collarbone",
+      "swedish": "Shuto nedåtgående slag mot nyckelbenet",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shuto_uchi_uchi",
+      "japanese": "手刀打ち打ち",
+      "romaji": "Shuto uchi uchi",
+      "english": "Shuto forward strike to the collarbone",
+      "swedish": "Shuto framåtslag mot nyckelbenet",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shuto_hizo_uchi",
+      "japanese": "手刀肘打ち",
+      "romaji": "Shuto hizo uchi",
+      "english": "Shuto outward strike to the temple or neck",
+      "swedish": "Shuto utåtriktat slag mot tinningen eller halsen",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shuto_yoko_ganmen_uchi",
+      "japanese": "手刀横顔面打ち",
+      "romaji": "Shuto Yoko Ganmen Uchi",
+      "english": "Shuto strike to the spleen/abdomen",
+      "swedish": "Shuto slag mot mjälten/magen",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "nihon_nukite",
+      "japanese": "二本突き手",
+      "romaji": "Nihon Nukite",
+      "english": "Two-Fingered Spear Hand",
+      "swedish": "Tvåfingrad spjuthand",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "yonhon_nukite",
+      "japanese": "四本突き手",
+      "romaji": "Yonhon Nukite",
+      "english": "Four-Fingered Spear Hand",
+      "swedish": "Fyrafingrad spjuthand",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shotei_uchi",
+      "japanese": "掌底打ち",
+      "romaji": "Shotei Uchi",
+      "english": "Palm Heel Strike",
+      "swedish": "Handflata slag",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "hiji_ate",
+      "japanese": "肘当て",
+      "romaji": "Hiji Ate",
+      "english": "Elbow Strike",
+      "swedish": "Armbågsstöt",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "mae_hiji_ate",
+      "japanese": "前肘当て",
+      "romaji": "Mae Hiji Ate",
+      "english": "Forward Elbow Strike",
+      "swedish": "Framåtgående armbågsstöt",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "age_hiji_ate",
+      "japanese": "上げ肘当て",
+      "romaji": "Age Hiji Ate",
+      "english": "Rising Elbow Strike",
+      "swedish": "Stigande armbågsstöt",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "ushiro_hiji_ate",
+      "japanese": "後ろ肘当て",
+      "romaji": "Ushiro Hiji Ate",
+      "english": "Backwards Elbow Strike",
+      "swedish": "Bakåtriktad armbågsstöt",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "oroshi_hiji_ate",
+      "japanese": "降ろし肘当て",
+      "romaji": "Oroshi Hiji Ate",
+      "english": "Descending Elbow Strike",
+      "swedish": "Nedåtgående armbågsstöt",
+      "categoryId": "striking_techniques"
+    },
+    {
+      "id": "shodan_uke",
+      "japanese": "上段受け",
+      "romaji": "Jodan uke",
+      "english": "Upper block",
+      "swedish": "Övre block",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "soto_uke",
+      "japanese": "外受け",
+      "romaji": "Soto uke",
+      "english": "Middle section from outside to inside",
+      "swedish": "Mellansektionsblock från utsidan till insidan",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "uchi_uke",
+      "japanese": "内受け",
+      "romaji": "Uchi uke",
+      "english": "Middle section from inside to outside",
+      "swedish": "Mellansektionsblock från insidan till utsidan",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "gedan_barai",
+      "japanese": "下段払い",
+      "romaji": "Gedan barai",
+      "english": "Lower block",
+      "swedish": "Nedre block",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "kosa_uke_uchiuke_gedanbarai",
+      "japanese": "交差受け／内受け下段払い",
+      "romaji": "Kosa uke / Uchiuke gedanbarai",
+      "english": "Uchiuke & gedanbarai at the same time",
+      "swedish": "Uchiuke & gedanbarai samtidigt",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "morote_chudan_uchi_uke",
+      "japanese": "双手中段内受け",
+      "romaji": "Morote Chudan Uchi Uke",
+      "english": "Two-Handed Middle Area Inside Block",
+      "swedish": "Tvåhands block för mittområde insidan",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "mawashi_uke",
+      "japanese": "回し受け",
+      "romaji": "Mawashi uke",
+      "english": "Roundhouse block",
+      "swedish": "Rundblock",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "shuto_mawashi_uke",
+      "japanese": "手刀回し受け",
+      "romaji": "Shuto mawashi uke",
+      "english": "Shuto roundhouse block",
+      "swedish": "Shuto rundblock",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "juji_uke",
+      "japanese": "十字受け",
+      "romaji": "Juji Uke",
+      "english": "Crossed Block",
+      "swedish": "Korsat block",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "kake_uke",
+      "japanese": "掛け受け",
+      "romaji": "Kake Uke",
+      "english": "Hooked Block",
+      "swedish": "Hooked block",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "shotei_uke",
+      "japanese": "掌底受け",
+      "romaji": "Shotei Uke",
+      "english": "Palm Heel Block",
+      "swedish": "Handflata block",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "enkei_gyaku_tsuki",
+      "japanese": "円経逆突き",
+      "romaji": "Enkei gyaku tsuki",
+      "english": "Reverse strike with circular motion block on Zenkutsu dachi stance",
+      "swedish": "Omvänd slag med cirkulärt rörelseblock i Zenkutsu dachi-ställning",
+      "categoryId": "blocking_techniques"
+    },
+    {
+      "id": "mae_keage",
+      "japanese": "前蹴上げ",
+      "romaji": "Mae keage",
+      "english": "Front upper kick with no knee snap",
+      "swedish": "Framåt övre spark utan knäknäpp",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "hiza_geri",
+      "japanese": "膝蹴り",
+      "romaji": "Hiza geri",
+      "english": "Knee kick",
+      "swedish": "Knäspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "kin_geri",
+      "japanese": "筋蹴り",
+      "romaji": "Kin geri",
+      "english": "Groin kick",
+      "swedish": "Innanlårsspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "mae_geri",
+      "japanese": "前蹴り",
+      "romaji": "Mae geri",
+      "english": "Front snap kick",
+      "swedish": "Framåtspark med knäpp",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "yoko_keage",
+      "japanese": "横蹴上げ",
+      "romaji": "Yoko keage",
+      "english": "Side upper kick with no knee snap",
+      "swedish": "Sidokick övre utan knäknäpp",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "kansetsu_geri",
+      "japanese": "関節蹴り",
+      "romaji": "Kansetsu geri",
+      "english": "Knee joint kick",
+      "swedish": "Knåssfikick",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "yoko_geri",
+      "japanese": "横蹴り",
+      "romaji": "Yoko geri",
+      "english": "Side kick",
+      "swedish": "Sidokick",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "ushiro_geri",
+      "japanese": "後ろ蹴り",
+      "romaji": "Ushiro geri",
+      "english": "Back kick",
+      "swedish": "Bakåtspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "uchi_mawashi_geri",
+      "japanese": "内回し蹴り",
+      "romaji": "Uchi mawashi geri",
+      "english": "Roundhouse kick with no knee snap outward",
+      "swedish": "Rundspark med knäknäpp utåt",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "soto_mawashi_geri",
+      "japanese": "外回し蹴り",
+      "romaji": "Soto mawashi geri",
+      "english": "Roundhouse kick with no knee snap inward",
+      "swedish": "Rundspark med knäknäpp inåt",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "mawashi_geri",
+      "japanese": "回し蹴り",
+      "romaji": "Mawashi geri",
+      "english": "Roundhouse kick",
+      "swedish": "Rundspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "ushiro_mawashi_geri",
+      "japanese": "後ろ回し蹴り",
+      "romaji": "Ushiro mawashi geri",
+      "english": "Spinning roundhouse kick",
+      "swedish": "Snurrande rundspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "kakato_otoshi",
+      "japanese": "踵落とし",
+      "romaji": "Kakato otoshi",
+      "english": "Ax kick",
+      "swedish": "Axelspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "domawashi_kaiten_geri",
+      "japanese": "土回し回転蹴り",
+      "romaji": "Domawashi kaiten geri",
+      "english": "Suicidal jumping spin kick",
+      "swedish": "Självmords hoppande snurrspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "tobi_geri",
+      "japanese": "跳び蹴り",
+      "romaji": "Tobi geri",
+      "english": "Jumping kick",
+      "swedish": "Hoppande spark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "tobi_mae_geri",
+      "japanese": "飛び前蹴り",
+      "romaji": "Tobi Mae Geri",
+      "english": "Jumping Front Kick",
+      "swedish": "Hoppande framåtspark",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "nidan_geri",
+      "japanese": "二段蹴り",
+      "romaji": "Nidan geri",
+      "english": "Jumping kick with shuffle legs",
+      "swedish": "Hoppande spark med shuffle ben",
+      "categoryId": "kicking_techniques"
+    },
+    {
+      "id": "taikyoku_sono_ichi",
+      "japanese": "太極その一",
+      "romaji": "Taikyoku sono ichi",
+      "english": "Taikyoku sono ichi",
+      "swedish": "Taikyoku sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "taikyoku_sono_ni",
+      "japanese": "太極その二",
+      "romaji": "Taikyoku sono ni",
+      "english": "Taikyoku sono ni",
+      "swedish": "Taikyoku sono ni",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "taikyoku_sono_san",
+      "japanese": "太極その三",
+      "romaji": "Taikyoku sono san",
+      "english": "Taikyoku sono san",
+      "swedish": "Taikyoku sono san",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "sokugi_taikyoku_sono_ichi",
+      "japanese": "即技太極その一",
+      "romaji": "Sokugi Taikyoku sono ichi",
+      "english": "Sokugi Taikyoku sono ichi",
+      "swedish": "Sokugi Taikyoku sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "sokugi_taikyoku_sono_ni",
+      "japanese": "即技太極その二",
+      "romaji": "Sokugi Taikyoku sono ni",
+      "english": "Sokugi Taikyoku sono ni",
+      "swedish": "Sokugi Taikyoku sono ni",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "sokugi_taikyoku_sono_san",
+      "japanese": "即技太極その三",
+      "romaji": "Sokugi Taikyoku sono san",
+      "english": "Sokugi Taikyoku sono san",
+      "swedish": "Sokugi Taikyoku sono san",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "pinan_sono_ichi",
+      "japanese": "品安その一",
+      "romaji": "Pinan sono ichi",
+      "english": "Pinan sono ichi",
+      "swedish": "Pinan sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "pinan_sono_ni",
+      "japanese": "品安その二",
+      "romaji": "Pinan sono ni",
+      "english": "Pinan sono ni",
+      "swedish": "Pinan sono ni",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "pinan_sono_san",
+      "japanese": "品安その三",
+      "romaji": "Pinan sono san",
+      "english": "Pinan sono san",
+      "swedish": "Pinan sono san",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "pinan_sono_yon",
+      "japanese": "品安その四",
+      "romaji": "Pinan sono yon",
+      "english": "Pinan sono yon",
+      "swedish": "Pinan sono yon",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "pinan_sono_go",
+      "japanese": "品安その五",
+      "romaji": "Pinan sono go",
+      "english": "Pinan sono go",
+      "swedish": "Pinan sono go",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "sanchin",
+      "japanese": "三戦",
+      "romaji": "Sanchin",
+      "english": "Sanchin",
+      "swedish": "Sanchin",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "yantsu",
+      "japanese": "燕寿",
+      "romaji": "Yantsu",
+      "english": "Yantsu",
+      "swedish": "Yantsu",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tsuki_no_kata",
+      "japanese": "突きの型",
+      "romaji": "Tsuki no Kata",
+      "english": "Tsuki no Kata",
+      "swedish": "Tsuki no Kata",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "gekisai_dai",
+      "japanese": "撃砕大",
+      "romaji": "Gekisai dai",
+      "english": "Gekisai dai",
+      "swedish": "Gekisai dai",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "gekisai_sho",
+      "japanese": "撃砕小",
+      "romaji": "Gekisai sho",
+      "english": "Gekisai sho",
+      "swedish": "Gekisai sho",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tensho",
+      "japanese": "天照",
+      "romaji": "Tensho",
+      "english": "Tensho",
+      "swedish": "Tensho",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "saifa",
+      "japanese": "裁破",
+      "romaji": "Saifa",
+      "english": "Saifa",
+      "swedish": "Saifa",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "seienchin",
+      "japanese": "清円鎮",
+      "romaji": "Seienchin",
+      "english": "Seienchin",
+      "swedish": "Seienchin",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "garyu",
+      "japanese": "牙流",
+      "romaji": "Garyu",
+      "english": "Garyu",
+      "swedish": "Garyu",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "seipai",
+      "japanese": "生培",
+      "romaji": "Seipai",
+      "english": "Seipai",
+      "swedish": "Seipai",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "kanku",
+      "japanese": "観空",
+      "romaji": "Kanku",
+      "english": "Kanku",
+      "swedish": "Kanku",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "sushiho",
+      "japanese": "秋砕",
+      "romaji": "Sushiho",
+      "english": "Sushiho",
+      "swedish": "Sushiho",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tekki_sono_ichi",
+      "japanese": "鉄気その一",
+      "romaji": "Tekki sono ichi",
+      "english": "Tekki sono ichi",
+      "swedish": "Tekki sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tekki_sono_ni",
+      "japanese": "鉄気その二",
+      "romaji": "Tekki sono ni",
+      "english": "Tekki sono ni",
+      "swedish": "Tekki sono ni",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tekki_sono_san",
+      "japanese": "鉄気その三",
+      "romaji": "Tekki sono san",
+      "english": "Tekki sono san",
+      "swedish": "Tekki sono san",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "bo_kihon_sono_ichi",
+      "japanese": "棒基本その一",
+      "romaji": "Bo kihon sono ichi",
+      "english": "Bo kihon sono ichi",
+      "swedish": "Bo kihon sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "juji_kata_no_kata",
+      "japanese": "十字型の型",
+      "romaji": "Juji Kata no kata",
+      "english": "Juji Kata no kata",
+      "swedish": "Juji Kata no kata",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "juji_keri_no_kata",
+      "japanese": "十字蹴りの型",
+      "romaji": "Juji keri no Kata",
+      "english": "Juji keri no Kata",
+      "swedish": "Juji keri no Kata",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "chion",
+      "japanese": "知恩",
+      "romaji": "Chion",
+      "english": "Chion",
+      "swedish": "Chion",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "nunchaku_kihon_sono_ichi",
+      "japanese": "ヌンチャク基本その一",
+      "romaji": "Nunchaku kihon sono ichi",
+      "english": "Nunchaku kihon sono ichi",
+      "swedish": "Nunchaku kihon sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "tonfa_kihon_sono_ichi",
+      "japanese": "トンファ基本その一",
+      "romaji": "Tonfa kihon sono ichi",
+      "english": "Tonfa kihon sono ichi",
+      "swedish": "Tonfa kihon sono ichi",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "bassai_dai",
+      "japanese": "抜塞大",
+      "romaji": "Bassai dai",
+      "english": "Bassai dai",
+      "swedish": "Bassai dai",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "soki",
+      "japanese": "礎気",
+      "romaji": "Soki",
+      "english": "Soki",
+      "swedish": "Soki",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "taizan",
+      "japanese": "太山",
+      "romaji": "Taizan",
+      "english": "Taizan",
+      "swedish": "Taizan",
+      "categoryId": "name_of_kata"
+    },
+    {
+      "id": "ichi",
+      "japanese": "一",
+      "romaji": "Ichi",
+      "english": "1",
+      "swedish": "1",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "ni",
+      "japanese": "二",
+      "romaji": "Ni",
+      "english": "2",
+      "swedish": "2",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "san",
+      "japanese": "三",
+      "romaji": "San",
+      "english": "3",
+      "swedish": "3",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "shi_yon",
+      "japanese": "四",
+      "romaji": "Shi / Yon",
+      "english": "4",
+      "swedish": "4",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "go",
+      "japanese": "五",
+      "romaji": "Go",
+      "english": "5",
+      "swedish": "5",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "roku",
+      "japanese": "六",
+      "romaji": "Roku",
+      "english": "6",
+      "swedish": "6",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "shichi_nana",
+      "japanese": "七",
+      "romaji": "Shichi / Nana",
+      "english": "7",
+      "swedish": "7",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "hachi",
+      "japanese": "八",
+      "romaji": "Hachi",
+      "english": "8",
+      "swedish": "8",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "kyu",
+      "japanese": "九",
+      "romaji": "Kyu",
+      "english": "9",
+      "swedish": "9",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu",
+      "japanese": "十",
+      "romaji": "Jyu",
+      "english": "10",
+      "swedish": "10",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_ichi",
+      "japanese": "十一",
+      "romaji": "Jyu Ichi",
+      "english": "11",
+      "swedish": "11",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_ni",
+      "japanese": "十二",
+      "romaji": "Jyu Ni",
+      "english": "12",
+      "swedish": "12",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_san",
+      "japanese": "十三",
+      "romaji": "Jyu San",
+      "english": "13",
+      "swedish": "13",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_shi",
+      "japanese": "十四",
+      "romaji": "Jyu Shi",
+      "english": "14",
+      "swedish": "14",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_go",
+      "japanese": "十五",
+      "romaji": "Jyu Go",
+      "english": "15",
+      "swedish": "15",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_roku",
+      "japanese": "十六",
+      "romaji": "Jyu Roku",
+      "english": "16",
+      "swedish": "16",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_shichi",
+      "japanese": "十七",
+      "romaji": "Jyu Shichi",
+      "english": "17",
+      "swedish": "17",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_hachi",
+      "japanese": "十八",
+      "romaji": "Jyu Hachi",
+      "english": "18",
+      "swedish": "18",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "jyu_kyu",
+      "japanese": "十九",
+      "romaji": "Jyu Kyu",
+      "english": "19",
+      "swedish": "19",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "ni_jyu",
+      "japanese": "二十",
+      "romaji": "Ni Jyu",
+      "english": "20",
+      "swedish": "20",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "san_jyu",
+      "japanese": "三十",
+      "romaji": "San Jyu",
+      "english": "30",
+      "swedish": "30",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "yon_jyu",
+      "japanese": "四十",
+      "romaji": "Yon Jyu",
+      "english": "40",
+      "swedish": "40",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "go_jyu",
+      "japanese": "五十",
+      "romaji": "Go Jyu",
+      "english": "50",
+      "swedish": "50",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "roku_jyu",
+      "japanese": "六十",
+      "romaji": "Roku Jyu",
+      "english": "60",
+      "swedish": "60",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "nana_jyu",
+      "japanese": "七十",
+      "romaji": "Nana Jyu",
+      "english": "70",
+      "swedish": "70",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "hachi_jyu",
+      "japanese": "八十",
+      "romaji": "Hachi Jyu",
+      "english": "80",
+      "swedish": "80",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "kyu_jyu",
+      "japanese": "九十",
+      "romaji": "Kyu Jyu",
+      "english": "90",
+      "swedish": "90",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "hyaku",
+      "japanese": "百",
+      "romaji": "Hyaku",
+      "english": "100",
+      "swedish": "100",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "sen",
+      "japanese": "千",
+      "romaji": "Sen",
+      "english": "1000",
+      "swedish": "1000",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "man",
+      "japanese": "万",
+      "romaji": "Man",
+      "english": "10000",
+      "swedish": "10000",
+      "categoryId": "numbers"
+    },
+    {
+      "id": "awasete_ippon",
+      "japanese": "合わせて一本",
+      "romaji": "Awasete Ippon",
+      "english": "Adds Up to One Point",
+      "swedish": "Adderar till en poäng",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "shomen_front",
+      "japanese": "正面",
+      "romaji": "Shomen",
+      "english": "Front",
+      "swedish": "Fram",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "shushin_referee",
+      "japanese": "主審",
+      "romaji": "Shushin",
+      "english": "Referee",
+      "swedish": "Domare",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "seiza_sit_down",
+      "japanese": "正座",
+      "romaji": "Seiza",
+      "english": "Sit down",
+      "swedish": "Sitt ner",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "kamaete_on_guard_tournament",
+      "japanese": "構えて",
+      "romaji": "Kamaete",
+      "english": "On guard",
+      "swedish": "I beredskap",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "yame_stop",
+      "japanese": "止め",
+      "romaji": "Yame",
+      "english": "Stop",
+      "swedish": "Stoppa",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "shiro_white",
+      "japanese": "白",
+      "romaji": "Shiro",
+      "english": "White",
+      "swedish": "Vit",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "genten_penalty",
+      "japanese": "原点",
+      "romaji": "Genten",
+      "english": "Penalty",
+      "swedish": "Straff",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "genten_ichi_minus_1_point",
+      "japanese": "原点一",
+      "romaji": "Genten ichi",
+      "english": "Minus 1 point",
+      "swedish": "Minus 1 poäng",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "rei_bow",
+      "japanese": "礼",
+      "romaji": "Rei",
+      "english": "Bow",
+      "swedish": "Buga",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "otagai_each_other",
+      "japanese": "お互い",
+      "romaji": "Otagai",
+      "english": "Each other",
+      "swedish": "Varandra",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "mawatte_turn",
+      "japanese": "回って",
+      "romaji": "Mawatte",
+      "english": "Turn",
+      "swedish": "Vänd",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "hajime_start",
+      "japanese": "始め",
+      "romaji": "Hajime",
+      "english": "Start",
+      "swedish": "Starta",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "aka_red",
+      "japanese": "赤",
+      "romaji": "Aka",
+      "english": "Red",
+      "swedish": "Röd",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "kachi_win",
+      "japanese": "勝ち",
+      "romaji": "Kachi",
+      "english": "Win",
+      "swedish": "Vinna",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "chui_warning",
+      "japanese": "注意",
+      "romaji": "Chui",
+      "english": "Warning",
+      "swedish": "Varning",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "genten_ni_minus_2_point",
+      "japanese": "原点二",
+      "romaji": "Genten ni",
+      "english": "Minus 2 point",
+      "swedish": "Minus 2 poäng",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "genten_san_shikkaku",
+      "japanese": "原点三＝失格",
+      "romaji": "Genten san = shikkaku",
+      "english": "Minus 3 point = disqualified",
+      "swedish": "Minus 3 poäng = diskvalificerad",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "hantei_onegai_shimasu",
+      "japanese": "判定お願いします",
+      "romaji": "Hantei onegai shimasu",
+      "english": "Please give the judgment",
+      "swedish": "Var snäll och ge domen",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "hantei",
+      "japanese": "判定",
+      "romaji": "Hantei",
+      "english": "Decision / Judgement",
+      "swedish": "Beslut / Dom",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "waza_ari",
+      "japanese": "技あり",
+      "romaji": "Waza ari",
+      "english": "Half point",
+      "swedish": "Halv poäng",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "zokko",
+      "japanese": "続行",
+      "romaji": "Zokko",
+      "english": "Continue / Resume Fighting",
+      "swedish": "Fortsätt / Återuppta striden",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "akushu",
+      "japanese": "握手",
+      "romaji": "Akushu",
+      "english": "Shake hands",
+      "swedish": "Skaka hand",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "ippon",
+      "japanese": "一本",
+      "romaji": "Ippon",
+      "english": "One Point / Knock out = fight ends",
+      "swedish": "En poäng / Knock out = striden slutar",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "encho",
+      "japanese": "延長",
+      "romaji": "Encho",
+      "english": "Overtime Round (extension)",
+      "swedish": "Övertidsomgång (förlängning)",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "fukushin",
+      "japanese": "副審",
+      "romaji": "Fukushin",
+      "english": "Corner Judge (assistant referee)",
+      "swedish": "Hördomare (biträde domare)",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "fukushin_shugo",
+      "japanese": "副審主合",
+      "romaji": "Fukushin Shugo",
+      "english": "Referees' Conference",
+      "swedish": "Domarnas konferens",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "hikiwake",
+      "japanese": "引き分け",
+      "romaji": "Hikiwake",
+      "english": "Draw, Tie",
+      "swedish": "Oavgjort, Tie",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "senshuken_taikai",
+      "japanese": "選手権大会",
+      "romaji": "Senshuken Taikai",
+      "english": "Championship Tournament",
+      "swedish": "Mästerskapsturnering",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "shikaku",
+      "japanese": "資格",
+      "romaji": "Shikaku",
+      "english": "Disqualification",
+      "swedish": "Diskvalificering",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "ganmen_oda",
+      "japanese": "顔面押し",
+      "romaji": "Ganmen oda",
+      "english": "Face punch",
+      "swedish": "Ansiktspunch",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "tsukami",
+      "japanese": "つかみ",
+      "romaji": "Tsukami",
+      "english": "Grabbing",
+      "swedish": "Grabbning",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "kinteki_geri",
+      "japanese": "筋的蹴り",
+      "romaji": "Kinteki geri",
+      "english": "Groin kick",
+      "swedish": "Innanlårsspark",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "nage",
+      "japanese": "投げ",
+      "romaji": "Nage",
+      "english": "Throwing",
+      "swedish": "Kastning",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "oshi",
+      "japanese": "押し",
+      "romaji": "Oshi",
+      "english": "Push",
+      "swedish": "Trycka",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "kake_hook",
+      "japanese": "掛けフック",
+      "romaji": "Kake",
+      "english": "Hook",
+      "swedish": "Hook",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "kansetsu_geri_tournament",
+      "japanese": "関節蹴り",
+      "romaji": "Kansetsu geri",
+      "english": "Knee joint kick",
+      "swedish": "Knåssfikick",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "atama_wo_tsukeno_kogeki",
+      "japanese": "頭を突けの攻撃",
+      "romaji": "Atama wo tsuketeno kogeki",
+      "english": "Attach with head on opponent",
+      "swedish": "Fäst med huvudet på motståndaren",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "senaka_sekizui_eno_kogeki",
+      "japanese": "背中・脊髄への攻撃",
+      "romaji": "Senaka / Sekizui eno kogeki",
+      "english": "Strike to the back / spinal area",
+      "swedish": "Slag mot ryggen / ryggradsområdet",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "taoreta_aite_eno_kogeki",
+      "japanese": "倒れた相手への攻撃",
+      "romaji": "Taoreta aite eno kogeki",
+      "english": "Attack to the downed opponent",
+      "swedish": "Attack mot den nedfallna motståndaren",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "waza_no_kake_nige",
+      "japanese": "技の掛け逃げ",
+      "romaji": "Waza no kake nige",
+      "english": "Throwing technique for escape purpose",
+      "swedish": "Kastteknik för flyktändamål",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "seni_soshitsu",
+      "japanese": "戦意喪失",
+      "romaji": "Seni soshitsu",
+      "english": "Lost of intent to fight",
+      "swedish": "Förlust av vilja att slåss",
+      "categoryId": "tournament_terminology"
+    },
+    {
+      "id": "hokyo",
+      "japanese": "法固",
+      "romaji": "Hokyo",
+      "english": "Strength training e.g. Push ups",
+      "swedish": "Styrketräning t.ex. armhävningar",
+      "categoryId": "training"
+    },
+    {
+      "id": "kentate",
+      "japanese": "拳立て",
+      "romaji": "Kentate",
+      "english": "Fist push ups",
+      "swedish": "Nävpush-ups",
+      "categoryId": "training"
+    },
+    {
+      "id": "yubitate",
+      "japanese": "指立て",
+      "romaji": "Yubitate",
+      "english": "Finger push ups",
+      "swedish": "Fingerpush-ups",
+      "categoryId": "training"
+    },
+    {
+      "id": "fukkin",
+      "japanese": "腹筋",
+      "romaji": "Fukkin",
+      "english": "Abdominal exercises / crunch / sit-up",
+      "swedish": "Magövningar / crunch / sit-ups",
+      "categoryId": "training"
+    },
+    {
+      "id": "haikin",
+      "japanese": "背筋",
+      "romaji": "Haikin",
+      "english": "Back extension",
+      "swedish": "Ryggförlängning",
+      "categoryId": "training"
+    },
+    {
+      "id": "sukuwatto",
+      "japanese": "スクワット",
+      "romaji": "Sukuwatto",
+      "english": "Squat",
+      "swedish": "Knäböj",
+      "categoryId": "training"
+    },
+    {
+      "id": "sakadachi",
+      "japanese": "逆足立ち",
+      "romaji": "Sakadachi",
+      "english": "Hand standing",
+      "swedish": "Handstående",
+      "categoryId": "training"
+    },
+    {
+      "id": "junan",
+      "japanese": "柔軟",
+      "romaji": "Junan",
+      "english": "Stretching",
+      "swedish": "Stretching",
+      "categoryId": "training"
+    },
+    {
+      "id": "bogu",
+      "japanese": "防具",
+      "romaji": "Bogu",
+      "english": "Protection gear",
+      "swedish": "Skyddsutrustning",
+      "categoryId": "training"
+    },
+    {
+      "id": "mizu",
+      "japanese": "水",
+      "romaji": "Mizu",
+      "english": "Water",
+      "swedish": "Vatten",
+      "categoryId": "training"
+    },
+    {
+      "id": "tai_sabaki",
+      "japanese": "体捌き",
+      "romaji": "Tai Sabaki",
+      "english": "Body management. A martial arts term referring to whole-body movement or repositioning to avoid attacks and gain an advantageous position.",
+      "swedish": "Kroppshantering. En kampsportsterm som avser helkroppsrörelse eller ompositionering för att undvika attacker och få en fördelaktig position.",
+      "categoryId": "training"
+    },
+    {
+      "id": "ashi_sabaki",
+      "japanese": "足捌き",
+      "romaji": "Ashi Sabaki",
+      "english": "Footwork. Techniques involving movement of the feet to maintain balance and positioning in martial arts.",
+      "swedish": "Fotarbete. Tekniker som innebär rörelse av fötterna för att bibehålla balans och position inom kampsport.",
+      "categoryId": "training"
+    },
+    {
+      "id": "te_sabaki",
+      "japanese": "手捌き",
+      "romaji": "Te Sabaki",
+      "english": "Hand movement. Techniques involving hand movements to control or evade an opponent's actions in martial arts.",
+      "swedish": "Handrörelse Tekniker som involverar handrörelser för att kontrollera eller undvika en motståndares handlingar inom kampsport.",
+      "categoryId": "training"
+    }
+  ]
+}

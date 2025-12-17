@@ -1,0 +1,28 @@
+.karate-guide {
+   font-family: 'Arial', sans-serif;
+   padding: 20px;
+   max-width: 800px;
+   margin: auto;
+}
+
+.karate-guide h1,
+.karate-guide h2,
+.karate-guide h3 {
+   color: #d35400; /* Orange color */
+}
+
+.karate-guide ul {
+   list-style-type: none;
+   padding: 0;
+}
+
+.karate-guide li {
+   margin-bottom: 10px;
+}
+
+.karate-guide p {
+   background-color: #f0f0f0;
+   padding: 15px;
+   border-radius: 5px;
+   line-height: 1.6;
+}

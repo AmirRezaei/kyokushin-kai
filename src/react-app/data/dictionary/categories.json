@@ -1,0 +1,114 @@
+{
+  "categories": [
+    {
+      "id": "general_vocabulary",
+      "name": "General Vocabulary",
+      "description": "Basic vocabulary used in Kyokushin terminology."
+    },
+    {
+      "id": "greetings_and_expressions",
+      "name": "General Japanese Greetings & Expressions",
+      "description": "Common greetings and expressions in Japanese."
+    },
+    {
+      "id": "greetings_and_salutes",
+      "name": "Greetings and Salutes",
+      "description": "Traditional greetings and salutes used in Kyokushin."
+    },
+    {
+      "id": "titles_and_status",
+      "name": "Titles and Status",
+      "description": "Terms related to ranks and positions within Kyokushin."
+    },
+    {
+      "id": "places_and_clothing",
+      "name": "Places and Clothing",
+      "description": "Terminology for locations and attire in Kyokushin."
+    },
+    {
+      "id": "basic_terminology",
+      "name": "Basic Terminology (Kihon Jutsugo)",
+      "description": "Foundational terms used in Kyokushin."
+    },
+    {
+      "id": "directions",
+      "name": "Directions",
+      "description": "Terms indicating directions and positions."
+    },
+    {
+      "id": "colors",
+      "name": "Colors",
+      "description": "Color names used in Kyokushin."
+    },
+    {
+      "id": "body_weapons_hand_arms",
+      "name": "Body Weapons - The Hand and Arms as Weapon",
+      "description": "Terms related to hand and arm techniques."
+    },
+    {
+      "id": "body_weapons_leg_foot",
+      "name": "Body Weapons - The Leg and Foot as Weapon",
+      "description": "Terms related to leg and foot techniques."
+    },
+    {
+      "id": "body_weapons_others",
+      "name": "Body Weapons - Others",
+      "description": "Additional body weapon terminology."
+    },
+    {
+      "id": "body_parts_target",
+      "name": "Body parts as a target",
+      "description": "Terms for body parts used as targets."
+    },
+    {
+      "id": "kihon_waza",
+      "name": "Kihon Waza (Basic Techniques)",
+      "description": "Basic techniques in Kyokushin."
+    },
+    {
+      "id": "stances",
+      "name": "Stances (the word \"tachi\" & \"dachi\" has same meaning)",
+      "description": "Different stances used in Kyokushin."
+    },
+    {
+      "id": "punching_techniques",
+      "name": "Punching Techniques (Tsuki Waza)",
+      "description": "Punching techniques in Kyokushin."
+    },
+    {
+      "id": "striking_techniques",
+      "name": "Striking Techniques (Uchi Waza)",
+      "description": "Striking techniques in Kyokushin."
+    },
+    {
+      "id": "blocking_techniques",
+      "name": "Blocking Techniques (Uke Waza)",
+      "description": "Blocking techniques in Kyokushin."
+    },
+    {
+      "id": "kicking_techniques",
+      "name": "Kicking Techniques (Geri Waza)",
+      "description": "Kicking techniques in Kyokushin."
+    },
+    {
+      "id": "name_of_kata",
+      "name": "Name of the Kata",
+      "description": "Names of the Kata in Kyokushin."
+    },
+    {
+      "id": "numbers",
+      "name": "Numbers (Kazu)",
+      "description": "Number terms used in Kyokushin."
+    },
+    {
+      "id": "tournament_terminology",
+      "name": "Tournament Terminology (Taikai Jutsugo)",
+      "description": "Terms related to Kyokushin tournaments."
+    },
+    {
+      "id": "training",
+      "name": "Training",
+      "description": "Terms related to training in Kyokushin."
+    }
+  ]
+}

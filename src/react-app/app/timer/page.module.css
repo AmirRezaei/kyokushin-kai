@@ -1,0 +1,115 @@
+/* src/app/test2/page.module.css */
+.container {
+   max-width: 800px;
+   margin: 0 auto;
+   padding: 20px;
+}
+
+.section {
+   margin-bottom: 30px;
+   padding: 20px;
+   border: 1px solid #ccc;
+   border-radius: 8px;
+}
+
+.interval {
+   margin-bottom: 15px;
+}
+
+.intervalInputs {
+   display: flex;
+   gap: 10px;
+   flex-wrap: wrap;
+}
+
+.intervalInputs label {
+   display: flex;
+   flex-direction: column;
+   flex: 1;
+   min-width: 120px;
+}
+
+.addButton,
+.startButton,
+.resetButton,
+.savePresetButton {
+   padding: 10px 20px;
+   background-color: #28a745;
+   color: white;
+   border: none;
+   border-radius: 4px;
+   cursor: pointer;
+}
+
+.addButton:hover,
+.startButton:hover,
+.resetButton:hover,
+.savePresetButton:hover {
+   background-color: #218838;
+}
+
+.timer {
+   text-align: center;
+}
+
+.time {
+   font-size: 48px;
+   margin: 10px 0;
+}
+
+.progressBar {
+   width: 100%;
+   height: 20px;
+   background-color: #e9ecef;
+   border-radius: 10px;
+   overflow: hidden;
+}
+
+.progress {
+   height: 100%;
+   background-color: #28a745;
+   transition: width 1s linear;
+}
+
+.controls {
+   margin-top: 20px;
+}
+
+.controlButtons button {
+   margin: 0 10px;
+   padding: 10px 15px;
+   font-size: 16px;
+}
+
+.countdown {
+   font-size: 48px;
+   text-align: center;
+}
+
+.presetManager {
+   display: flex;
+   gap: 10px;
+   margin-bottom: 10px;
+}
+
+.presetsList {
+   display: flex;
+   flex-direction: column;
+   gap: 5px;
+}
+
+.preset {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+}
+
+.history {
+   max-height: 300px;
+   overflow-y: auto;
+}
+
+.historyItem {
+   padding: 10px;
+   border-bottom: 1px solid #ccc;
+}

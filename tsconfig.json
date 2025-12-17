@@ -1,4 +1,9 @@
 {
+	  "compilerOptions": {
+		"paths": {
+			"@/*": ["./src/react-app/*"]
+		}
+	  },
 	"files": [],
 	"references": [
 		{ "path": "./tsconfig.app.json" },
