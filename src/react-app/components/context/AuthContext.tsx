@@ -5,9 +5,9 @@ import React, {createContext, useContext, useEffect, useState, ReactNode} from '
 import {hydrateSettingsFromServer, isSettingsSyncAvailable, pushLocalSettingsToServer} from '@/services/userSettingsService';
 
 // Ensure the Google Client ID is available
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = import.meta.env.GOOGLE_CLIENT_ID;
 if (!GOOGLE_CLIENT_ID) {
-   console.warn('VITE_GOOGLE_CLIENT_ID is missing in environment variables.');
+   console.warn('GOOGLE_CLIENT_ID is missing in environment variables.');
 }
 
 interface User {
