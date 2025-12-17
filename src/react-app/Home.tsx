@@ -20,6 +20,7 @@ const Home: React.FC = () => {
             justifyContent: 'center',
             alignItems: 'center',
          }}>
+            TEST
          {showMottos ? <MottoDeck onClose={() => setShowMottos(false)} /> : <QuoteDeck quotes={quoteData} />}
       </Box>
    );
