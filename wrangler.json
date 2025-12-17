@@ -11,5 +11,13 @@
 	"assets": {
 		"directory": "./dist/client",
 		"not_found_handling": "single-page-application"
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "kyokushin-kai-db",
+			"database_id": "5bcc0f7a-48fa-46b9-b25a-91d33e7a9293",
+			"migrations_dir": "src/worker/migrations"
+		}
+	]
 }
