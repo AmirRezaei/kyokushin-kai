@@ -120,7 +120,7 @@ export const EquipmentTrainingHistory: React.FC<Props> = ({equipment, trainingSe
                   grid={{vertical: true, horizontal: true}}
                   slots={{line: CustomAnimatedLine}}
                   slotProps={{
-                     line: {limit: lastRealDataX},
+                     line: {limit: lastRealDataX} as any,
                   }}
                   sx={{
                      '& .line-after path': {

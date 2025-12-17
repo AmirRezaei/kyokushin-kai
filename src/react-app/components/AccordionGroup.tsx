@@ -62,7 +62,7 @@ const AccordionGroup: React.FC<AccordionGroupProps> = ({children}) => {
             // Check if the child is an Accordion component
             if (React.isValidElement(child) && child.type === Accordion) {
                // Return the cloned element with the additional props
-               return React.cloneElement(child as React.ReactElement, {
+               return React.cloneElement(child as any, {
                   expanded: expandedIndices.includes(index),
                   onChange: () => handleAccordionChange(index),
                });

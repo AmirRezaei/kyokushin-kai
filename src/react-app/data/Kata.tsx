@@ -3,7 +3,7 @@
 // HEADER-END
 
 import {Grade} from './Grade';
-import {Technique} from './Technique';
+import {Technique} from '@/app/Technique/TechniqueData';
 
 export class Kata {
    id: string;

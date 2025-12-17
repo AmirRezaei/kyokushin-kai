@@ -25,7 +25,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 
 import {Grade} from '@/data/Grade';
 import {gradeData} from '@/data/gradeData';
-import {Technique} from '@/data/Technique';
+import {Technique} from '@/app/Technique/TechniqueData';
 
 /**
  * Interface for Achievements Props

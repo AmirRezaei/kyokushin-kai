@@ -94,8 +94,8 @@ const CopyableText: React.FC<CopyableTextProps> = ({children, copyText}) => {
       if (Array.isArray(children)) {
          return children.map(child => getTextFromChildren(child)).join('');
       }
-      if (React.isValidElement(children) && typeof children.props.children === 'string') {
-         return children.props.children;
+      if (React.isValidElement(children) && typeof (children.props as any).children === 'string') {
+         return (children.props as any).children;
       }
       return '';
    };
