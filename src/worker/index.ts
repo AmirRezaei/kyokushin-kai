@@ -259,6 +259,91 @@ app.post('/api/v1/terminology-progress', async c => {
   return c.json({ ok: true });
 });
 
+// --- WordQuest Endpoints ---
+
+interface WordQuestProgressRow {
+  techniqueId: string;
+}
+
+app.get('/api/v1/wordquest/progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT technique_id as techniqueId FROM user_wordquest_progress WHERE user_id = ?`
+  )
+    .bind(user.id)
+    .all<WordQuestProgressRow>();
+
+  const solvedIds = (results || []).map(row => row.techniqueId);
+  return c.json({ solvedIds });
+});
+
+app.post('/api/v1/wordquest/progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { techniqueId: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.techniqueId) throw new Error('Missing techniqueId');
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing techniqueId' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_wordquest_progress (user_id, technique_id, solved_at)
+     VALUES (?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, technique_id) DO NOTHING`
+  )
+  .bind(user.id, payload.techniqueId)
+  .run();
+
+  return c.json({ ok: true });
+});
+
+app.get('/api/v1/wordquest/state/:gameId', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const gameId = c.req.param('gameId');
+
+  const row = await c.env.DB.prepare(
+    `SELECT data FROM user_game_state WHERE user_id = ? AND game_id = ?`
+  )
+  .bind(user.id, gameId)
+  .first<{data: string} | null>();
+
+  const state = row ? parseJsonSafely(row.data, {}) : {};
+  return c.json({ state });
+});
+
+app.post('/api/v1/wordquest/state/:gameId', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const gameId = c.req.param('gameId');
+
+  let payload: unknown;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+
+  const dataJson = JSON.stringify(payload);
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_game_state (user_id, game_id, data, updated_at)
+     VALUES (?, ?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, game_id) DO UPDATE SET
+       data = excluded.data,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, gameId, dataJson)
+  .run();
+
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging

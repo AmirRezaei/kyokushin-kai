@@ -11,6 +11,7 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {Stack} from '@mui/system';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import { useAuth } from '@/components/context/AuthContext';
 
 import {Technique} from '@/app/Technique/TechniqueData';
 import ChallengingTechniquesModal from '@/app/WordQuest/WordPlay/ChallengingTechniquesModal';
@@ -203,44 +204,128 @@ const WordPlayPage: React.FC = () => {
       }
    }, [grades, techniqueMap]);
 
+   const { token } = useAuth();
+
    /**
-    * Load knownTechniqueIds from localStorage on mount
+    * Load knownTechniqueIds from API or localStorage on mount
     */
    useEffect(() => {
-      const storedKnownTechniques = localStorage.getItem('knownTechniqueIds');
-      if (storedKnownTechniques) {
-         try {
-            const parsed: string[] = JSON.parse(storedKnownTechniques);
-            const updatedKnownTechniqueIds = new Set(parsed);
-
-            // Update the knownTechniqueIds state
-            setKnownTechniqueIds(updatedKnownTechniqueIds);
-
-            // Update the selected level based on known techniques
-            const levelNumber = grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))) ? getLevelNumber(grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id)))!) : grades.find(g => g.techniques.length > 0) ? getLevelNumber(grades.find(g => g.techniques.length > 0)!) : 1;
-
-            const knownGradeIds = grades.filter(grade => grade.techniques.length > 0 && grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))).map(grade => grade.id);
-            setKnownGradeIds(new Set(knownGradeIds));
-            setSelectedLevel(levelNumber);
-            handleLevelChangeByLevelNumber(levelNumber);
-         } catch {
-            // Failed to parse knownTechniqueIds from localStorage
+      const loadProgress = async () => {
+         let loadedIds: string[] = [];
+         
+         if (token) {
+            try {
+                const res = await fetch('/api/v1/wordquest/progress', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    loadedIds = data.solvedIds || [];
+                }
+            } catch (err) {
+                console.warn('Failed to load progress from API', err);
+            }
          }
-      }
-   }, [grades, handleLevelChangeByLevelNumber]); // Empty dependency array to ensure this runs only on mount
+
+         if (loadedIds.length === 0) {
+             const storedKnownTechniques = localStorage.getItem('knownTechniqueIds');
+             if (storedKnownTechniques) {
+                try {
+                   loadedIds = JSON.parse(storedKnownTechniques);
+                } catch { }
+             }
+         }
+
+         if (loadedIds.length > 0) {
+             const updatedKnownTechniqueIds = new Set(loadedIds);
+             setKnownTechniqueIds(updatedKnownTechniqueIds);
+             
+             // Update the selected level based on known techniques
+             const levelNumber = grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))) 
+                ? getLevelNumber(grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id)))!) 
+                : grades.find(g => g.techniques.length > 0) 
+                   ? getLevelNumber(grades.find(g => g.techniques.length > 0)!) 
+                   : 1;
+
+             const knownGradeIds = grades.filter(grade => grade.techniques.length > 0 && grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))).map(grade => grade.id);
+             setKnownGradeIds(new Set(knownGradeIds));
+             setSelectedLevel(levelNumber);
+             handleLevelChangeByLevelNumber(levelNumber);
+         }
+      };
+      
+      loadProgress();
+   }, [grades, handleLevelChangeByLevelNumber, token]);
 
    /**
-    * Save knownTechniqueIds to localStorage whenever it changes
+    * Save knownTechniqueIds to API and localStorage whenever it changes
     */
    useEffect(() => {
       if (knownTechniqueIds.size > 0) {
          try {
             localStorage.setItem('knownTechniqueIds', JSON.stringify(Array.from(knownTechniqueIds)));
-         } catch {
-            // Failed to save knownTechniqueIds to localStorage
-         }
+         } catch { }
       }
    }, [knownTechniqueIds]);
+
+   // Save newly solved technique to API
+   useEffect(() => {
+       if (!solved || !currentTechnique || !token) return;
+       
+       fetch('/api/v1/wordquest/progress', {
+           method: 'POST',
+           headers: { 
+               'Content-Type': 'application/json',
+               Authorization: `Bearer ${token}` 
+            },
+           body: JSON.stringify({ techniqueId: currentTechnique.id })
+       }).catch(err => console.error('Failed to save progress', err));
+   }, [solved, currentTechnique, token]);
+
+   /**
+    * Load/Save Score
+    */
+   useEffect(() => {
+       if (!token) {
+           const storedScore = localStorage.getItem('Score');
+           if (storedScore) setScore(parseInt(storedScore, 10) || 0);
+           return;
+       }
+
+       fetch('/api/v1/wordquest/state/wordquest', {
+           headers: { Authorization: `Bearer ${token}` }
+       })
+       .then(res => res.ok ? res.json() : {})
+       .then((data: {state?: {score: number}}) => {
+           if (data.state?.score) {
+               setScore(data.state.score);
+           }
+       })
+       .catch(err => console.warn('Failed to load score', err));
+   }, [token]);
+
+   useEffect(() => {
+       if (score === 0) return; // Skip initial
+
+       if (!token) {
+           localStorage.setItem('Score', score.toString());
+           return;
+       }
+
+       // Debounce saving score if needed, but for now save on change (optimize later if spammy)
+       const handler = setTimeout(() => {
+           fetch('/api/v1/wordquest/state/wordquest', {
+               method: 'POST',
+               headers: { 
+                   'Content-Type': 'application/json',
+                   Authorization: `Bearer ${token}` 
+                },
+               body: JSON.stringify({ score })
+           }).catch(err => console.error('Failed to save score', err));
+       }, 1000);
+
+       return () => clearTimeout(handler);
+   }, [score, token]);
    /**
     * Handle Level Change
     */
@@ -488,7 +573,8 @@ const WordPlayPage: React.FC = () => {
    return (
       <Box>
          <Box display='flex' justifyContent='center' sx={{mt: 0.5, mb: 0.5}}>
-            <ScoreUI initialScore={score} storageKey='Score' />
+            {/* storageKey is required but we manage persistence in parent now, so we pass a dummy key or rely on sync */}
+            <ScoreUI initialScore={score} storageKey='Score_Sync' /> 
          </Box>
          <Stack
             direction={'row'}
