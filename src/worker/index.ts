@@ -344,6 +344,148 @@ app.post('/api/v1/wordquest/state/:gameId', async c => {
   return c.json({ ok: true });
 });
 
+// --- FlashCard & Deck Endpoints ---
+
+interface DeckRow {
+  id: string;
+  name: string;
+  description: string | null;
+  updatedAt: number;
+}
+
+interface FlashCardRow {
+  id: string;
+  question: string;
+  answer: string;
+  category: string | null;
+  deckId: string | null;
+  updatedAt: number;
+}
+
+// Decks
+app.get('/api/v1/decks', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, name, description, updated_at as updatedAt FROM user_flashcard_decks WHERE user_id = ?`
+  )
+    .bind(user.id)
+    .all<DeckRow>();
+
+  // Use optional chaining default
+  const decks = (results || []).map(row => ({
+    id: row.id,
+    name: row.name,
+    description: row.description || undefined,
+    flashCardIds: [], // Populated by frontend from flashcards list
+  }));
+  return c.json({ decks });
+});
+
+app.post('/api/v1/decks', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { id: string; name: string; description?: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.id || !payload.name) throw new Error('Missing fields');
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_flashcard_decks (user_id, id, name, description, updated_at)
+     VALUES (?, ?, ?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       description = excluded.description,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, payload.id, payload.name, payload.description || null)
+  .run();
+
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/decks/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  await c.env.DB.batch([
+    c.env.DB.prepare(`DELETE FROM user_flashcard_decks WHERE user_id = ? AND id = ?`).bind(user.id, id),
+    // Also remove deckId from cards, or delete cards? 
+    // Logic in frontend was: set deckId=undefined. 
+    // In DB, if we delete deck, we should update cards to have deck_id = NULL
+    c.env.DB.prepare(`UPDATE user_flashcards SET deck_id = NULL WHERE user_id = ? AND deck_id = ?`).bind(user.id, id)
+  ]);
+
+  return c.json({ ok: true });
+});
+
+// FlashCards
+app.get('/api/v1/flashcards', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, question, answer, category, deck_id as deckId, updated_at as updatedAt FROM user_flashcards WHERE user_id = ?`
+  )
+    .bind(user.id)
+    .all<FlashCardRow>();
+
+  const flashCards = (results || []).map(row => ({
+    id: row.id,
+    question: row.question,
+    answer: row.answer,
+    category: row.category || undefined,
+    deckId: row.deckId || undefined,
+  }));
+  return c.json({ flashCards });
+});
+
+app.post('/api/v1/flashcards', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { id: string; question: string; answer: string; category?: string; deckId?: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.id || !payload.question || !payload.answer) throw new Error('Missing fields');
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_flashcards (user_id, id, question, answer, category, deck_id, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       question = excluded.question,
+       answer = excluded.answer,
+       category = excluded.category,
+       deck_id = excluded.deck_id,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, payload.id, payload.question, payload.answer, payload.category || null, payload.deckId || null)
+  .run();
+
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/flashcards/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  await c.env.DB.prepare(`DELETE FROM user_flashcards WHERE user_id = ? AND id = ?`)
+    .bind(user.id, id)
+    .run();
+
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging

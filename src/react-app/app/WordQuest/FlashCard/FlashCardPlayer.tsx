@@ -1,6 +1,6 @@
 // File: ./src/app/WordQuest/FlashCard/FlashCardPlayer.tsx
 
-import {ArrowBack, ArrowForward, Flip, Shuffle} from '@mui/icons-material';
+import {ArrowBack, ArrowForward, Flip, Shuffle, SwapHoriz} from '@mui/icons-material';
 import {Box, Button, FormControl, IconButton, InputLabel, MenuItem, Select, SelectChangeEvent, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React, {useEffect, useState} from 'react';
@@ -24,6 +24,7 @@ const FlashCardPlayer: React.FC = () => {
    const [selectedDeckId, setSelectedDeckId] = useState<string>('All');
    const [selectedCategory, setSelectedCategory] = useState<string>('All');
    const [orderedFlashCards, setOrderedFlashCards] = useState<FlashCard[]>([]);
+   const [isReversed, setIsReversed] = useState<boolean>(false);
 
    /**
     * Update orderedFlashCards based on selected deck and category.
@@ -58,6 +59,13 @@ const FlashCardPlayer: React.FC = () => {
       setFlipped(prev => !prev);
    };
 
+   const handleReverse = () => {
+       setIsReversed(prev => !prev);
+       setFlipped(false); // Reset flip state when changing mode
+   };
+
+   // ... (next/prev handlers same as before) ...
+   
    /**
     * Navigate to the next flashcard.
     */
@@ -154,7 +162,7 @@ const FlashCardPlayer: React.FC = () => {
                         height: '100%',
                      }}>
                      <Typography variant='h5' sx={{color: theme.palette.text.primary}}>
-                        {currentCard.question}
+                        {isReversed ? currentCard.answer : currentCard.question}
                      </Typography>
                   </Box>
                </FlipCardFace>
@@ -172,7 +180,7 @@ const FlashCardPlayer: React.FC = () => {
                         height: '100%',
                      }}>
                      <Typography sx={{mt: '1em', fontWeight: 'bold'}} variant='h5'>
-                        {currentCard.answer}
+                        {isReversed ? currentCard.question : currentCard.answer}
                      </Typography>
                   </Box>
                </FlipCardBack>
@@ -202,6 +210,9 @@ const FlashCardPlayer: React.FC = () => {
             </IconButton>
             <IconButton onClick={shuffleFlashCards} color='primary'>
                <Shuffle />
+            </IconButton>
+            <IconButton onClick={handleReverse} color={isReversed ? 'secondary' : 'primary'} title="Swap Question/Answer">
+               <SwapHoriz />
             </IconButton>
          </Box>
       </Box>
