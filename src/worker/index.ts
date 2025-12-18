@@ -107,9 +107,104 @@ app.put('/api/v1/settings', async c => {
   return c.json({ok: true});
 });
 
+
+// --- Technique Progress Endpoints ---
+
+interface TechniqueProgressRow {
+  techniqueId: string;
+  status: string;
+  rating: number;
+  notes: string;
+  tags: string | null;
+  videoLinks: string | null;
+  updatedAt: number;
+}
+
+app.get('/api/v1/technique-progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT technique_id as techniqueId, status, rating, notes, tags, video_links as videoLinks, updated_at as updatedAt 
+     FROM user_technique_progress 
+     WHERE user_id = ?`
+  )
+    .bind(user.id)
+    .all<TechniqueProgressRow>();
+
+  // Parse JSON fields
+  const parsed = results.map(row => ({
+    ...row,
+    tags: parseJsonSafely(row.tags, []),
+    videoLinks: parseJsonSafely(row.videoLinks, []),
+    // Ensure numbers/dates are correct types
+    rating: Number(row.rating),
+    updatedAt: Number(row.updatedAt)
+  }));
+
+  return c.json({ progress: parsed });
+});
+
+app.post('/api/v1/technique-progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: {
+    techniqueId: string;
+    status?: string;
+    rating?: number;
+    notes?: string;
+    tags?: string[];
+    videoLinks?: string[];
+  };
+
+  try {
+    payload = await c.req.json();
+    if (!payload.techniqueId) throw new Error('Missing techniqueId');
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing techniqueId' }, 400);
+  }
+
+  const existing = await c.env.DB.prepare(
+    'SELECT * FROM user_technique_progress WHERE user_id = ? AND technique_id = ?'
+  )
+  .bind(user.id, payload.techniqueId)
+  .first<{tags: string | null; video_links: string | null; status: string; rating: number; notes: string} | null>();
+
+  const currentTags = existing ? parseJsonSafely(existing.tags, []) : [];
+  const currentVideoLinks = existing ? parseJsonSafely(existing.video_links, []) : [];
+
+  const newStatus = payload.status ?? existing?.status ?? 'not-started';
+  const newRating = payload.rating ?? existing?.rating ?? 0;
+  const newNotes = payload.notes ?? existing?.notes ?? '';
+  const newTags = payload.tags ?? currentTags;
+  const newVideoLinks = payload.videoLinks ?? currentVideoLinks; 
+
+  const tagsJson = JSON.stringify(newTags);
+  const videoLinksJson = JSON.stringify(newVideoLinks);
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_technique_progress 
+       (user_id, technique_id, status, rating, notes, tags, video_links, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, technique_id) DO UPDATE SET
+       status = excluded.status,
+       rating = excluded.rating,
+       notes = excluded.notes,
+       tags = excluded.tags,
+       video_links = excluded.video_links,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, payload.techniqueId, newStatus, newRating, newNotes, tagsJson, videoLinksJson)
+  .run();
+
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
-  return c.json({error: 'Internal Server Error'}, 500);
+  // Return actual error message for debugging
+  return c.json({error: err.message || 'Internal Server Error', stack: err.stack}, 500);
 });
 
 export default app;
@@ -219,4 +314,13 @@ function sanitizeSettings(payload: Partial<PersistedSettings>): PersistedSetting
 
 function unauthorized(c: Context<{Bindings: Bindings}>) {
   return c.json({error: 'Unauthorized'}, 401);
+}
+
+function parseJsonSafely<T>(str: string | null | undefined, fallback: T): T {
+  if (!str) return fallback;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return fallback;
+  }
 }

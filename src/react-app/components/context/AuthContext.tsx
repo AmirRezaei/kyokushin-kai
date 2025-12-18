@@ -1,3 +1,4 @@
+
 // File: ./src/components/context/AuthContext.tsx
 
 import React, {createContext, useContext, useEffect, useState, ReactNode} from 'react';
@@ -20,6 +21,7 @@ interface AuthContextType {
     error: string | null;
     login: () => Promise<void>;
     logout: () => void;
+    token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -113,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       };
    }, [googleClientId]);
 
-   const handleCredentialResponse = React.useCallback(async (response: { credential: string }) => {
+   const handleCredentialResponse = React.useCallback(async (response: GoogleCredentialResponse) => {
       try {
          if (!response?.credential) {
             throw new Error('Missing Google credential');
@@ -146,7 +148,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
          return;
       }
 
-      window.google.accounts.id.initialize({
+      window.google!.accounts!.id.initialize({
          client_id: googleClientId,
          callback: handleCredentialResponse,
          auto_select: false,
@@ -167,12 +169,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       setError(null);
       
       // Always re-initialize to be safe before prompting
-      window.google.accounts.id.initialize({
+      window.google!.accounts!.id.initialize({
          client_id: clientId,
          callback: handleCredentialResponse,
       });
 
-      window.google.accounts.id.prompt((notification: any) => {
+      window.google!.accounts!.id.prompt((notification: PromptNotification) => {
           if (notification.isNotDisplayed()) {
               console.warn('Google Sign-In prompt not displayed:', notification.getNotDisplayedReason());
               setError(`Unable to show Google Login: ${notification.getNotDisplayedReason()}`);
@@ -195,6 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       error,
       login,
       logout,
+      token: user?.token || null,
    };
 
    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -208,9 +211,34 @@ export const useAuth = (): AuthContextType => {
    return context;
 };
 
+// Google Identity Services Types
+interface GoogleCredentialResponse {
+    credential: string;
+}
+
+interface PromptNotification {
+    isNotDisplayed: () => boolean;
+    isSkippedMoment: () => boolean;
+    getNotDisplayedReason: () => string;
+    getSkippedReason: () => string;
+}
+
+interface GoogleAccounts {
+    id: {
+        initialize: (config: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+            auto_select?: boolean;
+        }) => void;
+        prompt: (callback: (notification: PromptNotification) => void) => void;
+    };
+}
+
 // Extend window interface for Google Identity Services
 declare global {
    interface Window {
-      google: any;
+      google?: {
+          accounts?: GoogleAccounts;
+      };
    }
 }

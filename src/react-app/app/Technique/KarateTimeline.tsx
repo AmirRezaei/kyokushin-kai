@@ -40,7 +40,6 @@ import { useSnackbar } from '@/components/context/SnackbarContext';
 import CustomDivider from '@/components/UI/CustomDivider';
 import KarateBelt from '@/components/UI/KarateBelt';
 // import {getLocalStorageItem} from '@/components/utils/localStorageUtils'; // Removed
-import {setLocalStorageItem} from '@/components/utils/localStorageUtils';
 import { TechniqueKind } from '../../../data/model/technique';
 import { GradeWithContent } from '../../../data/repo/KyokushinRepository';
 
@@ -63,6 +62,7 @@ const toTitleCase = (str: string) => {
 };
 
 const getYoutubeEmbedUrl = (url: string) => {
+   // eslint-disable-next-line no-useless-escape
    const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 };
@@ -80,9 +80,10 @@ interface KarateTimelineProps {
    youtubeLinks: Record<string, string[]>;
    setYoutubeLinks: React.Dispatch<React.SetStateAction<Record<string, string[]>>>;
    selectedType: string | null;
+   onSaveProgress: (techniqueId: string, data: { rating?: number; notes?: string; tags?: string[]; videoLinks?: string[] }) => void;
 }
 
-export default React.memo(function KarateTimeline({grades, loading, searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks}: KarateTimelineProps) {
+export default React.memo(function KarateTimeline({grades, loading, searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks, onSaveProgress}: KarateTimelineProps) {
    const theme = useTheme();
    const {selectedLanguages} = useLanguage();
 
@@ -103,24 +104,26 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
    const handleRatingChange = (techniqueId: string, newRating: number | null) => {
       const updated = {...ratings, [techniqueId]: newRating || 0};
       setRatings(updated);
-      setLocalStorageItem('techniqueRatings', updated);
+      onSaveProgress(techniqueId, { rating: newRating || 0 });
    };
 
    const handleAddTag = (techniqueId: string, tag: string) => {
       if (!tag.trim()) return;
       const currentTags = tags[techniqueId] || [];
       if (!currentTags.includes(tag)) {
-         const updated = {...tags, [techniqueId]: [...currentTags, tag]};
+         const newTags = [...currentTags, tag];
+         const updated = {...tags, [techniqueId]: newTags};
          setTags(updated);
-         setLocalStorageItem('techniqueTags', updated);
+         onSaveProgress(techniqueId, { tags: newTags });
       }
    };
 
    const handleRemoveTag = (techniqueId: string, tagToRemove: string) => {
       const currentTags = tags[techniqueId] || [];
-      const updated = {...tags, [techniqueId]: currentTags.filter(tag => tag !== tagToRemove)};
+      const newTags = currentTags.filter(tag => tag !== tagToRemove);
+      const updated = {...tags, [techniqueId]: newTags};
       setTags(updated);
-      setLocalStorageItem('techniqueTags', updated);
+      onSaveProgress(techniqueId, { tags: newTags });
    };
 
    const filteredGrades = React.useMemo(() => {
@@ -390,7 +393,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                       onBlur={e => {
                                                          const newNote = e.target.value;
                                                          setNotes(prev => ({...prev, [techRomaji]: newNote}));
-                                                         setLocalStorageItem('techniqueNotes', {...notes, [techRomaji]: newNote});
+                                                         onSaveProgress(techRomaji, { notes: newNote });
                                                       }}
                                                       fullWidth
                                                    />
@@ -434,7 +437,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                                updatedUrls[index] = newUrl;
                                                                                const filteredUrls = updatedUrls.filter(u => u);
                                                                                setYoutubeLinks(prev => ({...prev, [techRomaji]: filteredUrls}));
-                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: filteredUrls});
+                                                                               onSaveProgress(techRomaji, { videoLinks: filteredUrls });
                                                                             }}
                                                                             fullWidth
                                                                          />
@@ -444,7 +447,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                                const currentUrls = youtubeLinks[techRomaji] || [];
                                                                                const updatedUrls = currentUrls.filter((_, i) => i !== index);
                                                                                setYoutubeLinks(prev => ({...prev, [techRomaji]: updatedUrls}));
-                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: updatedUrls});
+                                                                               onSaveProgress(techRomaji, { videoLinks: updatedUrls });
                                                                             }}>
                                                                             <DeleteIcon />
                                                                          </IconButton>
@@ -456,7 +459,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                          const currentUrls = youtubeLinks[techRomaji] || [];
                                                                          const updatedUrls = [...currentUrls, ''];
                                                                          setYoutubeLinks(prev => ({...prev, [techRomaji]: updatedUrls}));
-                                                                         setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: updatedUrls});
+                                                                         // Don't save empty string to DB yet, wait for blur
                                                                       }}
                                                                       sx={{alignSelf: 'flex-start'}}>
                                                                       <AddIcon />
@@ -638,7 +641,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                    onBlur={e => {
                                                       const newNote = e.target.value;
                                                       setNotes(prev => ({...prev, [kataRomaji]: newNote}));
-                                                      setLocalStorageItem('techniqueNotes', {...notes, [kataRomaji]: newNote});
+                                                      onSaveProgress(kataRomaji, { notes: newNote });
                                                    }}
                                                    fullWidth
                                                 />
@@ -666,7 +669,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                           </Typography>
                                                           {editModes[kataRomaji] && (
                                                              <Stack spacing={1}>
-                                                                {userLinks.map((url, index) => (
+                                                                 {userLinks.map((url, index) => (
                                                                    <Box key={index} sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                                                       <TextField
                                                                          label={`Media ${index + 1}`}
@@ -679,7 +682,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                             updatedUrls[index] = newUrl;
                                                                             const filteredUrls = updatedUrls.filter(u => u);
                                                                             setYoutubeLinks(prev => ({...prev, [kataRomaji]: filteredUrls}));
-                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: filteredUrls});
+                                                                            onSaveProgress(kataRomaji, { videoLinks: filteredUrls });
                                                                          }}
                                                                          fullWidth
                                                                       />
@@ -689,7 +692,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                             const currentUrls = youtubeLinks[kataRomaji] || [];
                                                                             const updatedUrls = currentUrls.filter((_, i) => i !== index);
                                                                             setYoutubeLinks(prev => ({...prev, [kataRomaji]: updatedUrls}));
-                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: updatedUrls});
+                                                                            onSaveProgress(kataRomaji, { videoLinks: updatedUrls });
                                                                          }}>
                                                                          <DeleteIcon />
                                                                       </IconButton>
@@ -701,7 +704,7 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                                       const currentUrls = youtubeLinks[kataRomaji] || [];
                                                                       const updatedUrls = [...currentUrls, ''];
                                                                       setYoutubeLinks(prev => ({...prev, [kataRomaji]: updatedUrls}));
-                                                                      setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: updatedUrls});
+                                                                      // Don't save empty string yet
                                                                    }}
                                                                    sx={{alignSelf: 'flex-start'}}>
                                                                    <AddIcon />

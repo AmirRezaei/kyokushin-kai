@@ -5,8 +5,9 @@ import UploadIcon from '@mui/icons-material/Upload';
 import {Box, Button, Chip, InputAdornment, Stack, TextField} from '@mui/material';
 import React, {useState, useEffect} from 'react';
 
-import {getLocalStorageItem, setLocalStorageItem} from '@/components/utils/localStorageUtils';
 import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
+import { useAuth } from '@/components/context/AuthContext';
+import { useSnackbar } from '@/components/context/SnackbarContext';
 
 import KarateTimeline from './KarateTimeline';
 
@@ -17,6 +18,14 @@ const TechniquePage: React.FC = () => {
 
      const [grades, setGrades] = useState<GradeWithContent[]>([]);
      const [loading, setLoading] = useState(true);
+
+     const [ratings, setRatings] = useState<Record<string, number>>({});
+     const [notes, setNotes] = useState<Record<string, string>>({});
+     const [tags, setTags] = useState<Record<string, string[]>>({});
+     const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string[]>>({});
+
+     const { token } = useAuth();
+     const { showSnackbar } = useSnackbar();
 
      useEffect(() => {
         // Fetch data from repository
@@ -30,59 +39,102 @@ const TechniquePage: React.FC = () => {
         return () => clearTimeout(timer);
      }, [searchTerm]);
 
-    const [ratings, setRatings] = useState<Record<string, number>>(() => getLocalStorageItem('techniqueRatings', {}));
-    const [notes, setNotes] = useState<Record<string, string>>(() => getLocalStorageItem('techniqueNotes', {}));
-    const [tags, setTags] = useState<Record<string, string[]>>(() => getLocalStorageItem('techniqueTags', {}));
-    const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string[]>>(() => getLocalStorageItem('techniqueYoutubeLinks', {}));
+     // Fetch user progress on mount or when token changes
+     useEffect(() => {
+        if (!token) return;
 
+        fetch('/api/v1/technique-progress', {
+           headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+           if (res.ok) return res.json();
+           throw new Error('Failed to fetch progress');
+        })
+        .then((data: any) => {
+           if (data.progress) {
+             const newRatings: Record<string, number> = {};
+             const newNotes: Record<string, string> = {};
+             const newTags: Record<string, string[]> = {};
+             const newYoutubeLinks: Record<string, string[]> = {};
 
+             data.progress.forEach((item: any) => {
+                if (item.rating) newRatings[item.techniqueId] = item.rating;
+                if (item.notes) newNotes[item.techniqueId] = item.notes;
+                if (item.tags && item.tags.length) newTags[item.techniqueId] = item.tags;
+                if (item.videoLinks && item.videoLinks.length) newYoutubeLinks[item.techniqueId] = item.videoLinks;
+             });
 
-    const handleExport = () => {
-       const data = {
-          techniqueRatings: ratings,
-          techniqueNotes: notes,
-          techniqueTags: tags,
-          techniqueYoutubeLinks: youtubeLinks,
-       };
-       const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-       const url = URL.createObjectURL(blob);
-       const a = document.createElement('a');
-       a.href = url;
-       a.download = 'technique-data.json';
-       a.click();
-       URL.revokeObjectURL(url);
-    };
+             setRatings(newRatings);
+             setNotes(newNotes);
+             setTags(newTags);
+             setYoutubeLinks(newYoutubeLinks);
+           }
+        })
+        .catch(err => console.error('Error fetching progress:', err));
+     }, [token]);
 
-    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-       const file = event.target.files?.[0];
-       if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-             try {
-                const data = JSON.parse(e.target?.result as string);
-                if (data.techniqueRatings) {
-                   setRatings(data.techniqueRatings);
-                   setLocalStorageItem('techniqueRatings', data.techniqueRatings);
-                }
-                if (data.techniqueNotes) {
-                   setNotes(data.techniqueNotes);
-                   setLocalStorageItem('techniqueNotes', data.techniqueNotes);
-                }
-                if (data.techniqueTags) {
-                   setTags(data.techniqueTags);
-                   setLocalStorageItem('techniqueTags', data.techniqueTags);
-                }
-                if (data.techniqueYoutubeLinks) {
-                   setYoutubeLinks(data.techniqueYoutubeLinks);
-                   setLocalStorageItem('techniqueYoutubeLinks', data.techniqueYoutubeLinks);
-                }
-             } catch (error) {
-                alert('Invalid JSON file');
-             }
-          };
-          reader.readAsText(file);
-       }
-    };
+     const onSaveProgress = async (techniqueId: string, data: { rating?: number; notes?: string; tags?: string[]; videoLinks?: string[] }) => {
+        if (!token) {
+           showSnackbar('Please log in to save progress', 'warning');
+           return;
+        }
+
+        try {
+           const res = await fetch('/api/v1/technique-progress', {
+              method: 'POST',
+              headers: { 
+                 'Content-Type': 'application/json',
+                 Authorization: `Bearer ${token}` 
+              },
+              body: JSON.stringify({ techniqueId, ...data })
+           });
+
+           if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || 'Failed to save');
+           }
+        } catch (error) {
+           console.error('Save failed:', error);
+           showSnackbar('Failed to save changes. Please try again.', 'error');
+        }
+     };
+
+     const handleExport = () => {
+        const data = {
+           techniqueRatings: ratings,
+           techniqueNotes: notes,
+           techniqueTags: tags,
+           techniqueYoutubeLinks: youtubeLinks,
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'technique-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+     };
+
+     const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+           const reader = new FileReader();
+           reader.onload = (e) => {
+              try {
+                 const data = JSON.parse(e.target?.result as string);
+                 if (data.techniqueRatings) setRatings(data.techniqueRatings);
+                 if (data.techniqueNotes) setNotes(data.techniqueNotes);
+                 if (data.techniqueTags) setTags(data.techniqueTags);
+                 if (data.techniqueYoutubeLinks) setYoutubeLinks(data.techniqueYoutubeLinks);
+                 
+                 showSnackbar('Data imported locally. Edit items to save to cloud.', 'info');
+              } catch (error) {
+                 alert('Invalid JSON file');
+              }
+           };
+           reader.readAsText(file);
+        }
+     };
 
     return (
        <Box>
@@ -145,6 +197,7 @@ const TechniquePage: React.FC = () => {
              setTags={setTags} 
              youtubeLinks={youtubeLinks} 
              setYoutubeLinks={setYoutubeLinks} 
+             onSaveProgress={onSaveProgress}
           />
        </Box>
     );

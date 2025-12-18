@@ -22,6 +22,6 @@
 	],
 	"vars": {
 		"GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
-		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
+		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com"
 	}
 }
