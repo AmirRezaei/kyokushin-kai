@@ -486,6 +486,83 @@ app.delete('/api/v1/flashcards/:id', async c => {
   return c.json({ ok: true });
 });
 
+// --- TrainingSession Endpoints ---
+
+interface TrainingSessionRow {
+  id: string;
+  date: string;
+  type: string;
+  duration: number;
+  intensity: string | null;
+  notes: string | null;
+  updatedAt: number;
+}
+
+app.get('/api/v1/training-sessions', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, date, type, duration, intensity, notes, updated_at as updatedAt 
+     FROM user_training_sessions 
+     WHERE user_id = ?
+     ORDER BY date DESC`
+  )
+    .bind(user.id)
+    .all<TrainingSessionRow>();
+
+  const sessions = (results || []).map(row => ({
+    id: row.id,
+    date: row.date,
+    type: row.type,
+    duration: row.duration,
+    intensity: row.intensity || undefined,
+    notes: row.notes || undefined,
+  }));
+  return c.json({ sessions });
+});
+
+app.post('/api/v1/training-sessions', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { id: string; date: string; type: string; duration: number; intensity?: string; notes?: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.id || !payload.date || !payload.type) throw new Error('Missing fields');
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_training_sessions (user_id, id, date, type, duration, intensity, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       date = excluded.date,
+       type = excluded.type,
+       duration = excluded.duration,
+       intensity = excluded.intensity,
+       notes = excluded.notes,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, payload.id, payload.date, payload.type, payload.duration, payload.intensity || null, payload.notes || null)
+  .run();
+
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/training-sessions/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  await c.env.DB.prepare(`DELETE FROM user_training_sessions WHERE user_id = ? AND id = ?`)
+    .bind(user.id, id)
+    .run();
+
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging

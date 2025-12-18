@@ -51,13 +51,9 @@ import React, {useState} from 'react';
 
 import TrainingSessionForm from './TrainingSessionForm';
 
-export interface TrainingSession {
-   date: string;
-   type: string;
-   duration: number;
-   intensity: string;
-   notes: string;
-}
+import { UserTrainingSession } from '../../../data/model/trainingSession';
+
+export type TrainingSession = UserTrainingSession;
 
 interface TrainingSessionListProps {
    sessions: TrainingSession[];

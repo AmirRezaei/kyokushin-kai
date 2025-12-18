@@ -46,14 +46,9 @@
 // HEADER-END
 import {Box, Button, MenuItem, TextField, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
+import { UserTrainingSession } from '../../../data/model/trainingSession';
 
-interface TrainingSession {
-   date: string;
-   type: string;
-   duration: number;
-   intensity: string;
-   notes: string;
-}
+export type TrainingSession = UserTrainingSession;
 
 interface TrainingSessionFormProps {
    onAddSession: (session: TrainingSession) => void;
@@ -63,6 +58,7 @@ interface TrainingSessionFormProps {
 
 const TrainingSessionForm: React.FC<TrainingSessionFormProps> = ({onAddSession, initialData, isEditMode = false}) => {
    const [formData, setFormData] = useState<TrainingSession>({
+      id: '', // Empty ID initially, will be handled by parent for new sessions
       date: '',
       type: '',
       duration: 0,
@@ -86,6 +82,7 @@ const TrainingSessionForm: React.FC<TrainingSessionFormProps> = ({onAddSession, 
       onAddSession(formData);
       if (!isEditMode) {
          setFormData({
+            id: '',
             date: '',
             type: '',
             duration: 0,
