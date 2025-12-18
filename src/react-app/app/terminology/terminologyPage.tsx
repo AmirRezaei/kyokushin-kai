@@ -13,6 +13,8 @@ import {getLocalStorageItem, setLocalStorageItem} from '@/components/utils/local
 import categories from '@/data/dictionary/categories.json';
 import dictionaryEntities from '@/data/dictionary/dictionaryEntries.json';
 import {DictionaryEntry} from '@/data/dictionary/DictionaryEntry';
+import { useAuth } from '@/components/context/AuthContext';
+import { useSnackbar } from '@/components/context/SnackbarContext';
 
 // Define a type alias for FlattenedEntry
 type FlattenedEntry =
@@ -95,39 +97,85 @@ const TerminologyPage: React.FC = () => {
    const theme = useTheme();
    const {selectedLanguages} = useLanguage();
    const [bookmarkedWordIds, setBookmarkedWordIds] = useState<string[]>([]);
+   
+   const { token } = useAuth();
+   const { showSnackbar } = useSnackbar();
 
-   // Define the key used in localStorage for bookmarks
-   const BOOKMARKS_KEY = 'bookmarkedWords';
-
+   // Retrieve bookmarks from API
    useEffect(() => {
-      // Retrieve bookmarks from local storage
-      const bookmarks = getLocalStorageItem<string[]>(BOOKMARKS_KEY, []);
-      setBookmarkedWordIds(bookmarks);
-   }, []);
+      if (!token) {
+         // Fallback to local storage if not logged in (optional, or just clear)
+         const bookmarks = getLocalStorageItem<string[]>('bookmarkedWords', []);
+         setBookmarkedWordIds(bookmarks);
+         return;
+      }
+
+      fetch('/api/v1/terminology-progress', {
+         headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+         if (res.ok) return res.json();
+         throw new Error('Failed to fetch bookmarks');
+      })
+      .then((data: {bookmarks: string[]}) => {
+         if (data.bookmarks) {
+            setBookmarkedWordIds(data.bookmarks);
+         }
+      })
+      .catch(err => console.error('Error fetching bookmarks:', err));
+   }, [token]);
 
    // Callback for toggling bookmark
    const toggleBookmark = useCallback(
-      (wordId: string) => {
-         setBookmarkedWordIds(prevBookmarkedWordIds => {
-            const isBookmarked = prevBookmarkedWordIds.includes(wordId);
-            let updatedBookmarks: string[];
-
-            if (isBookmarked) {
-               // Remove the word from bookmarks
-               updatedBookmarks = prevBookmarkedWordIds.filter(id => id !== wordId);
-            } else {
-               // Add the word to bookmarks
-               updatedBookmarks = [...prevBookmarkedWordIds, wordId];
-            }
-
-            // Update localStorage with the new bookmarks
-            setLocalStorageItem<string[]>(BOOKMARKS_KEY, updatedBookmarks);
-
-            return updatedBookmarks;
+      async (wordId: string) => {
+         // Optimistic update
+         setBookmarkedWordIds(prev => {
+            const isBookmarked = prev.includes(wordId);
+            return isBookmarked ? prev.filter(id => id !== wordId) : [...prev, wordId];
          });
+
+         if (!token) {
+             // Fallback to local storage
+             setBookmarkedWordIds(prev => {
+                setLocalStorageItem('bookmarkedWords', prev);
+                return prev;
+             });
+             return;
+         }
+
+         try {
+             // Calculate new state based on current optimistic state check
+             // Note: ideally we pass the intended state. 
+             // Since we just toggled, we can check if it WAS in the list before toggle (logic slightly complex with async).
+             // Better: explicitly determine intent.
+             const isBookmarked = bookmarkedWordIds.includes(wordId);
+             const newStatus = !isBookmarked; // Toggle
+
+             const res = await fetch('/api/v1/terminology-progress', {
+                method: 'POST',
+                headers: { 
+                   'Content-Type': 'application/json',
+                   Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({ termId: wordId, isBookmarked: newStatus })
+             });
+
+             if (!res.ok) throw new Error('Failed to save bookmark');
+
+         } catch (error) {
+             console.error('Save failed:', error);
+             showSnackbar('Failed to save bookmark', 'error');
+             // Revert on error
+             setBookmarkedWordIds(prev => {
+                 const isBookmarked = prev.includes(wordId);
+                 return isBookmarked ? prev.filter(id => id !== wordId) : [...prev, wordId];
+             });
+         }
       },
-      [BOOKMARKS_KEY],
+      [bookmarkedWordIds, showSnackbar, token],
    );
+
+   // ... (rest of component: debouncing, filtering, rendering)
 
    // Debounced search state
    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>(searchTerm);

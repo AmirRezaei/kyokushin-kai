@@ -201,6 +201,64 @@ app.post('/api/v1/technique-progress', async c => {
   return c.json({ ok: true });
 });
 
+// --- Terminology Progress Endpoints ---
+
+interface TerminologyProgressRow {
+  termId: string;
+  isBookmarked: number;
+  updatedAt: number;
+}
+
+app.get('/api/v1/terminology-progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT term_id as termId, is_bookmarked as isBookmarked, updated_at as updatedAt 
+     FROM user_terminology_progress 
+     WHERE user_id = ? AND is_bookmarked = 1`
+  )
+    .bind(user.id)
+    .all<TerminologyProgressRow>();
+
+  // Use optional chaining to safely access results, defaulting to empty array if undefined
+  const bookmarks = (results || []).map(row => row.termId);
+
+  return c.json({ bookmarks });
+});
+
+app.post('/api/v1/terminology-progress', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: {
+    termId: string;
+    isBookmarked: boolean;
+  };
+
+  try {
+    payload = await c.req.json();
+    if (!payload.termId) throw new Error('Missing termId');
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing termId' }, 400);
+  }
+
+  const isBookmarkedInt = payload.isBookmarked ? 1 : 0;
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_terminology_progress 
+       (user_id, term_id, is_bookmarked, updated_at)
+     VALUES (?, ?, ?, strftime('%s','now'))
+     ON CONFLICT(user_id, term_id) DO UPDATE SET
+       is_bookmarked = excluded.is_bookmarked,
+       updated_at = excluded.updated_at`
+  )
+  .bind(user.id, payload.termId, isBookmarkedInt)
+  .run();
+
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging
