@@ -1,11 +1,12 @@
 // file: cloudflare/pm-api/src/index.ts
 import {Hono, type Context} from 'hono';
 import {cors} from 'hono/cors';
-import {createRemoteJWKSet, jwtVerify} from 'jose';
+import {createRemoteJWKSet, jwtVerify, SignJWT} from 'jose';
 
 type Bindings = {
   DB: D1Database;
   GOOGLE_CLIENT_ID: string;
+  JWT_SECRET: string;
   VITE_GOOGLE_CLIENT_ID?: string;
   VITE_API_BASE_URL?: string;
   ALLOWED_ORIGINS?: string;
@@ -57,6 +58,197 @@ app.get('/api/v1/public-config', c => {
     apiBaseUrl: c.env.VITE_API_BASE_URL ?? requestUrl.origin,
   };
   return c.json(payload, 200);
+});
+
+// --- Auth Endpoints ---
+// Implements refresh token authentication to extend session lifetime beyond Google's 1-hour ID token
+// LIMITATION: Current implementation doesn't issue new access tokens on refresh (see /auth/refresh comments)
+
+app.post('/api/v1/auth/login', async c => {
+  /**
+   * Exchange Google ID token for access + refresh tokens
+   * 
+   * Flow:
+   * 1. Verify Google ID token with Google's JWKS
+   * 2. Generate cryptographically secure refresh token (30-day expiry)
+   * 3. Hash and store refresh token in database
+   * 4. Return both Google ID token (access) and refresh token to client
+   * 
+   * Security:
+   * - Refresh tokens are SHA-256 hashed before storage
+   * - Multiple refresh tokens can exist per user (no cleanup implemented)
+   * - No rate limiting (vulnerability)
+   * 
+   * @body {idToken: string} - Google ID token from OAuth flow
+   * @returns {accessToken, refreshToken, expiresIn, user}
+   */
+  let payload: { idToken: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.idToken) throw new Error('Missing idToken');
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const clientId = c.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return c.json({ error: 'Server configuration error' }, 500);
+  }
+
+  try {
+    // Verify Google ID token
+    const { payload: googlePayload } = await jwtVerify(payload.idToken, jwks, {
+      audience: clientId,
+    });
+
+    if (!googlePayload.sub || !googlePayload.email) {
+      throw new Error('Missing email or sub claim');
+    }
+
+    const userId = String(googlePayload.sub);
+    const email = String(googlePayload.email);
+    const name = googlePayload.name ? String(googlePayload.name) : undefined;
+    const picture = googlePayload.picture ? String(googlePayload.picture) : undefined;
+
+    // Generate refresh token (30 days)
+    const refreshToken = generateRefreshToken();
+    const tokenHash = await hashToken(refreshToken);
+    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+
+    // Store in database
+    await c.env.DB.prepare(
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at)
+       VALUES (?, ?, ?, ?, strftime('%s', 'now'))`
+    )
+      .bind(crypto.randomUUID(), userId, tokenHash, expiresAt)
+      .run();
+
+    // Create custom JWT token (1 hour expiry)
+    const accessToken = await createJWT(userId, email, c.env.JWT_SECRET, 3600);
+
+    return c.json({
+      accessToken,
+      refreshToken,
+      expiresIn: 3600, // 1 hour
+      user: {
+        id: userId,
+        email,
+        name,
+        picture,
+      },
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return c.json({ error: 'Authentication failed' }, 401);
+  }
+});
+
+app.post('/api/v1/auth/refresh', async c => {
+  /**
+   * Validate refresh token and extend session
+   * 
+   * FIXED: Now issues custom JWT tokens
+   * 
+   * Current behavior:
+   * 1. Validates refresh token exists and hasn't expired (30 days)
+   * 2. Fetches user email from database
+   * 3. Issues new JWT access token (1 hour)
+   * 4. Updates last_used_at timestamp
+   * 
+   * Security:
+   * - No token rotation (same refresh token reused)
+   * - No rate limiting
+   * 
+   * @body {refreshToken: string}
+   * @returns {accessToken, expiresIn}
+   */
+  let payload: { refreshToken: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.refreshToken) throw new Error('Missing refreshToken');
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  try {
+    const tokenHash = await hashToken(payload.refreshToken);
+    const now = Math.floor(Date.now() / 1000);
+
+    // Find and validate refresh token + get user email
+    const row = await c.env.DB.prepare(
+      `SELECT rt.user_id as userId, rt.expires_at as expiresAt, us.email as email
+       FROM refresh_tokens rt
+       JOIN user_settings us ON rt.user_id = us.user_id
+       WHERE rt.token_hash = ? AND rt.expires_at > ?
+       LIMIT 1`
+    )
+      .bind(tokenHash, now)
+      .first<{ userId: string; expiresAt: number; email: string }>();
+
+    if (!row) {
+      return c.json({ error: 'Invalid or expired refresh token' }, 401);
+    }
+
+    //Update last_used_at
+    await c.env.DB.prepare(
+      `UPDATE refresh_tokens SET last_used_at = strftime('%s', 'now') WHERE token_hash = ?`
+    )
+      .bind(tokenHash)
+      .run();
+
+    // Issue new custom JWT token (1 hour expiry)
+    const accessToken = await createJWT(row.userId, row.email, c.env.JWT_SECRET, 3600);
+
+    return c.json({
+      accessToken,
+      expiresIn: 3600,
+    });
+  } catch (error) {
+    console.error('Refresh error:', error);
+    return c.json({ error: 'Token refresh failed' }, 401);
+  }
+});
+
+app.post('/api/v1/auth/logout', async c => {
+  /**
+   * Invalidate refresh token on logout
+   * 
+   * Flow:
+   * 1. Hash provided refresh token
+   * 2. Delete from database
+   * 3. Return success
+   * 
+   * Security:
+   * - Token deletion prevents future use
+   * - Fails gracefully if token not found
+   * - Client also clears localStorage
+   * 
+   * @body {refreshToken: string}
+   * @returns {ok: boolean}
+   */
+  let payload: { refreshToken: string };
+  try {
+    payload = await c.req.json();
+    if (!payload.refreshToken) throw new Error('Missing refreshToken');
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  try {
+    const tokenHash = await hashToken(payload.refreshToken);
+
+    // Delete refresh token
+    await c.env.DB.prepare(
+      `DELETE FROM refresh_tokens WHERE token_hash = ?`
+    )
+      .bind(tokenHash)
+      .run();
+
+    return c.json({ ok: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return c.json({ error: 'Logout failed' }, 500);
+  }
 });
 
 app.get('/api/v1/settings', async c => {
@@ -754,14 +946,32 @@ app.onError((err, c) => {
 
 export default app;
 
+/**
+ * Verify user authorization from JWT token
+ * Tries custom JWT first, falls back to Google ID token for backward compatibility
+ */
 async function requireUser(c: Context<{Bindings: Bindings}>) {
   const header = c.req.header('Authorization');
   if (!header?.startsWith('Bearer ')) return null;
   const token = header.slice('Bearer '.length);
   if (!token) return null;
+
+  // Try custom JWT first
+  const jwtSecret = c.env.JWT_SECRET;
+  if (jwtSecret) {
+    const customPayload = await verifyJWT(token, jwtSecret);
+    if (customPayload) {
+      return {
+        id: customPayload.sub,
+        email: customPayload.email,
+      };
+    }
+  }
+
+  // Fall back to Google ID token verification (for backward compatibility)
   const clientId = c.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
-    console.warn('GOOGLE_CLIENT_ID is not configured');
+    console.warn('Neither JWT_SECRET nor GOOGLE_CLIENT_ID configured');
     return null;
   }
 
@@ -783,7 +993,7 @@ async function requireUser(c: Context<{Bindings: Bindings}>) {
 
     return profile;
   } catch (error) {
-    console.warn('Google token verification failed', error);
+    console.warn('Token verification failed', error);
     return null;
   }
 }
@@ -867,5 +1077,87 @@ function parseJsonSafely<T>(str: string | null | undefined, fallback: T): T {
     return JSON.parse(str);
   } catch {
     return fallback;
+  }
+}
+
+// --- Auth Utility Functions ---
+
+function generateRefreshToken(): string {
+  // Generate cryptographically secure random token
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Create a custom JWT token for API authorization
+ * 
+ * @param userId - User's unique identifier
+ * @param secret - JWT signing secret from environment
+ * @param expiresIn - Token lifetime in seconds (default: 1 hour)
+ * @returns Signed JWT token
+ */
+async function createJWT(userId: string, email: string, secret: string, expiresIn: number = 3600): Promise<string> {
+  const encoder = new TextEncoder();
+  const secretKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const jwt = await new SignJWT({
+    sub: userId,
+    email,
+    type: 'access',
+  })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + expiresIn)
+    .sign(secretKey);
+
+  return jwt;
+}
+
+/**
+ * Verify a custom JWT token
+ * 
+ * @param token - JWT token to verify
+ * @param secret - JWT signing secret
+ * @returns Decoded payload if valid, null if invalid
+ */
+async function verifyJWT(token: string, secret: string): Promise<{ sub: string; email: string } | null> {
+  try {
+    const encoder = new TextEncoder();
+    const secretKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const { payload } = await jwtVerify(token, secretKey, {
+      algorithms: ['HS256'],
+    });
+
+    if (payload.sub && payload.email) {
+      return {
+        sub: String(payload.sub),
+        email: String(payload.email),
+      };
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

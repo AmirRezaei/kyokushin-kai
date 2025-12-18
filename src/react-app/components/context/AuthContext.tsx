@@ -12,6 +12,8 @@ interface User {
    email: string;
    imageUrl?: string;
    token: string;
+   refreshToken?: string;
+   expiresAt?: number; // Unix timestamp in seconds
 }
 
 interface AuthContextType {
@@ -49,6 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
    const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
    const [googleClientId, setGoogleClientId] = useState<string | null>(() => getClientConfigSnapshot().googleClientId ?? null);
+   const refreshTimerRef = React.useRef<number | null>(null);
    const resolveClientId = React.useCallback(async (): Promise<string | null> => {
       if (googleClientId) {
          return googleClientId;
@@ -66,6 +69,107 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
       return null;
    }, [googleClientId]);
+
+   /**
+    * Auto-refresh access token using refresh token
+    * 
+    * FIXED: Backend now returns new JWT access tokens
+    * 
+    * Flow:
+    * 1. Call /auth/refresh with current refresh token
+    * 2. Receive new JWT access token (1 hour expiry)
+    * 3. Update user with new token and expiry time
+    * 4. Save to localStorage
+    * \n    * Known Issues:
+    * - Stale closure: captures 'user' from parent scope, may be outdated
+    * - No retry logic: single failure logs user out
+    * - Force logout on error: poor UX if network hiccup
+    * 
+    * @returns Promise<boolean> - true if refresh succeeded, false if failed
+    */
+   const refreshAccessToken = React.useCallback(async (): Promise<boolean> => {
+      if (!user?.refreshToken) {
+         console.warn('No refresh token available');
+         return false;
+      }
+
+      try {
+         const res = await fetch('/api/v1/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken: user.refreshToken }),
+         });
+
+         if (!res.ok) {
+            throw new Error('Token refresh failed');
+         }
+
+         const data = await res.json() as { accessToken: string; expiresIn: number };
+         const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
+
+         // Update user with new access token and expiry
+         const updatedUser = { ...user, token: data.accessToken, expiresAt };
+         setUser(updatedUser);
+         localStorage.setItem('user', JSON.stringify(updatedUser));
+
+         return true;
+      } catch (error) {
+         console.error('Token refresh failed:', error);
+         // Force logout on refresh failure
+         setUser(null);
+         localStorage.removeItem('user');
+         return false;
+      }
+   }, [user]);
+
+   /**
+    * Schedule automatic token refresh 5 minutes before expiry
+    * 
+    * Behavior:
+    * - Sets setTimeout to call refreshAccessToken
+    * - Calculates delay: (expiresAt - now - 5 minutes)
+    * - Minimum delay: 60 seconds
+    * - Clears any existing timer first
+    * 
+    * Triggers:
+    * - On initial login (when user.expiresAt is set)
+    * - After successful token refresh (new expiresAt)
+    * - On user state change
+    * 
+    * Cleanup:
+    * - Timer cleared on component unmount
+    * - Timer cleared on new schedule
+    * - Timer cleared on logout
+    */
+   const scheduleTokenRefresh = React.useCallback(() => {
+      // Clear existing timer
+      if (refreshTimerRef.current) {
+         window.clearTimeout(refreshTimerRef.current);
+         refreshTimerRef.current = null;
+      }
+
+      if (!user?.expiresAt) return;
+
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = user.expiresAt - now;
+      const refreshIn = Math.max(timeUntilExpiry - 5 * 60, 60); // Refresh 5 min before expiry, min 60s
+
+      if (refreshIn > 0) {
+         refreshTimerRef.current = window.setTimeout(() => {
+            void refreshAccessToken();
+         }, refreshIn * 1000);
+      }
+   }, [user, refreshAccessToken]);
+
+   // Setup refresh timer on user change
+   useEffect(() => {
+      scheduleTokenRefresh();
+      return () => {
+         if (refreshTimerRef.current) {
+            window.clearTimeout(refreshTimerRef.current);
+         }
+      };
+   }, [scheduleTokenRefresh]);
 
    useEffect(() => {
       // Check for stored user data
@@ -120,22 +224,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
          if (!response?.credential) {
             throw new Error('Missing Google credential');
          }
-         // Decode the JWT token
-         const decoded = JSON.parse(atob(response.credential.split('.')[1]));
+
+         // Call backend to exchange Google token for access + refresh tokens
+         const res = await fetch('/api/v1/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: response.credential }),
+         });
+
+         if (!res.ok) {
+            throw new Error('Backend authentication failed');
+         }
+
+         const data = await res.json() as {
+            accessToken: string;
+            refreshToken: string;
+            expiresIn: number;
+            user: {
+               id: string;
+               email: string;
+               name?: string;
+               picture?: string;
+            };
+         };
+
+         const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
 
          const userData: User = {
-            id: decoded.sub,
-            name: decoded.name,
-            email: decoded.email,
-            imageUrl: decoded.picture,
-            token: response.credential,
+            id: data.user.id,
+            name: data.user.name || '',
+            email: data.user.email,
+            imageUrl: data.user.picture,
+            token: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiresAt,
          };
 
          setUser(userData);
          localStorage.setItem('user', JSON.stringify(userData));
          void syncUserSettings(userData.token);
       } catch (error) {
-         console.error('Error parsing Google credential:', error);
+         console.error('Error during authentication:', error);
          setError('Unable to complete Google authentication.');
       }
    }, []);
@@ -184,7 +313,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
       });
    };
 
-   const logout = () => {
+   /**
+    * Logout: Invalidate tokens both client and server-side
+    * 
+    * Flow:
+    * 1. Call /auth/logout to delete refresh token from database
+    * 2. Clear refresh timer
+    * 3. Clear user state and localStorage
+    * 
+    * Security:
+    * - Prevents further token refresh attempts
+    * - Invalidates 30-day refresh token
+    * - Continues even if backend call fails (graceful degradation)
+    */
+   const logout = async () => {
+      // Call backend to invalidate refresh token
+      if (user?.refreshToken) {
+         try {
+            await fetch('/api/v1/auth/logout', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ refreshToken: user.refreshToken }),
+            });
+         } catch (error) {
+            console.error('Logout endpoint error:', error);
+            // Continue with client-side logout even if backend fails
+         }
+      }
+
+      // Clear refresh timer
+      if (refreshTimerRef.current) {
+         window.clearTimeout(refreshTimerRef.current);
+         refreshTimerRef.current = null;
+      }
+
       setUser(null);
       localStorage.removeItem('user');
       setError(null);

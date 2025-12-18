@@ -128,10 +128,14 @@ const TerminologyPage: React.FC = () => {
    // Callback for toggling bookmark
    const toggleBookmark = useCallback(
       async (wordId: string) => {
+         // Store original state before optimistic update
+         const originalBookmarkedIds = bookmarkedWordIds;
+         const wasBookmarked = originalBookmarkedIds.includes(wordId);
+         const newStatus = !wasBookmarked; // Toggle
+
          // Optimistic update
          setBookmarkedWordIds(prev => {
-            const isBookmarked = prev.includes(wordId);
-            return isBookmarked ? prev.filter(id => id !== wordId) : [...prev, wordId];
+            return wasBookmarked ? prev.filter(id => id !== wordId) : [...prev, wordId];
          });
 
          if (!token) {
@@ -144,13 +148,6 @@ const TerminologyPage: React.FC = () => {
          }
 
          try {
-             // Calculate new state based on current optimistic state check
-             // Note: ideally we pass the intended state. 
-             // Since we just toggled, we can check if it WAS in the list before toggle (logic slightly complex with async).
-             // Better: explicitly determine intent.
-             const isBookmarked = bookmarkedWordIds.includes(wordId);
-             const newStatus = !isBookmarked; // Toggle
-
              const res = await fetch('/api/v1/terminology-progress', {
                 method: 'POST',
                 headers: { 
@@ -160,16 +157,22 @@ const TerminologyPage: React.FC = () => {
                 body: JSON.stringify({ termId: wordId, isBookmarked: newStatus })
              });
 
-             if (!res.ok) throw new Error('Failed to save bookmark');
+             if (!res.ok) {
+                // Check if it's an authentication error
+                if (res.status === 401) {
+                   // Revert optimistic update
+                   setBookmarkedWordIds(originalBookmarkedIds);
+                   showSnackbar('Session expired. Please log in again.', 'warning');
+                   return;
+                }
+                throw new Error('Failed to save bookmark');
+             }
 
          } catch (error) {
              console.error('Save failed:', error);
              showSnackbar('Failed to save bookmark', 'error');
-             // Revert on error
-             setBookmarkedWordIds(prev => {
-                 const isBookmarked = prev.includes(wordId);
-                 return isBookmarked ? prev.filter(id => id !== wordId) : [...prev, wordId];
-             });
+             // Revert to original state
+             setBookmarkedWordIds(originalBookmarkedIds);
          }
       },
       [bookmarkedWordIds, showSnackbar, token],
