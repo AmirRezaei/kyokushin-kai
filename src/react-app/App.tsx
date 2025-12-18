@@ -18,11 +18,14 @@ import TrainingTrackerPage from './app/ten-thousand-days/TrainingTrackerPage';
 import TerminologyPage from './app/terminology/terminologyPage';
 import TimerPage from './app/timer/timerPage';
 import TrainingSessionPage from './app/trainingSession/trainingSessionPage';
-import WordQuestPage from './app/WordQuest/WordQuestPage';
+import WordPlayPage from './app/WordQuest/WordPlay/WordPlayPage';
+import FlashCardPage from './app/WordQuest/FlashCard/FlashCardPage';
 import AppNotFoundPage from './AppNotFoundPage';
 import BreathingTechniquesPage from './BreathingTechniquesPage';
 import DojoKunPage from './app/dojo-kun/DojoKunPage';
 import TemporaryDrawer from './components/TemporaryDrawer';
+import LogoutPage from './components/LogoutPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import DarkModeToggle from './components/UI/DarkModeToggle';
 import LanguageSelector from './components/UI/LanguageSelector';
 import Home from './Home';
@@ -31,7 +34,7 @@ import MottoPage from './app/motto/MottoPage';
 function AppContent() {
    const theme = useTheme();
    const appBarHeight = theme.mixins.toolbar.minHeight || 48; // Default to 48 if not defined in theme
-   const {user, isAuthenticated, login, logout, error: authError} = useAuth();
+   const {user, isAuthenticated, login, error: authError} = useAuth();
    const navigate = useNavigate();
    const { showSnackbar } = useSnackbar();
 
@@ -58,7 +61,7 @@ function AppContent() {
    };
 
    const handleLogout = () => {
-      logout();
+      navigate('/logout');
       handleClose();
    };
 
@@ -202,18 +205,19 @@ function AppContent() {
                <Route path='/' element={<Home />} />
                <Route path='/home' element={<Home />} />
                <Route path='/motto-explorer' element={<MottoPage />} />
-               <Route path='/technique' element={<TechniquePage />} />
+               <Route path='/technique' element={<ProtectedRoute><TechniquePage /></ProtectedRoute>} />
                <Route path='/breathing' element={<BreathingTechniquesPage />} />
                <Route path='/kihon' element={<KihonPage />} />
-               <Route path='/terminology' element={<TerminologyPage />} />
-               <Route path='/WordQuest' element={<WordQuestPage />} />
+               <Route path='/terminology' element={<ProtectedRoute><TerminologyPage /></ProtectedRoute>} />
+               <Route path='/WordQuest' element={<ProtectedRoute><WordPlayPage /></ProtectedRoute>} />
+               <Route path='/flashcards' element={<ProtectedRoute><FlashCardPage /></ProtectedRoute>} />
                <Route path='/timer' element={<TimerPage />} />
-               <Route path='/trainingSession' element={<TrainingSessionPage />} />
-               <Route path='/training-manager' element={<TrainingManagerPage />} />
-
-               <Route path='/settings' element={<SettingsPage />} />
-               <Route path='/ten-thousand-days' element={<TenThousandDaysTrackerPage />} />
-               <Route path='/training-tracker' element={<TrainingTrackerPage />} />
+               <Route path='/trainingSession' element={<ProtectedRoute><TrainingSessionPage /></ProtectedRoute>} />
+               <Route path='/training-manager' element={<ProtectedRoute><TrainingManagerPage /></ProtectedRoute>} />
+               <Route path='/settings' element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+               <Route path='/logout' element={<LogoutPage />} />
+               <Route path='/ten-thousand-days' element={<ProtectedRoute><TenThousandDaysTrackerPage /></ProtectedRoute>} />
+               <Route path='/training-tracker' element={<ProtectedRoute><TrainingTrackerPage /></ProtectedRoute>} />
                <Route path='/dojo-kun' element={<DojoKunPage />} />
                <Route path='/about' element={<About />} />
                <Route path='*' element={<AppNotFoundPage />} />

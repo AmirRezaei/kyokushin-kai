@@ -40,8 +40,13 @@ export class Quote {
    }
    // Getter to retrieve the avatar URL based on the author's name
    get avatar(): string {
-      const baseUrl = 'avatar/';
-      const formattedAuthor = baseUrl + this.author.replace(/ /g, '-') + '.jpg';
-      return formattedAuthor;
+       try {
+           const formattedAuthor = this.author.replace(/ /g, '-');
+           // Use public folder path - Vite serves this directly
+           return `/media/avatar/${formattedAuthor}.jpg`;
+       } catch {
+           // Return empty string as fallback - Avatar component will show initials
+           return '';
+       }
    }
 }

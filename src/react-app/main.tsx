@@ -1,9 +1,4 @@
 // File: ./src/main.tsx
-
-// HEADER-START
-// * Path: ./src/main.tsx
-// HEADER-END
-
 import './index.css';
 
 import {StrictMode} from 'react';
