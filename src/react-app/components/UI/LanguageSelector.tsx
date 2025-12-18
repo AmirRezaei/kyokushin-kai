@@ -1,12 +1,11 @@
-// HEADER-START
-// * Path: ./src/components/UI/LanguageSelector.tsx
-// HEADER-END
+// ./src/components/UI/LanguageSelector.tsx
 
-import {Avatar, Checkbox, Divider, FormControl, ListItemText, MenuItem, OutlinedInput, Select, Stack, Typography} from '@mui/material';
+import {Avatar, Checkbox, Divider, FormControl, ListItemText, MenuItem, OutlinedInput, Select, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React, {useCallback, useMemo} from 'react';
 
 import {Language, LanguageEnum, Languages, useLanguage} from '../context/LanguageContext';
+import LanguageIcon from '@mui/icons-material/Language';
 
 const MenuProps = {
    PaperProps: {
@@ -33,34 +32,12 @@ const LanguageSelector: React.FC = () => {
       clearLanguages();
    }, [clearLanguages]);
 
-   // Define the renderValue function to display selected languages
+   // Define the renderValue function to display just the language icon
    const renderSelectedValues = useCallback(
-      (selected: Language[]) => (
-         <Stack direction='row' spacing={1} flexWrap='wrap'>
-            {selected.map((value: Language) => {
-               const lang = Languages.find(lang => lang.value === value);
-               return (
-                  lang && (
-                     <Stack
-                        key={value}
-                        direction='row'
-                        spacing={0.5}
-                        alignItems='center'
-                        sx={{
-                           backgroundColor: theme.palette.mode === 'dark' ? theme.palette.action.selected : theme.palette.action.hover,
-                           borderRadius: 1.5,
-                           padding: theme.spacing(0.25, 0.75),
-                        }}>
-                        <Typography variant='body2'>{lang.icon}</Typography>
-                        {/* Uncomment the following line if you want to display the language label */}
-                        {/* <Typography variant="body2">{lang.label}</Typography> */}
-                     </Stack>
-                  )
-               );
-            })}
-         </Stack>
+      () => (
+         <LanguageIcon sx={{ fontSize: '1.2rem' }} />
       ),
-      [theme],
+      [],
    );
 
    // Memoize the menu items to prevent unnecessary re-renders
@@ -95,20 +72,6 @@ const LanguageSelector: React.FC = () => {
                </Avatar>
                <ListItemText
                   primary={lang.label}
-                  // primary={
-                  //    lang.value === LanguageEnum.Japanese ? (
-                  //       <Tooltip title='This language is mandatory'>
-                  //          <span>
-                  //             {lang.label}{' '}
-                  //             <Typography component='span' color='error'>
-                  //                *
-                  //             </Typography>
-                  //          </span>
-                  //       </Tooltip>
-                  //    ) : (
-                  //       lang.label
-                  //    )
-                  // }
                />
             </MenuItem>
          )),

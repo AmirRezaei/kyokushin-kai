@@ -1,11 +1,12 @@
 // File: ./src/App.tsx
 
-import {AppBar, Avatar, Box, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography, useTheme} from '@mui/material';
-import {AccountCircle} from '@mui/icons-material';
+import {AppBar, Avatar, Box, Checkbox, IconButton, ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography, useTheme} from '@mui/material';
+import {AccountCircle, Language as LanguageIcon, ChevronRight} from '@mui/icons-material';
 import React, {useState} from 'react';
 import {Route, Routes, useNavigate} from 'react-router-dom';
 import {SnackbarProvider, useSnackbar} from './components/context/SnackbarContext';
 import {AuthProvider, useAuth} from './components/context/AuthContext';
+import {Language, Languages, useLanguage} from './components/context/LanguageContext';
 
 import About from './About';
 import TrainingManagerPage from './app/TrainingManager/TrainingManagerPage';
@@ -35,6 +36,7 @@ function AppContent() {
    const theme = useTheme();
    const appBarHeight = theme.mixins.toolbar.minHeight || 48; // Default to 48 if not defined in theme
    const {user, isAuthenticated, login, error: authError} = useAuth();
+   const {toggleLanguage, isLanguageSelected} = useLanguage();
    const navigate = useNavigate();
    const { showSnackbar } = useSnackbar();
 
@@ -45,6 +47,7 @@ function AppContent() {
    }, [authError, showSnackbar]);
 
    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+   const [langMenuAnchor, setLangMenuAnchor] = useState<null | HTMLElement>(null);
    const open = Boolean(anchorEl);
 
    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -68,6 +71,18 @@ function AppContent() {
    const handleProfile = () => {
       console.log('Profile clicked');
       handleClose();
+   };
+
+   const handleLanguageMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+      setLangMenuAnchor(event.currentTarget);
+   };
+
+   const handleLanguageMenuClose = () => {
+      setLangMenuAnchor(null);
+   };
+
+   const handleLanguageToggle = (language: Language) => {
+      toggleLanguage(language);
    };
 
    const handleSettings = () => {
