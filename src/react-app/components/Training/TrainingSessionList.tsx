@@ -143,7 +143,7 @@ const TrainingSessionList: React.FC<TrainingSessionListProps> = ({sessions, onDe
          {/* Edit Dialog */}
          <Dialog open={isEditOpen} onClose={handleClose} fullWidth maxWidth='sm'>
             <DialogTitle>Edit Training Session</DialogTitle>
-            <DialogContent>{editData && <TrainingSessionForm onAddSession={handleEditSubmit} initialData={editData} isEditMode />}</DialogContent>
+            <DialogContent>{editData && <TrainingSessionForm key={editData.id} onAddSession={handleEditSubmit} initialData={editData} isEditMode />}</DialogContent>
             <DialogActions>
                <Button onClick={handleClose} color='secondary'>
                   Cancel
