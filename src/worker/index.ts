@@ -61,27 +61,33 @@ app.get('/api/v1/public-config', c => {
 });
 
 // --- Auth Endpoints ---
-// Implements refresh token authentication to extend session lifetime beyond Google's 1-hour ID token
-// LIMITATION: Current implementation doesn't issue new access tokens on refresh (see /auth/refresh comments)
+// Custom JWT token authentication using OAuth 2.0 hybrid approach
+// Google Sign-In for authentication → Custom JWTs for authorization
+// Access tokens (1h) are refreshable via refresh tokens (30 days)
 
 app.post('/api/v1/auth/login', async c => {
-  /**
-   * Exchange Google ID token for access + refresh tokens
-   * 
-   * Flow:
-   * 1. Verify Google ID token with Google's JWKS
-   * 2. Generate cryptographically secure refresh token (30-day expiry)
-   * 3. Hash and store refresh token in database
-   * 4. Return both Google ID token (access) and refresh token to client
-   * 
-   * Security:
-   * - Refresh tokens are SHA-256 hashed before storage
-   * - Multiple refresh tokens can exist per user (no cleanup implemented)
-   * - No rate limiting (vulnerability)
-   * 
-   * @body {idToken: string} - Google ID token from OAuth flow
-   * @returns {accessToken, refreshToken, expiresIn, user}
-   */
+   /**
+    * Exchange Google ID token for custom JWT + refresh token
+    * 
+    * OAuth 2.0 Hybrid Flow:
+    * 1. Verify Google ID token with Google's JWKS (user authentication)
+    * 2. Generate cryptographically secure refresh token (30-day expiry)
+    * 3. Hash and store refresh token in database
+    * 4. Issue custom JWT access token (1-hour expiry, HMAC-SHA256)
+    * 5. Return both tokens to client
+    * 
+    * Security:
+    * - Refresh tokens SHA-256 hashed before storage
+    * - JWT signed with HMAC-SHA256 using JWT_SECRET
+    * - Multiple refresh tokens can exist per user (no automatic cleanup)
+    * 
+    * Known Issues:
+    * - No rate limiting (add Cloudflare rate limiting rules)
+    * - No old token cleanup (consider adding on login)
+    * 
+    * @body {idToken: string} - Google ID token from OAuth flow
+    * @returns {accessToken: JWT, refreshToken, expiresIn, user}
+    */
   let payload: { idToken: string };
   try {
     payload = await c.req.json();

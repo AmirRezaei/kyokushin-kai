@@ -22,7 +22,6 @@
 	],
 	"vars": {
 		"GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
-		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
-		"JWT_SECRET": "c3ef2e527bc2a035d9e721f46b7c1d842a87945271ab236c66fd6d25438d7cc5"
+		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com"
 	}
 }

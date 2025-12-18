@@ -71,21 +71,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
    }, [googleClientId]);
 
    /**
-    * Auto-refresh access token using refresh token
+    * Auto-refresh JWT access token using refresh token
     * 
-    * FIXED: Backend now returns new JWT access tokens
+    * Implementation Status: ✅ WORKING
+    * Backend now issues new custom JWT tokens on each refresh.
     * 
     * Flow:
     * 1. Call /auth/refresh with current refresh token
     * 2. Receive new JWT access token (1 hour expiry)
-    * 3. Update user with new token and expiry time
+    * 3. Update user state with new token and expiry
     * 4. Save to localStorage
-    * \n    * Known Issues:
-    * - Stale closure: captures 'user' from parent scope, may be outdated
-    * - No retry logic: single failure logs user out
-    * - Force logout on error: poor UX if network hiccup
+    * 5. Reschedule next refresh for 55 minutes from now
     * 
-    * @returns Promise<boolean> - true if refresh succeeded, false if failed
+    * ⚠️ KNOWN ISSUE - Stale Closure:
+    * This function captures 'user' from the parent scope, which may become outdated
+    * if user state changes between function definition and execution.
+    * 
+    * Recommended Fix:
+    * Use functional setState: setUser(currentUser => {...})
+    * instead of: setUser({...user, ...})
+    * 
+    * Other Limitations:
+    * - No retry logic: single failure logs user out (poor UX for network hiccups)
+    * - No request queuing: concurrent API calls during refresh may fail
+    * 
+    * @returns Promise<boolean> - true if refresh succeeded, false if failed (triggers logout)
     */
    const refreshAccessToken = React.useCallback(async (): Promise<boolean> => {
       if (!user?.refreshToken) {
