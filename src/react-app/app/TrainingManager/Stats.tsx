@@ -1,33 +1,38 @@
 // File: ./src/app/Equipment/Stats.tsx
-import {Box, Grid, Paper, Typography, useTheme} from '@mui/material';
+import {Box, Grid, Paper, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {BarChart, PieChart} from '@mui/x-charts';
 import React, {useContext, useMemo} from 'react';
 
 import {ExerciseContext} from './contexts/ExerciseContext';
 import {MuscleGroupContext} from './contexts/MuscleGroupContext';
-import {TrainingSessionContext} from './contexts/TrainingSessionContext';
+import {GymSessionContext} from './contexts/GymSessionContext';
+
 import ContributionCalendar from './ContributionCalendar';
 import {Contribution} from './types';
 
 const Stats: React.FC = () => {
-   const {trainingSessions} = useContext(TrainingSessionContext);
+   const {gymSessions} = useContext(GymSessionContext);
+
    const {exercises} = useContext(ExerciseContext);
    const {muscleGroups} = useContext(MuscleGroupContext);
    const theme = useTheme();
+   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
    // Convert training sessions to contributions
    const contributions: Contribution[] = useMemo(() => {
-      return trainingSessions.map(session => ({
+      return gymSessions.map(session => ({
          date: session.date,
          id: session.id,
          category: session.workoutPlanId || 'general', // Use workoutPlanId as category if available
       }));
-   }, [trainingSessions]);
+   }, [gymSessions]);
+
 
    // Total Volume per Exercise
    const volumeData = exercises.map(ex => {
-      const volume = trainingSessions
+      const volume = gymSessions
          .flatMap(s => s.exercises)
+
          .filter(se => se.exerciseId === ex.id)
          .reduce((sum, se) => sum + se.weight * se.reps * se.times, 0);
       return {id: ex.id, label: ex.name, value: volume};
@@ -36,8 +41,9 @@ const Stats: React.FC = () => {
    // Muscle Group Distribution with "Others" category
    const muscleGroupVolume = useMemo(() => {
       const allMuscleGroups = muscleGroups.map(mg => {
-         const volume = trainingSessions
+         const volume = gymSessions
             .flatMap(s => s.exercises)
+
             .filter(se => exercises.find(e => e.id === se.exerciseId)?.muscleGroupIds.includes(mg.id))
             .reduce((sum, se) => sum + se.weight * se.reps * se.times, 0);
          return {id: mg.id, label: mg.name, value: volume};
@@ -52,12 +58,14 @@ const Stats: React.FC = () => {
          return [...topMuscleGroups, {id: 'others', label: 'Others', value: othersVolume}];
       }
       return topMuscleGroups;
-   }, [trainingSessions, exercises, muscleGroups]);
+   }, [gymSessions, exercises, muscleGroups]);
+
 
    // Workout Frequency (Sessions per Month)
    const frequencyData = useMemo(() => {
-      const monthlySessions = trainingSessions.reduce(
+      const monthlySessions = gymSessions.reduce(
          (acc, s) => {
+
             const month = new Date(s.date).toISOString().slice(0, 7); // YYYY-MM
             acc[month] = (acc[month] || 0) + 1;
             return acc;
@@ -67,7 +75,7 @@ const Stats: React.FC = () => {
       return Object.entries(monthlySessions)
          .map(([month, count]) => ({month, count}))
          .sort((a, b) => a.month.localeCompare(b.month));
-   }, [trainingSessions]);
+   }, [gymSessions]);
 
    return (
       <Paper
@@ -102,7 +110,11 @@ const Stats: React.FC = () => {
                         {
                            scaleType: 'band',
                            data: volumeData.map(d => d.label),
-                           tickLabelStyle: {angle: 45, textAnchor: 'start', fontSize: 12},
+                           tickLabelStyle: {
+                              angle: isMobile ? 0 : 45,
+                              textAnchor: isMobile ? 'middle' : 'start',
+                              fontSize: isMobile ? 10 : 12,
+                           },
                         },
                      ]}
                      series={[
@@ -112,8 +124,8 @@ const Stats: React.FC = () => {
                            color: theme.palette.primary.main,
                         },
                      ]}
-                     height={300}
-                     margin={{bottom: 60}}
+                     height={isMobile ? 250 : 300}
+                     margin={{bottom: isMobile ? 40 : 60}}
                      grid={{horizontal: true}}
                      sx={{
                         '& .MuiChartsAxis-tickLabel': {fill: theme.palette.text.secondary},
@@ -137,24 +149,24 @@ const Stats: React.FC = () => {
                         {
                            data: muscleGroupVolume,
                            innerRadius: 30,
-                           outerRadius: 100,
+                           outerRadius: isMobile ? 80 : 100,
                            paddingAngle: 2,
                            cornerRadius: 5,
                         },
                      ]}
-                     height={300}
+                     height={isMobile ? 250 : 300}
                      slotProps={{
                         legend: {
-                           direction: 'row',
-                           position: {vertical: 'bottom', horizontal: 'middle'},
-                           padding: {top: 20, bottom: 0, left: 0, right: 0},
+                           direction: isMobile ? 'column' : 'row',
+                           position: {vertical: 'bottom', horizontal: isMobile ? 'left' : 'middle'},
+                           padding: isMobile ? {top: 10, bottom: 0, left: 0, right: 0} : {top: 20, bottom: 0, left: 0, right: 0},
                            itemMarkWidth: 20,
                            itemMarkHeight: 2,
                            markGap: 5,
-                           itemGap: 10,
+                           itemGap: isMobile ? 5 : 10,
                         },
                      }}
-                     margin={{bottom: 60}}
+                     margin={{bottom: isMobile ? 40 : 60}}
                      sx={{
                         '& .MuiChartsLegend-mark': {fill: theme.palette.text.primary},
                         '& .MuiChartsLegend-label': {fill: theme.palette.text.secondary},

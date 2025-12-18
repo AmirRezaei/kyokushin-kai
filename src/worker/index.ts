@@ -563,6 +563,189 @@ app.delete('/api/v1/training-sessions/:id', async c => {
   return c.json({ ok: true });
 });
 
+// --- Gym Endpoints ---
+
+// 1. Gym Sessions
+app.get('/api/v1/gym/sessions', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM user_gym_sessions WHERE user_id = ? ORDER BY date DESC`
+  ).bind(user.id).all();
+  const sessions = (results || []).map((row: any) => ({
+    ...row,
+    exercises: parseJsonSafely(row.exercises, []),
+    updatedAt: row.updated_at,
+    createdAt: row.created_at,
+    workoutPlanId: row.workout_plan_id
+  }));
+  return c.json({ sessions });
+});
+
+app.post('/api/v1/gym/sessions', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try { payload = await c.req.json(); } catch { return c.json({error: 'Invalid JSON'}, 400); }
+  
+  await c.env.DB.prepare(
+    `INSERT INTO user_gym_sessions (user_id, id, workout_plan_id, date, exercises, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       workout_plan_id = excluded.workout_plan_id,
+       date = excluded.date,
+       exercises = excluded.exercises,
+       updated_at = excluded.updated_at`
+  ).bind(user.id, payload.id, payload.workoutPlanId || null, payload.date, JSON.stringify(payload.exercises || []),).run();
+  
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/sessions/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  await c.env.DB.prepare(`DELETE FROM user_gym_sessions WHERE user_id = ? AND id = ?`).bind(user.id, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
+// 2. Gym Workout Plans
+app.get('/api/v1/gym/plans', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(`SELECT * FROM user_workout_plans WHERE user_id = ?`).bind(user.id).all();
+  const plans = (results || []).map((row: any) => ({
+    ...row,
+    exercises: parseJsonSafely(row.exercises, [])
+  }));
+  return c.json({ plans });
+});
+
+app.post('/api/v1/gym/plans', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try { payload = await c.req.json(); } catch { return c.json({error: 'Invalid JSON'}, 400); }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_workout_plans (user_id, id, name, exercises, created_at, updated_at)
+     VALUES (?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       exercises = excluded.exercises,
+       updated_at = excluded.updated_at`
+  ).bind(user.id, payload.id, payload.name, JSON.stringify(payload.exercises || [])).run();
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/plans/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  await c.env.DB.prepare(`DELETE FROM user_workout_plans WHERE user_id = ? AND id = ?`).bind(user.id, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
+// 3. Gym Exercises
+app.get('/api/v1/gym/exercises', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(`SELECT * FROM user_gym_exercises WHERE user_id = ?`).bind(user.id).all();
+  const exercises = (results || []).map((row: any) => ({
+    ...row,
+    muscleGroupIds: parseJsonSafely(row.muscle_group_ids, []),
+    equipmentIds: parseJsonSafely(row.equipment_ids, [])
+  }));
+  return c.json({ exercises });
+});
+
+app.post('/api/v1/gym/exercises', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try { payload = await c.req.json(); } catch { return c.json({error: 'Invalid JSON'}, 400); }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_gym_exercises (user_id, id, name, muscle_group_ids, equipment_ids, how, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       muscle_group_ids = excluded.muscle_group_ids,
+       equipment_ids = excluded.equipment_ids,
+       how = excluded.how,
+       updated_at = excluded.updated_at`
+  ).bind(user.id, payload.id, payload.name, JSON.stringify(payload.muscleGroupIds || []), JSON.stringify(payload.equipmentIds || []), payload.how || '').run();
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/exercises/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  await c.env.DB.prepare(`DELETE FROM user_gym_exercises WHERE user_id = ? AND id = ?`).bind(user.id, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
+// 4. Gym Equipment
+app.get('/api/v1/gym/equipment', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(`SELECT * FROM user_gym_equipment WHERE user_id = ?`).bind(user.id).all();
+  return c.json({ equipment: results });
+});
+
+app.post('/api/v1/gym/equipment', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try { payload = await c.req.json(); } catch { return c.json({error: 'Invalid JSON'}, 400); }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_gym_equipment (user_id, id, name, description, created_at, updated_at)
+     VALUES (?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       description = excluded.description,
+       updated_at = excluded.updated_at`
+  ).bind(user.id, payload.id, payload.name, payload.description || '').run();
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/equipment/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  await c.env.DB.prepare(`DELETE FROM user_gym_equipment WHERE user_id = ? AND id = ?`).bind(user.id, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
+// 5. User Muscle Groups
+app.get('/api/v1/gym/muscle-groups', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(`SELECT * FROM user_muscle_groups WHERE user_id = ?`).bind(user.id).all();
+  return c.json({ muscleGroups: results });
+});
+
+app.post('/api/v1/gym/muscle-groups', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try { payload = await c.req.json(); } catch { return c.json({error: 'Invalid JSON'}, 400); }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_muscle_groups (user_id, id, name, created_at, updated_at)
+     VALUES (?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       updated_at = excluded.updated_at`
+  ).bind(user.id, payload.id, payload.name).run();
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/muscle-groups/:id', async c => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  await c.env.DB.prepare(`DELETE FROM user_muscle_groups WHERE user_id = ? AND id = ?`).bind(user.id, c.req.param('id')).run();
+  return c.json({ ok: true });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging

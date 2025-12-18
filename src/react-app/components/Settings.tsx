@@ -7,6 +7,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
+import EditIcon from '@mui/icons-material/Edit';
 import UploadIcon from '@mui/icons-material/Upload';
 import {
    Box,
@@ -52,6 +53,8 @@ import PersistentSwitch from './UI/PersistentSwitch';
 const Settings: React.FC = () => {
    const [history, setHistory] = useState<GradeHistoryEntry[]>(() => SettingsManager.getGradeHistory());
    const [openAddDialog, setOpenAddDialog] = useState(false);
+   const [openEditDialog, setOpenEditDialog] = useState(false);
+   const [editingIndex, setEditingIndex] = useState<number | null>(null);
    const [newGradeDate, setNewGradeDate] = useState(new Date().toISOString().split('T')[0]);
    const [newGradeId, setNewGradeId] = useState('1');
    const [trainedDaysInput, setTrainedDaysInput] = useState<string>(() => SettingsManager.getTrainedDays().toString());
@@ -77,6 +80,23 @@ const Settings: React.FC = () => {
        SettingsManager.addGradeHistoryEntry(newGradeDate, newGradeId);
        setHistory(SettingsManager.getGradeHistory());
        setOpenAddDialog(false);
+   };
+
+   const handleOpenEditDialog = (index: number) => {
+       const entry = history[index];
+       setEditingIndex(index);
+       setNewGradeDate(entry.date);
+       setNewGradeId(entry.gradeId);
+       setOpenEditDialog(true);
+   };
+
+   const handleEditGrade = () => {
+       if (editingIndex !== null) {
+           SettingsManager.updateGradeHistoryEntry(editingIndex, newGradeDate, newGradeId);
+           setHistory(SettingsManager.getGradeHistory());
+           setOpenEditDialog(false);
+           setEditingIndex(null);
+       }
    };
 
    const handleDeleteGrade = (index: number) => {
@@ -195,6 +215,9 @@ const Settings: React.FC = () => {
                                    secondary={`Registered: ${entry.date}`}
                                />
                                <ListItemSecondaryAction>
+                                   <IconButton edge="end" aria-label="edit" onClick={() => handleOpenEditDialog(index)} sx={{ mr: 1 }}>
+                                       <EditIcon />
+                                   </IconButton>
                                    <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteGrade(index)}>
                                        <DeleteIcon />
                                    </IconButton>
@@ -259,6 +282,57 @@ const Settings: React.FC = () => {
              <DialogActions>
                  <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
                  <Button onClick={handleAddGrade} variant="contained">Add</Button>
+             </DialogActions>
+         </Dialog>
+
+         {/* Edit Grade Dialog */}
+         <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)}>
+             <DialogTitle>Edit Grade</DialogTitle>
+             <DialogContent>
+                 <Box display="flex" flexDirection="column" gap={2} mt={1} minWidth={{sm: 300}}>
+                     <TextField
+                         label="Date"
+                         type="date"
+                         value={newGradeDate}
+                         onChange={(e) => setNewGradeDate(e.target.value)}
+                         fullWidth
+                         InputLabelProps={{ shrink: true }}
+                     />
+                     <FormControl variant='outlined' fullWidth>
+                        <InputLabel id='edit-grade-select-label'>Grade</InputLabel>
+                        <Select
+                            labelId='edit-grade-select-label'
+                            value={newGradeId}
+                            onChange={(e) => setNewGradeId(e.target.value)}
+                            label='Grade'
+                        >
+                           {grades
+                              .filter(grade => editingIndex !== null && (grade.id === history[editingIndex].gradeId || !history.some(h => h.gradeId === grade.id)))
+                              .map((grade) => (
+                              <MenuItem key={grade.id} value={grade.id}>
+                                 <Box display='flex' alignItems='center'>
+                                    <KarateBelt
+                                       sx={{
+                                          width: '2em',
+                                          height: '1em',
+                                          mr: 2,
+                                       }}
+                                       color={getBeltColorHex(grade.beltColor)}
+                                       thickness={5}
+                                       stripes={getStripeNumber(grade)}
+                                       borderRadius='10%'
+                                    />
+                                    {getFormattedGradeName(grade)}
+                                 </Box>
+                              </MenuItem>
+                           ))}
+                        </Select>
+                     </FormControl>
+                 </Box>
+             </DialogContent>
+             <DialogActions>
+                 <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+                 <Button onClick={handleEditGrade} variant="contained">Save</Button>
              </DialogActions>
          </Dialog>
 

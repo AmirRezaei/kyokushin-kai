@@ -41,6 +41,17 @@ export class SettingsManager {
         }
     }
 
+    static updateGradeHistoryEntry(index: number, date: string, gradeId: string): void {
+        const history = this.getGradeHistory();
+        if (index >= 0 && index < history.length) {
+            history[index] = { date, gradeId };
+            // Re-sort after update
+            history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            localStorage.setItem(this.KEY_GRADE_HISTORY, JSON.stringify(history));
+            notifySettingsChanged();
+        }
+    }
+
     static getCurrentGradeId(): string {
         const history = this.getGradeHistory();
         if (history.length > 0) {

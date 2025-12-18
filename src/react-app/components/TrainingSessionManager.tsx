@@ -1,12 +1,5 @@
 // File: ./src/components/TrainingSessionManager.tsx
 
-// HEADER-START
-// * Path: ./src/components/TrainingSessionManager.tsx
-// HEADER-END
-
-// ./src/components/TrainingSessionManager.tsx
-'use client';
-// ./src/components/TrainingSessionManager.tsx
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';

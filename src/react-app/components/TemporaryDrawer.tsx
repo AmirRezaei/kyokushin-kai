@@ -145,7 +145,7 @@ export default function TemporaryDrawer() {
                            pl: 4,
                            backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
                         }}
-                        onClick={handleNavigation('/EquipmentTabsPage')}>
+                        onClick={handleNavigation('/training-manager')}>
                         <ListItemIcon>
                            <ScheduleIcon />
                         </ListItemIcon>

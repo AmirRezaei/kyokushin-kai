@@ -8,7 +8,8 @@ import {SnackbarProvider, useSnackbar} from './components/context/SnackbarContex
 import {AuthProvider, useAuth} from './components/context/AuthContext';
 
 import About from './About';
-import EquipmentPage from './app/Equipment/EquipmentPage';
+import TrainingManagerPage from './app/TrainingManager/TrainingManagerPage';
+
 import KihonPage from './app/kihon/kihonPage';
 import SettingsPage from './app/settings/settingsPage';
 import TechniquePage from './app/Technique/TechniquePage';
@@ -208,7 +209,8 @@ function AppContent() {
                <Route path='/WordQuest' element={<WordQuestPage />} />
                <Route path='/timer' element={<TimerPage />} />
                <Route path='/trainingSession' element={<TrainingSessionPage />} />
-               <Route path='/EquipmentTabsPage' element={<EquipmentPage />} />
+               <Route path='/training-manager' element={<TrainingManagerPage />} />
+
                <Route path='/settings' element={<SettingsPage />} />
                <Route path='/ten-thousand-days' element={<TenThousandDaysTrackerPage />} />
                <Route path='/training-tracker' element={<TrainingTrackerPage />} />

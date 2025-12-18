@@ -1,7 +1,7 @@
 // File: ./src/app/Equipment/MuscleGroupManager.tsx
 
 import {Add, Delete, Edit, FileUpload} from '@mui/icons-material';
-import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography, useMediaQuery, useTheme} from '@mui/material';
 import React, {ChangeEvent, FormEvent, useContext, useState} from 'react';
 
 import {MuscleGroupContext} from './contexts/MuscleGroupContext';
@@ -10,6 +10,8 @@ import {MuscleGroup} from './types';
 // MuscleGroupManagerFunctional Component
 const MuscleGroupManager: React.FC = () => {
    const {muscleGroups, addMuscleGroup, updateMuscleGroup, deleteMuscleGroup} = useContext(MuscleGroupContext);
+   const theme = useTheme();
+   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
    // Sort muscle groups alphabetically
    const sortedMuscleGroups = [...muscleGroups].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
@@ -203,43 +205,68 @@ const MuscleGroupManager: React.FC = () => {
             </Grid>
          </Grid>
 
-         {/* Muscle Groups Table */}
-         <TableContainer component={Paper}>
-            <Table aria-label='Muscle Groups table'>
-               <TableHead>
-                  <TableRow>
-                     <TableCell>Muscle Group Name</TableCell>
-                     <TableCell align='right'>Actions</TableCell>
-                  </TableRow>
-               </TableHead>
-               <TableBody>
-                  {sortedMuscleGroups.map(group => (
-                     <TableRow key={group.id}>
-                        <TableCell>{group.name}</TableCell>
-                        <TableCell align='right'>
-                           <Tooltip title='Edit'>
-                              <IconButton color='primary' onClick={() => handleOpenEditDialog(group)}>
-                                 <Edit />
+         {/* Muscle Groups Table/Cards */}
+         {isMobile ? (
+            <Box>
+               {sortedMuscleGroups.map(group => (
+                  <Card key={group.id} sx={{ mb: 2 }}>
+                     <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                           <Typography variant="h6">{group.name}</Typography>
+                           <Box>
+                              <IconButton size="small" color='primary' onClick={() => handleOpenEditDialog(group)}>
+                                 <Edit fontSize='small' />
                               </IconButton>
-                           </Tooltip>
-                           <Tooltip title='Delete'>
-                              <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(group)}>
-                                 <Delete />
+                              <IconButton size="small" color='secondary' onClick={() => handleOpenDeleteDialog(group)}>
+                                 <Delete fontSize='small' />
                               </IconButton>
-                           </Tooltip>
-                        </TableCell>
-                     </TableRow>
-                  ))}
-                  {sortedMuscleGroups.length === 0 && (
+                           </Box>
+                        </Box>
+                     </CardContent>
+                  </Card>
+               ))}
+               {sortedMuscleGroups.length === 0 && (
+                  <Typography align='center' color='textSecondary'>No Muscle Groups added yet.</Typography>
+               )}
+            </Box>
+         ) : (
+            <TableContainer component={Paper}>
+               <Table aria-label='Muscle Groups table'>
+                  <TableHead>
                      <TableRow>
-                        <TableCell colSpan={2} align='center'>
-                           No Muscle Groups added yet.
-                        </TableCell>
+                        <TableCell>Muscle Group Name</TableCell>
+                        <TableCell align='right'>Actions</TableCell>
                      </TableRow>
-                  )}
-               </TableBody>
-            </Table>
-         </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                     {sortedMuscleGroups.map(group => (
+                        <TableRow key={group.id}>
+                           <TableCell>{group.name}</TableCell>
+                           <TableCell align='right'>
+                              <Tooltip title='Edit'>
+                                 <IconButton color='primary' onClick={() => handleOpenEditDialog(group)}>
+                                    <Edit />
+                                 </IconButton>
+                              </Tooltip>
+                              <Tooltip title='Delete'>
+                                 <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(group)}>
+                                    <Delete />
+                                 </IconButton>
+                              </Tooltip>
+                           </TableCell>
+                        </TableRow>
+                     ))}
+                     {sortedMuscleGroups.length === 0 && (
+                        <TableRow>
+                           <TableCell colSpan={2} align='center'>
+                              No Muscle Groups added yet.
+                           </TableCell>
+                        </TableRow>
+                     )}
+                  </TableBody>
+               </Table>
+            </TableContainer>
+         )}
 
          {/* Add Muscle Group Dialog */}
          <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth maxWidth='sm'>

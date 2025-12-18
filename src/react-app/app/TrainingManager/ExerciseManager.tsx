@@ -4,6 +4,8 @@ import {Add, Delete, Edit} from '@mui/icons-material';
 import {
    Box,
    Button,
+   Card,
+   CardContent,
    Chip,
    Dialog,
    DialogActions,
@@ -31,6 +33,8 @@ import {
    TextField,
    Tooltip,
    Typography,
+   useMediaQuery,
+   useTheme,
 } from '@mui/material';
 import React, {ChangeEvent, FormEvent, useContext, useState} from 'react';
 import {v4 as uuidv4} from 'uuid';
@@ -56,6 +60,8 @@ const ExerciseManager: React.FC = () => {
    const {exercises, addExercise: contextAddExercise, updateExercise: contextUpdateExercise, deleteExercise: contextDeleteExercise} = useContext(ExerciseContext);
    const {equipments} = useContext(EquipmentContext);
    const {muscleGroups} = useContext(MuscleGroupContext);
+   const theme = useTheme();
+   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
    // State for dialogs and forms
    const [openAddDialog, setOpenAddDialog] = useState<boolean>(false);
@@ -311,59 +317,110 @@ const ExerciseManager: React.FC = () => {
             </Button>
          </Box>
 
-         {/* Exercises Table */}
-         <TableContainer component={Paper}>
-            <Table aria-label='Exercises table'>
-               <TableHead>
-                  <TableRow>
-                     <TableCell>Exercise Name</TableCell>
-                     <TableCell>Muscle Groups</TableCell>
-                     <TableCell>Equipments</TableCell>
-                     <TableCell>How</TableCell>
-                     <TableCell align='right'>Actions</TableCell>
-                  </TableRow>
-               </TableHead>
-               <TableBody>
-                  {exercises.map(exercise => (
-                     <TableRow key={exercise.id}>
-                        <TableCell>{exercise.name}</TableCell>
-                        <TableCell>
+         {/* Exercises Table/Cards */}
+         {isMobile ? (
+            <Box>
+               {exercises.map(exercise => (
+                  <Card key={exercise.id} sx={{ mb: 2 }}>
+                     <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                           <Typography variant="h6">{exercise.name}</Typography>
+                           <Box>
+                              <IconButton size="small" color='primary' onClick={() => handleOpenEditDialog(exercise)}>
+                                 <Edit fontSize='small' />
+                              </IconButton>
+                              <IconButton size="small" color='secondary' onClick={() => handleOpenDeleteDialog(exercise)}>
+                                 <Delete fontSize='small' />
+                              </IconButton>
+                           </Box>
+                        </Box>
+                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                           Muscle Groups
+                        </Typography>
+                        <Box mb={1}>
                            {exercise.muscleGroupIds.map(id => {
                               const group = muscleGroups.find(mg => mg.id === id);
-                              return group ? <Chip key={id} label={group.name} style={{marginRight: 4, marginBottom: 4}} /> : null;
+                              return group ? <Chip key={id} label={group.name} size="small" style={{marginRight: 4, marginBottom: 4}} /> : null;
                            })}
-                        </TableCell>
-                        <TableCell>
+                        </Box>
+                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                           Equipment
+                        </Typography>
+                        <Box mb={1}>
                            {exercise.equipmentIds.map(id => {
                               const equipment = equipments.find(eq => eq.id === id);
-                              return equipment ? <Chip key={id} label={equipment.name} color='secondary' style={{marginRight: 4, marginBottom: 4}} /> : null;
+                              return equipment ? <Chip key={id} label={equipment.name} color='secondary' size="small" style={{marginRight: 4, marginBottom: 4}} /> : null;
                            })}
-                        </TableCell>
-                        <TableCell>{exercise.how || '-'}</TableCell>
-                        <TableCell align='right'>
-                           <Tooltip title='Edit'>
-                              <IconButton color='primary' onClick={() => handleOpenEditDialog(exercise)}>
-                                 <Edit />
-                              </IconButton>
-                           </Tooltip>
-                           <Tooltip title='Delete'>
-                              <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(exercise)}>
-                                 <Delete />
-                              </IconButton>
-                           </Tooltip>
-                        </TableCell>
-                     </TableRow>
-                  ))}
-                  {exercises.length === 0 && (
+                        </Box>
+                        {exercise.how && (
+                           <>
+                              <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                                 How
+                              </Typography>
+                              <Typography variant="body2">{exercise.how}</Typography>
+                           </>
+                        )}
+                     </CardContent>
+                  </Card>
+               ))}
+               {exercises.length === 0 && (
+                  <Typography align='center' color='textSecondary'>No Exercises added yet.</Typography>
+               )}
+            </Box>
+         ) : (
+            <TableContainer component={Paper}>
+               <Table aria-label='Exercises table'>
+                  <TableHead>
                      <TableRow>
-                        <TableCell colSpan={5} align='center'>
-                           No Exercises added yet.
-                        </TableCell>
+                        <TableCell>Exercise Name</TableCell>
+                        <TableCell>Muscle Groups</TableCell>
+                        <TableCell>Equipments</TableCell>
+                        <TableCell>How</TableCell>
+                        <TableCell align='right'>Actions</TableCell>
                      </TableRow>
-                  )}
-               </TableBody>
-            </Table>
-         </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                     {exercises.map(exercise => (
+                        <TableRow key={exercise.id}>
+                           <TableCell>{exercise.name}</TableCell>
+                           <TableCell>
+                              {exercise.muscleGroupIds.map(id => {
+                                 const group = muscleGroups.find(mg => mg.id === id);
+                                 return group ? <Chip key={id} label={group.name} style={{marginRight: 4, marginBottom: 4}} /> : null;
+                              })}
+                           </TableCell>
+                           <TableCell>
+                              {exercise.equipmentIds.map(id => {
+                                 const equipment = equipments.find(eq => eq.id === id);
+                                 return equipment ? <Chip key={id} label={equipment.name} color='secondary' style={{marginRight: 4, marginBottom: 4}} /> : null;
+                              })}
+                           </TableCell>
+                           <TableCell>{exercise.how || '-'}</TableCell>
+                           <TableCell align='right'>
+                              <Tooltip title='Edit'>
+                                 <IconButton color='primary' onClick={() => handleOpenEditDialog(exercise)}>
+                                    <Edit />
+                                 </IconButton>
+                              </Tooltip>
+                              <Tooltip title='Delete'>
+                                 <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(exercise)}>
+                                    <Delete />
+                                 </IconButton>
+                              </Tooltip>
+                           </TableCell>
+                        </TableRow>
+                     ))}
+                     {exercises.length === 0 && (
+                        <TableRow>
+                           <TableCell colSpan={5} align='center'>
+                              No Exercises added yet.
+                           </TableCell>
+                        </TableRow>
+                     )}
+                  </TableBody>
+               </Table>
+            </TableContainer>
+         )}
 
          {/* Add Exercise Dialog */}
          <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth maxWidth='md'>

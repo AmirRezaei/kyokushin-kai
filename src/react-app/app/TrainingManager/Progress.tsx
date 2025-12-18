@@ -8,7 +8,7 @@ import React, {useContext, useMemo, useState} from 'react';
 
 import {ExerciseContext} from './contexts/ExerciseContext';
 import {MuscleGroupContext} from './contexts/MuscleGroupContext';
-import {TrainingSessionContext} from './contexts/TrainingSessionContext';
+import {GymSessionContext} from './contexts/GymSessionContext';
 import CustomAnimatedLine from './CustomAnimatedLine';
 
 // Define custom slot props for CustomAnimatedLine
@@ -23,7 +23,7 @@ interface DataPoint {
 
 const ExerciseDevelopment: React.FC = () => {
    const {exercises} = useContext(ExerciseContext);
-   const {trainingSessions} = useContext(TrainingSessionContext);
+   const {gymSessions: trainingSessions} = useContext(GymSessionContext);
    const {muscleGroups} = useContext(MuscleGroupContext);
    const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
    const [selectedMuscleGroupId, setSelectedMuscleGroupId] = useState<string>('');

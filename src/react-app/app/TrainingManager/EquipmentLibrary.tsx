@@ -2,7 +2,7 @@
 'use strict';
 
 import {Delete, Edit, FileUpload} from '@mui/icons-material';
-import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography} from '@mui/material';
+import {Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery, useTheme} from '@mui/material';
 import React, {ChangeEvent, FormEvent, useContext, useState} from 'react';
 
 import {EquipmentContext} from './contexts/EquipmentContext';
@@ -11,6 +11,8 @@ import {Equipment} from './types';
 // EquipmentLibrary Component
 const EquipmentLibrary: React.FC = () => {
    const {equipments, addEquipment, updateEquipment, deleteEquipment} = useContext(EquipmentContext);
+   const theme = useTheme();
+   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
    // Sort equipments alphabetically
    const sortedEquipments = [...equipments].sort((a, b) => a.name.localeCompare(b.name, undefined, {sensitivity: 'base'}));
@@ -207,41 +209,69 @@ const EquipmentLibrary: React.FC = () => {
             </Grid>
          </Grid>
 
-         {/* Equipments Table */}
-         <TableContainer component={Paper}>
-            <Table aria-label='Equipments table'>
-               <TableHead>
-                  <TableRow>
-                     <TableCell>Equipment Name</TableCell>
-                     <TableCell>Description</TableCell>
-                     <TableCell align='right'>Actions</TableCell>
-                  </TableRow>
-               </TableHead>
-               <TableBody>
-                  {sortedEquipments.map(equipment => (
-                     <TableRow key={equipment.id}>
-                        <TableCell>{equipment.name}</TableCell>
-                        <TableCell>{equipment.description}</TableCell>
-                        <TableCell align='right'>
-                           <IconButton color='primary' onClick={() => handleOpenEditDialog(equipment)}>
-                              <Edit />
-                           </IconButton>
-                           <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(equipment)}>
-                              <Delete />
-                           </IconButton>
-                        </TableCell>
-                     </TableRow>
-                  ))}
-                  {sortedEquipments.length === 0 && (
+         {/* Equipments Table/Cards */}
+         {isMobile ? (
+            <Box>
+               {sortedEquipments.map(equipment => (
+                  <Card key={equipment.id} sx={{ mb: 2 }}>
+                     <CardContent>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                           <Typography variant="h6">{equipment.name}</Typography>
+                           <Box>
+                              <IconButton size="small" color='primary' onClick={() => handleOpenEditDialog(equipment)}>
+                                 <Edit fontSize='small' />
+                              </IconButton>
+                              <IconButton size="small" color='secondary' onClick={() => handleOpenDeleteDialog(equipment)}>
+                                 <Delete fontSize='small' />
+                              </IconButton>
+                           </Box>
+                        </Box>
+                        {equipment.description && (
+                           <Typography variant="body2" color="textSecondary">{equipment.description}</Typography>
+                        )}
+                     </CardContent>
+                  </Card>
+               ))}
+               {sortedEquipments.length === 0 && (
+                  <Typography align='center' color='textSecondary'>No Equipments added yet.</Typography>
+               )}
+            </Box>
+         ) : (
+            <TableContainer component={Paper}>
+               <Table aria-label='Equipments table'>
+                  <TableHead>
                      <TableRow>
-                        <TableCell colSpan={3} align='center'>
-                           No Equipments added yet.
-                        </TableCell>
+                        <TableCell>Equipment Name</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell align='right'>Actions</TableCell>
                      </TableRow>
-                  )}
-               </TableBody>
-            </Table>
-         </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                     {sortedEquipments.map(equipment => (
+                        <TableRow key={equipment.id}>
+                           <TableCell>{equipment.name}</TableCell>
+                           <TableCell>{equipment.description}</TableCell>
+                           <TableCell align='right'>
+                              <IconButton color='primary' onClick={() => handleOpenEditDialog(equipment)}>
+                                 <Edit />
+                              </IconButton>
+                              <IconButton color='secondary' onClick={() => handleOpenDeleteDialog(equipment)}>
+                                 <Delete />
+                              </IconButton>
+                           </TableCell>
+                        </TableRow>
+                     ))}
+                     {sortedEquipments.length === 0 && (
+                        <TableRow>
+                           <TableCell colSpan={3} align='center'>
+                              No Equipments added yet.
+                           </TableCell>
+                        </TableRow>
+                     )}
+                  </TableBody>
+               </Table>
+            </TableContainer>
+         )}
 
          {/* Add Equipment Dialog */}
          <Dialog open={openAddDialog} onClose={handleCloseAddDialog} fullWidth maxWidth='sm'>

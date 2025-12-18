@@ -6,7 +6,7 @@ import React, {useContext} from 'react';
 import {EquipmentContext} from './contexts/EquipmentContext';
 import {ExerciseContext} from './contexts/ExerciseContext';
 import {MuscleGroupContext} from './contexts/MuscleGroupContext';
-import {TrainingSessionContext} from './contexts/TrainingSessionContext';
+import {GymSessionContext} from './contexts/GymSessionContext';
 import {TrainingSetContext} from './contexts/TrainingSetContext';
 import {WorkoutPlanContext} from './contexts/WorkoutPlanContext';
 
@@ -14,7 +14,7 @@ const DataManager: React.FC = () => {
    const {equipments, setEquipments} = useContext(EquipmentContext);
    const {exercises, setExercises} = useContext(ExerciseContext);
    const {muscleGroups, setMuscleGroups} = useContext(MuscleGroupContext);
-   const {trainingSessions, setTrainingSessions} = useContext(TrainingSessionContext);
+   const {gymSessions: trainingSessions, setGymSessions: setTrainingSessions} = useContext(GymSessionContext);
    const {trainingSets, setTrainingSets} = useContext(TrainingSetContext);
    const {plans, setPlans} = useContext(WorkoutPlanContext);
 
@@ -66,7 +66,7 @@ const DataManager: React.FC = () => {
             }
             if (importedData.trainingSessions && Array.isArray(importedData.trainingSessions)) {
                setTrainingSessions(importedData.trainingSessions);
-               localStorage.setItem('trainingSessions', JSON.stringify(importedData.trainingSessions));
+               localStorage.setItem('gymSessions', JSON.stringify(importedData.trainingSessions));
             }
             if (importedData.trainingSets && Array.isArray(importedData.trainingSets)) {
                setTrainingSets(importedData.trainingSets);
