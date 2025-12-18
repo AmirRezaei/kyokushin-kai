@@ -2,82 +2,18 @@
 // * Path: ./src/app/Technique/TechniqueData.ts
 // HEADER-END
 
-import {Grade} from '@/data/Grade';
-import {gradeData} from '@/data/gradeData';
+import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
+import { getLevelNumber } from '../../../data/repo/gradeHelpers';
+// import { TechniqueRecord } from '../../../data/model/technique'; // Unused
+// import { GradeRecord } from '../../../data/model/grade'; // Unused
 
-// Define the desired order of technique types
-export const TechniqueTypes: string[] = ['Stand', 'Strike', 'Block', 'Kick', 'Kata', 'Breathing', 'Fighting'];
+// Re-export from TechniqueModel
+export * from './TechniqueModel';
+import { TechniqueTypeEnum, CommonData } from './TechniqueModel';
 
-export enum TechniqueTypeEnum {
-   Stand = 'Stand',
-   Strike = 'Strike',
-   Block = 'Block',
-   Kick = 'Kick',
-   Kata = 'Kata',
-   Breathing = 'Breathing',
-   Fighting = 'Fighting',
-   ThreeStepFight = 'ThreeStepFight',
-}
-export const TechniqueTypeEnumValues = Object.values(TechniqueTypeEnum);
+// Helpers depending on Repository
 
-export type TechniqueType = 'Stand' | 'Strike' | 'Kick' | 'Block' | 'Kata' | 'Breathing' | 'ThreeStepFight' | 'Fighting';
-
-export class Technique {
-   id: string;
-   type: TechniqueType;
-   romaji: string;
-   japanese?: string;
-   english?: string;
-   swedish?: string;
-   history?: string;
-   detailedDescription?: string;
-   youtubeKey?: string;
-   poster?: string;
-   tags?: string[];
-
-   constructor(id: string, type: TechniqueType, romaji: string, english?: string, swedish?: string, japanese?: string, history?: string, detailedDescription?: string, youtubeKey?: string, poster?: string, tags?: string[]) {
-      this.id = id;
-      this.type = type;
-      this.romaji = romaji;
-      this.english = english;
-      this.swedish = swedish;
-      this.japanese = japanese;
-      this.history = history;
-      this.detailedDescription = detailedDescription;
-      this.youtubeKey = youtubeKey;
-      this.poster = poster;
-      this.tags = tags;
-   }
-
-   // returns grade for the technique. If grade is not found, first grade will be returned.
-   Grade(grades: Grade[]): Grade {
-      for (const grade of grades) {
-         if (grade.techniques.find(t => t.id === this.id)) {
-            return grade;
-         }
-      }
-      return grades[0]; // If no grade contains the technique return first grade.
-   }
-
-   get words(): string[] {
-      return (this.romaji || '').split(' ');
-   }
-
-   get correctOrder(): string[] {
-      return Array.from(this.words.values());
-   }
-}
-
-export type CommonData = {
-   levelNumber: number;
-   romaji: string;
-   japanese?: string;
-   english?: string;
-   swedish?: string;
-   type: TechniqueTypeEnum;
-};
-
-export const GetTechniqueByType = (grades: Grade[]): Record<TechniqueTypeEnum, CommonData[]> => {
+export const GetTechniqueByType = (): Record<TechniqueTypeEnum, CommonData[]> => {
    const categories: Record<TechniqueTypeEnum, CommonData[]> = {
       [TechniqueTypeEnum.Stand]: [],
       [TechniqueTypeEnum.Strike]: [],
@@ -89,22 +25,45 @@ export const GetTechniqueByType = (grades: Grade[]): Record<TechniqueTypeEnum, C
       [TechniqueTypeEnum.ThreeStepFight]: [],
    };
 
-   grades.forEach(({levelNumber, techniques, katas}) => {
-      techniques.forEach(({type, romaji, japanese = '', english = '', swedish = ''}) => {
-         const enumType = type as TechniqueTypeEnum; // Ensure the type aligns with TechniqueTypeEnum
-         if (!categories[enumType]) {
-            categories[enumType] = [];
-         }
-         categories[enumType].push({levelNumber, romaji, japanese, english, swedish, type: enumType});
+   const grades = KyokushinRepository.getCurriculumGrades();
+
+   grades.forEach((grade) => {
+        const levelNumber = getLevelNumber(grade);
+        grade.techniques.forEach((tech) => {
+            const type = tech.kind as unknown as TechniqueTypeEnum; // Mapping
+            
+            // Map 'Combination' or others if necessary, otherwise skip or default
+            if (!Object.values(TechniqueTypeEnum).includes(type)) {
+               return; 
+            }
+
+            if (categories[type]) {
+                 categories[type].push({
+                    levelNumber,
+                    romaji: tech.name.romaji || '',
+                    japanese: tech.name.ja || '', 
+                    english: tech.name.en || '',
+                    swedish: tech.name.sv || '',
+                    type: type
+                 });
+            }
       });
 
-      katas.forEach(({description, japanese, english, swedish}) => {
-         categories[TechniqueTypeEnum.Kata].push({levelNumber, romaji: description, japanese, english, swedish, type: TechniqueTypeEnum.Kata});
+      grade.katas.forEach((kata) => {
+         categories[TechniqueTypeEnum.Kata].push({
+            levelNumber, 
+            romaji: kata.name.romaji || '', 
+            japanese: kata.name.ja || '', 
+            english: kata.name.en || '', 
+            swedish: kata.name.sv || '', 
+            type: TechniqueTypeEnum.Kata
+        });
       });
    });
 
    return categories;
 };
+
 // Special technique tags per category
 
 export const specialTechniqueTagsByCategory: Record<string, string[]> = {
@@ -114,25 +73,15 @@ export const specialTechniqueTagsByCategory: Record<string, string[]> = {
    Stand: ['Kamae', 'Kamaete', 'Sagari', 'Ura'],
 };
 
-export type TechniqueCombo = {
-   id: string;
-   name: string;
-   techniques: Technique[];
-   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-   tags?: string[];
-   notes?: string;
-};
 
-export function FindGradeByTechniqueId(grades: Grade[], id: string): Grade {
-   for (const grade of grades) {
-      if (grade.techniques.find(t => t.id === id)) {
-         return grade;
-      }
-   }
-   return grades[0]; // If no grade contains the technique return first grade.
+export function FindGradeByTechniqueId(grades: any[], id: string): GradeWithContent {
+    // Ignore passed 'grades' arg, use repo
+   const grade = KyokushinRepository.getGradeForTechnique(id);
+   if (grade) return grade;
+   
+   // Fallback to first grade if not found matches old behavior
+   const allGrades = KyokushinRepository.getCurriculumGrades();
+   return allGrades[0];
 }
 
-// export class GradeManager {
-//    Grades: Grade[] = gradeData;
-//    Techniques: Technique[] = gradeData.flatMap(grade => grade.techniques);
-// }
+

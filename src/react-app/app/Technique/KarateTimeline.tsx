@@ -20,6 +20,7 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import FormControl from '@mui/material/FormControl';
@@ -34,15 +35,16 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React from 'react';
 
-import {GetFlagEmoji, useLanguage} from '@/components/context/LanguageContext'; // Import the hook
+import {GetFlagEmoji, useLanguage} from '@/components/context/LanguageContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
 import CustomDivider from '@/components/UI/CustomDivider';
 import KarateBelt from '@/components/UI/KarateBelt';
-import {getLocalStorageItem, setLocalStorageItem} from '@/components/utils/localStorageUtils';
-import {gradeData} from '@/data/gradeData';
+// import {getLocalStorageItem} from '@/components/utils/localStorageUtils'; // Removed
+import {setLocalStorageItem} from '@/components/utils/localStorageUtils';
+import { TechniqueKind } from '../../../data/model/technique';
+import { GradeWithContent } from '../../../data/repo/KyokushinRepository';
 
 import kyokushinRanks from '../../data/kyokushinRanks';
-import {GetTechniqueByType, TechniqueTypeEnumValues} from './TechniqueData';
 
 const suggestedTags = [
    {label: 'favorite', icon: FavoriteIcon, color: 'error' as const},
@@ -66,6 +68,8 @@ const getYoutubeEmbedUrl = (url: string) => {
 };
 
 interface KarateTimelineProps {
+   grades: GradeWithContent[];
+   loading?: boolean;
    searchTerm: string;
    ratings: Record<string, number>;
    setRatings: React.Dispatch<React.SetStateAction<Record<string, number>>>;
@@ -78,9 +82,8 @@ interface KarateTimelineProps {
    selectedType: string | null;
 }
 
-export default React.memo(function KarateTimeline({searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks}: KarateTimelineProps) {
+export default React.memo(function KarateTimeline({grades, loading, searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks}: KarateTimelineProps) {
    const theme = useTheme();
-   // Use the useLanguage hook to get selectedLanguages
    const {selectedLanguages} = useLanguage();
 
    const [editModes, setEditModes] = React.useState<Record<string, boolean>>({});
@@ -96,7 +99,6 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
       navigator.clipboard.writeText(text);
       showSnackbar(`Copied: ${text}`, 'success');
    };
-
 
    const handleRatingChange = (techniqueId: string, newRating: number | null) => {
       const updated = {...ratings, [techniqueId]: newRating || 0};
@@ -122,42 +124,44 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
    };
 
    const filteredGrades = React.useMemo(() => {
-      return gradeData
+      if (!grades) return [];
+      
+      return grades
          .map(grade => ({
             ...grade,
             techniques: grade.techniques.filter(technique => {
-               const romaji = technique.romaji.toLowerCase();
+               const romaji = (technique.name.romaji || '').toLowerCase();
                const matchesSearch =
                   !searchTerm ||
                   romaji.includes(searchTerm.toLowerCase()) ||
-                  (technique.japanese || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (technique.english || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (technique.swedish || '').toLowerCase().includes(searchTerm.toLowerCase());
+                  (technique.name.ja || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (technique.name.en || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (technique.name.sv || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-               const matchesTag = !selectedTagFilter || (tags[technique.romaji] || []).includes(selectedTagFilter);
+               const matchesTag = !selectedTagFilter || (tags[technique.name.romaji || ''] || []).includes(selectedTagFilter);
 
-               const matchesRating = (ratings[technique.romaji] || 0) >= minRatingFilter;
+               const matchesRating = (ratings[technique.name.romaji || ''] || 0) >= minRatingFilter;
 
-               const matchesNotes = !hasNotesFilter || notes[technique.romaji];
+               const matchesNotes = !hasNotesFilter || notes[technique.name.romaji || ''];
 
-               const matchesType = !selectedType || technique.type === selectedType;
+               const matchesType = !selectedType || technique.kind === selectedType;
 
                return matchesSearch && matchesTag && matchesRating && matchesNotes && matchesType;
             }),
             katas: grade.katas.filter(kata => {
-               const romaji = kata.romaji.toLowerCase();
+               const romaji = (kata.name.romaji || '').toLowerCase();
                const matchesSearch =
                   !searchTerm ||
                   romaji.includes(searchTerm.toLowerCase()) ||
-                  (kata.japanese || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (kata.english || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (kata.swedish || '').toLowerCase().includes(searchTerm.toLowerCase());
+                  (kata.name.ja || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (kata.name.en || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  (kata.name.sv || '').toLowerCase().includes(searchTerm.toLowerCase());
 
-               const matchesTag = !selectedTagFilter || (tags[kata.romaji] || []).includes(selectedTagFilter);
+               const matchesTag = !selectedTagFilter || (tags[kata.name.romaji || ''] || []).includes(selectedTagFilter);
 
-               const matchesRating = (ratings[kata.romaji] || 0) >= minRatingFilter;
+               const matchesRating = (ratings[kata.name.romaji || ''] || 0) >= minRatingFilter;
 
-               const matchesNotes = !hasNotesFilter || notes[kata.romaji];
+               const matchesNotes = !hasNotesFilter || notes[kata.name.romaji || ''];
 
                const matchesType = !selectedType || selectedType === 'Kata';
 
@@ -165,13 +169,32 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
             }),
          }))
          .filter(grade => grade.techniques.length > 0 || grade.katas.length > 0);
-   }, [searchTerm, selectedType, selectedTagFilter, minRatingFilter, hasNotesFilter, tags, ratings, notes]);
+   }, [grades, searchTerm, selectedType, selectedTagFilter, minRatingFilter, hasNotesFilter, tags, ratings, notes]);
 
    const allTags = React.useMemo(() => {
       const tagSet = new Set<string>();
       Object.values(tags).forEach(tagArray => tagArray.forEach(tag => tagSet.add(tag)));
       return Array.from(tagSet).sort();
    }, [tags]);
+
+   const techniqueTypes = [
+       TechniqueKind.Stand,
+       TechniqueKind.Strike,
+       TechniqueKind.Block,
+       TechniqueKind.Kick,
+       TechniqueKind.Breathing,
+       TechniqueKind.Fighting,
+       TechniqueKind.Combination, 
+       TechniqueKind.Other
+   ];
+
+   if (loading) {
+       return (
+           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+               <CircularProgress />
+           </Box>
+       );
+   }
 
    return (
       <>
@@ -225,10 +248,13 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
             {filteredGrades.map((grade, index) => {
                const connectorColor = theme.palette.mode === 'dark' ? theme.palette.common.white : theme.palette.common.black;
                const boxShadowColor = theme.palette.mode === 'dark' ? theme.palette.grey[500] : theme.palette.grey[300];
-               const beltConnectorColor = kyokushinRanks[grade.rankName].beltColor;
+               
+               const rankName = grade.name.en || 'Unknown Rank';
+               const rankInfo = kyokushinRanks[rankName] || { beltColor: grade.beltColor, beltStripe: 0, beltName: rankName };
+               const beltConnectorColor = rankInfo.beltColor;
 
                return (
-                  <TimelineItem key={index} sx={{m: 0, p: 0}}>
+                  <TimelineItem key={grade.id} sx={{m: 0, p: 0}}>
                      <TimelineSeparator
                         sx={{
                            flexDirection: 'column',
@@ -243,7 +269,7 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                            }}
                            color={grade.beltColor}
                            thickness={'0.3em'}
-                           stripes={kyokushinRanks[grade.rankName].beltStripe}
+                           stripes={rankInfo.beltStripe || 0}
                            borderRadius='100%'
                         />
                         {index < filteredGrades.length - 1 && (
@@ -269,30 +295,17 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                  md: '1.5rem',
                               },
                               cursor: 'default',
-                              whiteSpace: 'normal', // Ensure content wraps
+                              whiteSpace: 'normal',
                            }}>
-                           {grade.rankName} - {kyokushinRanks[grade.rankName].beltName}
+                           {rankName} - {rankInfo.beltName}
                         </Typography>
-                        {TechniqueTypeEnumValues.map(type => {
-                           const items =
-                              grade.techniques
-                                 .filter(t => t.type === type)
-                                 .map(t => ({
-                                    levelNumber: grade.kyuNumber,
-                                    romaji: t.romaji,
-                                    japanese: t.japanese,
-                                    english: t.english,
-                                    swedish: t.swedish,
-                                    type: type,
-                                    youtubeKey: t.youtubeKey,
-                                 })) || [];
-                           // If there are no items for the current type, return null.
-                           // This will prevent rendering an empty section like white belt.
-                           if (items.length === 0) return null;
+                        {techniqueTypes.map(type => {
+                           const techniquesOfType = grade.techniques.filter(t => t.kind === type);
+                           
+                           if (techniquesOfType.length === 0) return null;
 
                            return (
-                              // Render Technique Type
-                              <React.Fragment key={`${type}-${type}`}>
+                              <React.Fragment key={`${grade.id}-${type}`}>
                                  <Stack
                                     direction='column'
                                     sx={{
@@ -306,13 +319,16 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                     </CustomDivider>
                                  </Stack>
                                  <Box sx={{width: '100%'}}>
-                                    {items.map(technique => (
-                                       <Accordion key={technique.romaji} sx={{mb: 1}}>
+                                    {techniquesOfType.map(technique => {
+                                       const techRomaji = technique.name.romaji || technique.id; 
+                                       
+                                       return (
+                                       <Accordion key={technique.id} sx={{mb: 1}}>
                                           <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
                                              <Stack spacing={0} direction='column' sx={{flexGrow: 1, alignItems: 'flex-start'}}>
                                                 {selectedLanguages.map(
                                                    language =>
-                                                      technique[language] && (
+                                                      technique.name[language as keyof typeof technique.name] && (
                                                          <Typography
                                                             key={language}
                                                             align='left'
@@ -325,25 +341,25 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                             <span
                                                                onClick={(e) => {
                                                                   e.stopPropagation();
-                                                                  handleFlagClick(technique[language] || '');
+                                                                  handleFlagClick(technique.name[language as keyof typeof technique.name] || '');
                                                                }}
                                                                style={{ cursor: 'pointer', marginRight: '4px' }}
                                                             >
                                                                {GetFlagEmoji(language)}
                                                             </span>
-                                                            {technique[language] || 'Translation not available'}
+                                                            {technique.name[language as keyof typeof technique.name] || 'Translation not available'}
                                                          </Typography>
                                                       ),
                                                 )}
                                              </Stack>
                                              <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5}}>
                                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                                   {notes[technique.romaji] && <ChatIcon fontSize='small' />}
-                                                   <Rating value={ratings[technique.romaji] || 0} readOnly size='small' />
+                                                   {notes[techRomaji] && <ChatIcon fontSize='small' />}
+                                                   <Rating value={ratings[techRomaji] || 0} readOnly size='small' />
                                                 </Box>
-                                                {(tags[technique.romaji] || []).length > 0 && (
+                                                {(tags[techRomaji] || []).length > 0 && (
                                                    <Stack direction='row' spacing={0.5} sx={{flexWrap: 'wrap', justifyContent: 'flex-end'}}>
-                                                      {(tags[technique.romaji] || []).slice(0, 3).map(tag => {
+                                                      {(tags[techRomaji] || []).slice(0, 3).map(tag => {
                                                          const config = getTagConfig(tag);
                                                          const Icon = config.icon;
                                                          return <Chip key={tag} label={toTitleCase(tag)} icon={Icon ? <Icon sx={{fontSize: '0.7rem'}} /> : undefined} size='small' color={config.color} variant='filled' sx={{fontSize: '0.7rem', height: '20px'}} />;
@@ -354,53 +370,56 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                           </AccordionSummary>
                                           <AccordionDetails>
                                              <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 1}}>
-                                                <IconButton size='small' onClick={() => setEditModes(prev => ({...prev, [technique.romaji]: !prev[technique.romaji]}))}>
+                                                <IconButton size='small' onClick={() => setEditModes(prev => ({...prev, [techRomaji]: !prev[techRomaji]}))}>
                                                    <EditIcon />
                                                 </IconButton>
                                              </Box>
                                              <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                                {editModes[technique.romaji] && (
+                                                {editModes[techRomaji] && (
                                                    <Box>
                                                       <Typography variant='body2'>Rating:</Typography>
-                                                      <Rating value={ratings[technique.romaji] || 0} onChange={(event, newValue) => handleRatingChange(technique.romaji, newValue)} />
+                                                      <Rating value={ratings[techRomaji] || 0} onChange={(event, newValue) => handleRatingChange(techRomaji, newValue)} />
                                                    </Box>
                                                 )}
-                                                {editModes[technique.romaji] ? (
+                                                {editModes[techRomaji] ? (
                                                    <TextField
                                                       label='Notes'
                                                       multiline
                                                       rows={4}
-                                                      defaultValue={notes[technique.romaji] || ''}
+                                                      defaultValue={notes[techRomaji] || ''}
                                                       onBlur={e => {
                                                          const newNote = e.target.value;
-                                                         setNotes(prev => ({...prev, [technique.romaji]: newNote}));
-                                                         setLocalStorageItem('techniqueNotes', {...notes, [technique.romaji]: newNote});
+                                                         setNotes(prev => ({...prev, [techRomaji]: newNote}));
+                                                         setLocalStorageItem('techniqueNotes', {...notes, [techRomaji]: newNote});
                                                       }}
                                                       fullWidth
                                                    />
                                                 ) : (
-                                                   notes[technique.romaji] && (
+                                                   notes[techRomaji] && (
                                                       <Box>
                                                          <Typography variant='body2'>Notes:</Typography>
                                                          <Typography variant='body1' sx={{mt: 0.5, whiteSpace: 'pre-wrap'}}>
-                                                            {notes[technique.romaji]}
+                                                            {notes[techRomaji]}
                                                          </Typography>
                                                       </Box>
                                                    )
                                                 )}
                                                  {(() => {
-                                                    const defaultLink = technique.youtubeKey ? [`https://www.youtube.com/watch?v=${technique.youtubeKey}`] : [];
-                                                    const userLinks = youtubeLinks[technique.romaji] || [];
+                                                    const ytMediaId = technique.mediaIds?.find(id => id.startsWith('media_yt_'));
+                                                    const youtubeKey = ytMediaId ? ytMediaId.replace('media_yt_', '') : null;
+                                                    
+                                                    const defaultLink = youtubeKey ? [`https://www.youtube.com/watch?v=${youtubeKey}`] : [];
+                                                    const userLinks = youtubeLinks[techRomaji] || [];
                                                     const allLinks = [...defaultLink, ...userLinks];
                                                     const hasMedia = allLinks.length > 0;
 
                                                     return (
-                                                       (editModes[technique.romaji] || hasMedia) && (
+                                                       (editModes[techRomaji] || hasMedia) && (
                                                           <Box sx={{mt: 1}}>
                                                              <Typography variant='body2' sx={{mb: 1}}>
                                                                 Media:
                                                              </Typography>
-                                                             {editModes[technique.romaji] && (
+                                                             {editModes[techRomaji] && (
                                                                 <Stack spacing={1}>
                                                                    {userLinks.map((url, index) => (
                                                                       <Box key={index} sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -410,22 +429,22 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                                             defaultValue={url}
                                                                             onBlur={e => {
                                                                                const newUrl = e.target.value.trim();
-                                                                               const currentUrls = youtubeLinks[technique.romaji] || [];
+                                                                               const currentUrls = youtubeLinks[techRomaji] || [];
                                                                                const updatedUrls = [...currentUrls];
                                                                                updatedUrls[index] = newUrl;
                                                                                const filteredUrls = updatedUrls.filter(u => u);
-                                                                               setYoutubeLinks(prev => ({...prev, [technique.romaji]: filteredUrls}));
-                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [technique.romaji]: filteredUrls});
+                                                                               setYoutubeLinks(prev => ({...prev, [techRomaji]: filteredUrls}));
+                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: filteredUrls});
                                                                             }}
                                                                             fullWidth
                                                                          />
                                                                          <IconButton
                                                                             size='small'
                                                                             onClick={() => {
-                                                                               const currentUrls = youtubeLinks[technique.romaji] || [];
+                                                                               const currentUrls = youtubeLinks[techRomaji] || [];
                                                                                const updatedUrls = currentUrls.filter((_, i) => i !== index);
-                                                                               setYoutubeLinks(prev => ({...prev, [technique.romaji]: updatedUrls}));
-                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [technique.romaji]: updatedUrls});
+                                                                               setYoutubeLinks(prev => ({...prev, [techRomaji]: updatedUrls}));
+                                                                               setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: updatedUrls});
                                                                             }}>
                                                                             <DeleteIcon />
                                                                          </IconButton>
@@ -434,10 +453,10 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                                    <IconButton
                                                                       size='small'
                                                                       onClick={() => {
-                                                                         const currentUrls = youtubeLinks[technique.romaji] || [];
+                                                                         const currentUrls = youtubeLinks[techRomaji] || [];
                                                                          const updatedUrls = [...currentUrls, ''];
-                                                                         setYoutubeLinks(prev => ({...prev, [technique.romaji]: updatedUrls}));
-                                                                         setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [technique.romaji]: updatedUrls});
+                                                                         setYoutubeLinks(prev => ({...prev, [techRomaji]: updatedUrls}));
+                                                                         setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [techRomaji]: updatedUrls});
                                                                       }}
                                                                       sx={{alignSelf: 'flex-start'}}>
                                                                       <AddIcon />
@@ -476,7 +495,7 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                        )
                                                     );
                                                  })()}
-                                                {editModes[technique.romaji] && (
+                                                {editModes[techRomaji] && (
                                                    <Box>
                                                       <Typography variant='body2' sx={{mb: 1}}>
                                                          Tags:
@@ -487,7 +506,7 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                          </Typography>
                                                          <Stack direction='row' spacing={1} sx={{flexWrap: 'wrap'}}>
                                                             {suggestedTags.map(({label, icon: Icon, color}) => (
-                                                               <Chip key={label} label={toTitleCase(label)} icon={<Icon />} onClick={() => handleAddTag(technique.romaji, label)} size='small' color={color} variant='filled' />
+                                                               <Chip key={label} label={toTitleCase(label)} icon={<Icon />} onClick={() => handleAddTag(techRomaji, label)} size='small' color={color} variant='filled' />
                                                             ))}
                                                          </Stack>
                                                       </Box>
@@ -496,21 +515,21 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                          size='small'
                                                          onKeyDown={e => {
                                                             if (e.key === 'Enter') {
-                                                               handleAddTag(technique.romaji, (e.target as HTMLInputElement).value);
+                                                               handleAddTag(techRomaji, (e.target as HTMLInputElement).value);
                                                                (e.target as HTMLInputElement).value = '';
                                                             }
                                                          }}
                                                          fullWidth
                                                          sx={{mb: 1}}
                                                       />
-                                                      {(tags[technique.romaji] || []).length > 0 && (
+                                                      {(tags[techRomaji] || []).length > 0 && (
                                                          <Box>
                                                             <Typography variant='caption' color='text.secondary' sx={{mb: 0.5}}>
                                                                Your Tags:
                                                             </Typography>
                                                             <Stack direction='row' spacing={1} sx={{flexWrap: 'wrap'}}>
-                                                               {(tags[technique.romaji] || []).map(tag => (
-                                                                  <Chip key={tag} label={toTitleCase(tag)} onDelete={() => handleRemoveTag(technique.romaji, tag)} size='small' />
+                                                               {(tags[techRomaji] || []).map(tag => (
+                                                                  <Chip key={tag} label={toTitleCase(tag)} onDelete={() => handleRemoveTag(techRomaji, tag)} size='small' />
                                                                ))}
                                                             </Stack>
                                                          </Box>
@@ -520,7 +539,8 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                              </Box>
                                           </AccordionDetails>
                                        </Accordion>
-                                    ))}
+                                       );
+                                    })}
                                  </Box>
                               </React.Fragment>
                            );
@@ -540,13 +560,18 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                  </CustomDivider>
                               </Stack>
                               <Box sx={{width: '100%'}}>
-                                 {grade.katas.map(kata => (
+                                 {grade.katas.map(kata => {
+                                    const kataRomaji = kata.name.romaji || kata.id;
+                                    const ytMediaId = kata.mediaIds?.find(id => id.startsWith('media_yt_'));
+                                    const youtubeKey = ytMediaId ? ytMediaId.replace('media_yt_', '') : null;
+                                    
+                                    return (
                                     <Accordion key={kata.id} sx={{mb: 1}}>
                                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
                                           <Stack spacing={0} direction='column' sx={{flexGrow: 1, alignItems: 'flex-start'}}>
                                              {selectedLanguages.map(
                                                 language =>
-                                                   kata[language] && (
+                                                   kata.name[language as keyof typeof kata.name] && (
                                                       <Typography
                                                          key={language}
                                                          align='left'
@@ -559,25 +584,25 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                          <span
                                                             onClick={(e) => {
                                                                e.stopPropagation();
-                                                               handleFlagClick(kata[language] || '');
+                                                               handleFlagClick(kata.name[language as keyof typeof kata.name] || '');
                                                             }}
                                                             style={{ cursor: 'pointer', marginRight: '4px' }}
                                                          >
                                                             {GetFlagEmoji(language)}
                                                          </span>
-                                                         {kata[language] || 'Translation not available'}
+                                                         {kata.name[language as keyof typeof kata.name] || 'Translation not available'}
                                                       </Typography>
                                                    ),
                                              )}
                                           </Stack>
                                           <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5}}>
                                              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                                {notes[kata.romaji] && <ChatIcon fontSize='small' />}
-                                                <Rating value={ratings[kata.romaji] || 0} readOnly size='small' />
+                                                {notes[kataRomaji] && <ChatIcon fontSize='small' />}
+                                                <Rating value={ratings[kataRomaji] || 0} readOnly size='small' />
                                              </Box>
-                                             {(tags[kata.romaji] || []).length > 0 && (
+                                             {(tags[kataRomaji] || []).length > 0 && (
                                                 <Stack direction='row' spacing={0.5} sx={{flexWrap: 'wrap', justifyContent: 'flex-end'}}>
-                                                   {(tags[kata.romaji] || []).slice(0, 3).map(tag => {
+                                                   {(tags[kataRomaji] || []).slice(0, 3).map(tag => {
                                                       const config = getTagConfig(tag);
                                                       const Icon = config.icon;
                                                       return <Chip key={tag} label={toTitleCase(tag)} icon={Icon ? <Icon sx={{fontSize: '0.7rem'}} /> : undefined} size='small' color={config.color} variant='filled' sx={{fontSize: '0.7rem', height: '20px'}} />;
@@ -588,56 +613,58 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                        </AccordionSummary>
                                        <AccordionDetails>
                                           <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 1}}>
-                                             <IconButton size='small' onClick={() => setEditModes(prev => ({...prev, [kata.romaji]: !prev[kata.romaji]}))}>
+                                             <IconButton size='small' onClick={() => setEditModes(prev => ({...prev, [kataRomaji]: !prev[kataRomaji]}))}>
                                                 <EditIcon />
                                              </IconButton>
                                           </Box>
                                           <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
-                                             <Typography variant='body1' sx={{whiteSpace: 'pre-wrap'}}>
-                                                {kata.detailedDescription}
-                                             </Typography>
-                                             {editModes[kata.romaji] && (
+                                             {kata.detailedDescription?.en && (
+                                                <Typography variant='body1' sx={{whiteSpace: 'pre-wrap'}}>
+                                                   {kata.detailedDescription.en}
+                                                </Typography>
+                                             )}
+                                             {editModes[kataRomaji] && (
                                                 <Box>
                                                    <Typography variant='body2'>Rating:</Typography>
-                                                   <Rating value={ratings[kata.romaji] || 0} onChange={(event, newValue) => handleRatingChange(kata.romaji, newValue)} />
+                                                   <Rating value={ratings[kataRomaji] || 0} onChange={(event, newValue) => handleRatingChange(kataRomaji, newValue)} />
                                                 </Box>
                                              )}
-                                             {editModes[kata.romaji] ? (
+                                             {editModes[kataRomaji] ? (
                                                 <TextField
                                                    label='Notes'
                                                    multiline
                                                    rows={4}
-                                                   defaultValue={notes[kata.romaji] || ''}
+                                                   defaultValue={notes[kataRomaji] || ''}
                                                    onBlur={e => {
                                                       const newNote = e.target.value;
-                                                      setNotes(prev => ({...prev, [kata.romaji]: newNote}));
-                                                      setLocalStorageItem('techniqueNotes', {...notes, [kata.romaji]: newNote});
+                                                      setNotes(prev => ({...prev, [kataRomaji]: newNote}));
+                                                      setLocalStorageItem('techniqueNotes', {...notes, [kataRomaji]: newNote});
                                                    }}
                                                    fullWidth
                                                 />
                                              ) : (
-                                                notes[kata.romaji] && (
+                                                notes[kataRomaji] && (
                                                    <Box>
                                                       <Typography variant='body2'>Notes:</Typography>
                                                       <Typography variant='body1' sx={{mt: 0.5, whiteSpace: 'pre-wrap'}}>
-                                                         {notes[kata.romaji]}
+                                                         {notes[kataRomaji]}
                                                       </Typography>
                                                    </Box>
                                                 )
                                              )}
                                               {(() => {
-                                                 const defaultLink = kata.youtubeKey ? [`https://www.youtube.com/watch?v=${kata.youtubeKey}`] : [];
-                                                 const userLinks = youtubeLinks[kata.romaji] || [];
+                                                 const defaultLink = youtubeKey ? [`https://www.youtube.com/watch?v=${youtubeKey}`] : [];
+                                                 const userLinks = youtubeLinks[kataRomaji] || [];
                                                  const allLinks = [...defaultLink, ...userLinks];
                                                  const hasMedia = allLinks.length > 0;
 
                                                  return (
-                                                    (editModes[kata.romaji] || hasMedia) && (
+                                                    (editModes[kataRomaji] || hasMedia) && (
                                                        <Box sx={{mt: 1}}>
                                                           <Typography variant='body2' sx={{mb: 1}}>
                                                              Media:
                                                           </Typography>
-                                                          {editModes[kata.romaji] && (
+                                                          {editModes[kataRomaji] && (
                                                              <Stack spacing={1}>
                                                                 {userLinks.map((url, index) => (
                                                                    <Box key={index} sx={{display: 'flex', alignItems: 'center', gap: 1}}>
@@ -647,22 +674,22 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                                          defaultValue={url}
                                                                          onBlur={e => {
                                                                             const newUrl = e.target.value.trim();
-                                                                            const currentUrls = youtubeLinks[kata.romaji] || [];
+                                                                            const currentUrls = youtubeLinks[kataRomaji] || [];
                                                                             const updatedUrls = [...currentUrls];
                                                                             updatedUrls[index] = newUrl;
                                                                             const filteredUrls = updatedUrls.filter(u => u);
-                                                                            setYoutubeLinks(prev => ({...prev, [kata.romaji]: filteredUrls}));
-                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kata.romaji]: filteredUrls});
+                                                                            setYoutubeLinks(prev => ({...prev, [kataRomaji]: filteredUrls}));
+                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: filteredUrls});
                                                                          }}
                                                                          fullWidth
                                                                       />
                                                                       <IconButton
                                                                          size='small'
                                                                          onClick={() => {
-                                                                            const currentUrls = youtubeLinks[kata.romaji] || [];
+                                                                            const currentUrls = youtubeLinks[kataRomaji] || [];
                                                                             const updatedUrls = currentUrls.filter((_, i) => i !== index);
-                                                                            setYoutubeLinks(prev => ({...prev, [kata.romaji]: updatedUrls}));
-                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kata.romaji]: updatedUrls});
+                                                                            setYoutubeLinks(prev => ({...prev, [kataRomaji]: updatedUrls}));
+                                                                            setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: updatedUrls});
                                                                          }}>
                                                                          <DeleteIcon />
                                                                       </IconButton>
@@ -671,10 +698,10 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                                 <IconButton
                                                                    size='small'
                                                                    onClick={() => {
-                                                                      const currentUrls = youtubeLinks[kata.romaji] || [];
+                                                                      const currentUrls = youtubeLinks[kataRomaji] || [];
                                                                       const updatedUrls = [...currentUrls, ''];
-                                                                      setYoutubeLinks(prev => ({...prev, [kata.romaji]: updatedUrls}));
-                                                                      setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kata.romaji]: updatedUrls});
+                                                                      setYoutubeLinks(prev => ({...prev, [kataRomaji]: updatedUrls}));
+                                                                      setLocalStorageItem('techniqueYoutubeLinks', {...youtubeLinks, [kataRomaji]: updatedUrls});
                                                                    }}
                                                                    sx={{alignSelf: 'flex-start'}}>
                                                                    <AddIcon />
@@ -713,7 +740,7 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                     )
                                                  );
                                               })()}
-                                             {editModes[kata.romaji] && (
+                                             {editModes[kataRomaji] && (
                                                 <Box>
                                                    <Typography variant='body2' sx={{mb: 1}}>
                                                       Tags:
@@ -724,7 +751,7 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                       </Typography>
                                                       <Stack direction='row' spacing={1} sx={{flexWrap: 'wrap'}}>
                                                          {suggestedTags.map(({label, icon: Icon, color}) => (
-                                                            <Chip key={label} label={toTitleCase(label)} icon={<Icon />} onClick={() => handleAddTag(kata.romaji, label)} size='small' color={color} variant='filled' />
+                                                            <Chip key={label} label={toTitleCase(label)} icon={<Icon />} onClick={() => handleAddTag(kataRomaji, label)} size='small' color={color} variant='filled' />
                                                          ))}
                                                       </Stack>
                                                    </Box>
@@ -733,21 +760,21 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                                       size='small'
                                                       onKeyDown={e => {
                                                          if (e.key === 'Enter') {
-                                                            handleAddTag(kata.romaji, (e.target as HTMLInputElement).value);
+                                                            handleAddTag(kataRomaji, (e.target as HTMLInputElement).value);
                                                             (e.target as HTMLInputElement).value = '';
                                                          }
                                                       }}
                                                       fullWidth
                                                       sx={{mb: 1}}
                                                    />
-                                                   {(tags[kata.romaji] || []).length > 0 && (
+                                                   {(tags[kataRomaji] || []).length > 0 && (
                                                       <Box>
                                                          <Typography variant='caption' color='text.secondary' sx={{mb: 0.5}}>
                                                             Your Tags:
                                                          </Typography>
                                                          <Stack direction='row' spacing={1} sx={{flexWrap: 'wrap'}}>
-                                                            {(tags[kata.romaji] || []).map(tag => (
-                                                               <Chip key={tag} label={toTitleCase(tag)} onDelete={() => handleRemoveTag(kata.romaji, tag)} size='small' />
+                                                            {(tags[kataRomaji] || []).map(tag => (
+                                                               <Chip key={tag} label={toTitleCase(tag)} onDelete={() => handleRemoveTag(kataRomaji, tag)} size='small' />
                                                             ))}
                                                          </Stack>
                                                       </Box>
@@ -757,7 +784,8 @@ export default React.memo(function KarateTimeline({searchTerm, selectedType, rat
                                           </Box>
                                        </AccordionDetails>
                                     </Accordion>
-                                 ))}
+                                    );
+                                 })}
                               </Box>
                            </>
                         )}

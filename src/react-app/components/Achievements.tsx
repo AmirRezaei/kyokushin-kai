@@ -23,9 +23,9 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import React, {useEffect, useMemo, useState} from 'react';
 
-import {Grade} from '@/data/Grade';
-import {gradeData} from '@/data/gradeData';
-import {Technique} from '@/app/Technique/TechniqueData';
+import { KyokushinRepository, GradeWithContent } from '../../data/repo/KyokushinRepository';
+import { getFormattedGradeName, getLevelNumber } from '../../data/repo/gradeHelpers';
+import { TechniqueRecord } from '../../data/model/technique';
 
 /**
  * Interface for Achievements Props
@@ -68,11 +68,7 @@ const MajorAchievementBox = styled(Box)(({theme}) => ({
    marginTop: theme.spacing(1),
 }));
 
-const MajorProgressLabel = styled(Typography)(({theme}) => ({
-   marginLeft: theme.spacing(2),
-}));
-
-const ExpandButton = styled(IconButton)(({theme}) => ({
+const ExpandButton = styled(IconButton)(() => ({
    marginLeft: 'auto',
 }));
 
@@ -86,7 +82,7 @@ const ToggleContainer = styled(Box)(({theme}) => ({
  * AchievementItem Component
  */
 const AchievementItem: React.FC<{
-   grade: Grade;
+   grade: GradeWithContent;
    subAchievements: {
       techniqueType: string;
       total: number;
@@ -119,6 +115,8 @@ const AchievementItem: React.FC<{
     */
    const majorAchievementKey = `major-${grade.id}`;
 
+   const rankName = getFormattedGradeName(grade);
+
    return (
       <StyledCard>
          <CardContent>
@@ -130,7 +128,7 @@ const AchievementItem: React.FC<{
                   }}>
                   {getMajorAchievementStatus(majorAchievement.achieved, majorAchievement.total) ? <CheckCircleIcon /> : <HourglassEmptyIcon />}
                </Avatar>
-               <Typography variant='h6'>{grade.rankName}</Typography>
+               <Typography variant='h6'>{rankName}</Typography>
                <ExpandButton onClick={handleExpandClick}>{expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}</ExpandButton>
             </Box>
             <MajorAchievementBox>
@@ -231,6 +229,9 @@ const Achievements: React.FC<AchievementsProps> = ({knownTechniqueIds, currentLe
    const [viewMode, setViewMode] = useState<'all' | 'current'>('current');
    const [achievementCounts, setAchievementCounts] = useState<AchievementCounts>({});
    const [achievedAchievements, setAchievedAchievements] = useState<string[]>([]);
+   
+   // Initialize data
+   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
 
    /**
     * Handle Toggle Change
@@ -245,14 +246,14 @@ const Achievements: React.FC<AchievementsProps> = ({knownTechniqueIds, currentLe
     * Calculate Achievements Data
     */
    const achievementsData = useMemo(() => {
-      return gradeData.map((grade: Grade) => {
+      return grades.map((grade) => {
          // Group techniques by their type
          const techniquesByType: {
-            [type: string]: Technique[];
+            [type: string]: TechniqueRecord[];
          } = {};
 
-         grade.techniques.forEach((technique: Technique) => {
-            const type = technique.type.toString(); // Ensure type is a string
+         grade.techniques.forEach((technique) => {
+            const type = technique.kind; // Use kind as type
             if (!techniquesByType[type]) {
                techniquesByType[type] = [];
             }
@@ -282,7 +283,7 @@ const Achievements: React.FC<AchievementsProps> = ({knownTechniqueIds, currentLe
             majorAchievement,
          };
       });
-   }, [knownTechniqueIds]);
+   }, [knownTechniqueIds, grades]);
 
    /**
     * Filter Achievements Based on View Mode
@@ -291,7 +292,7 @@ const Achievements: React.FC<AchievementsProps> = ({knownTechniqueIds, currentLe
       if (viewMode === 'all') {
          return achievementsData;
       }
-      return achievementsData.filter(ach => ach.grade.levelNumber === currentLevelNumber);
+      return achievementsData.filter(ach => getLevelNumber(ach.grade) === currentLevelNumber);
    }, [viewMode, achievementsData, currentLevelNumber]);
 
    /**

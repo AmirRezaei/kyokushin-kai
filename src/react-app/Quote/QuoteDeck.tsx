@@ -4,7 +4,7 @@
 import {ArrowBackIos, ArrowForwardIos, Favorite, FavoriteBorder, Info as InfoIcon} from '@mui/icons-material';
 import {Avatar, Box, BoxProps, Card, CardActions, CardContent, Chip, Collapse, IconButton, Paper, Stack, Typography} from '@mui/material';
 import {SxProps, Theme} from '@mui/material/styles';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
 import CopyButton from '../components/UI/CopyButton';
 import {getLocalStorageItemById, setLocalStorageItemById} from '../components/utils/localStorageUtils';
@@ -21,37 +21,37 @@ const FAVORITE_QUOTES_KEY = 'favoriteQuotes';
 const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
    // Initialize currentIndex to a random index
    const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * quotes.length));
+   
+   // Force update trigger for favorite toggles
+   const [favoriteUpdateTrigger, setFavoriteUpdateTrigger] = useState(0);
 
-   // Derive the current quote from currentIndex
-   const [quote, setQuote] = useState<Quote>(() => {
-      const initialQuote = quotes[currentIndex];
-      const favoriteQuote = getLocalStorageItemById<Quote>(FAVORITE_QUOTES_KEY, initialQuote.id);
-      return favoriteQuote ? favoriteQuote : initialQuote;
-   });
+   // Derive the current quote from currentIndex and local storage
+   const quote = React.useMemo(() => {
+     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _trigger = favoriteUpdateTrigger; // Ensure dependency is used
+      const current = quotes[currentIndex];
+      const favoriteQuote = getLocalStorageItemById<Quote>(FAVORITE_QUOTES_KEY, current?.id); // Safe access in case quotes is empty/invalid
+      return favoriteQuote ? favoriteQuote : current;
+   }, [currentIndex, quotes, favoriteUpdateTrigger]);
 
    // State to manage Info section toggle per quote
    const [infoState, setInfoState] = useState<boolean>(false);
 
-   // Update quote when currentIndex changes
-   useEffect(() => {
-      const newQuote = quotes[currentIndex];
-      const favoriteQuote = getLocalStorageItemById<Quote>(FAVORITE_QUOTES_KEY, newQuote.id);
-      setQuote(favoriteQuote ? favoriteQuote : newQuote);
-   }, [currentIndex, quotes]);
-
    const handleNextQuote = () => {
       setCurrentIndex(prev => (prev + 1) % quotes.length);
+      setInfoState(false); // Optionally close info on change
    };
 
    const handlePrevQuote = () => {
       setCurrentIndex(prev => (prev - 1 + quotes.length) % quotes.length);
+      setInfoState(false);
    };
 
    const handleToggleFavorite = (id: string) => {
-      if (quote.id === id) {
-         const updatedQuote = {...quote, isFavorited: !quote.isFavorited, toggleFavorite: quote.toggleFavorite, avatar: quote.avatar};
-         setQuote(updatedQuote);
+      if (quote && quote.id === id) { // Check if quote exists
+         const updatedQuote = {...quote, isFavorited: !quote.isFavorited};
          setLocalStorageItemById(FAVORITE_QUOTES_KEY, updatedQuote);
+         setFavoriteUpdateTrigger(prev => prev + 1);
       }
    };
 

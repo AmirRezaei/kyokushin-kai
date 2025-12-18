@@ -13,8 +13,9 @@ import React, {useCallback, useMemo, useState} from 'react';
 import {v4 as uuidv4} from 'uuid';
 
 import {FindGradeByTechniqueId, specialTechniqueTagsByCategory, Technique, TechniqueType} from '@/app/Technique/TechniqueData';
-import {gradeData} from '@/data/gradeData';
+// import {gradeData} from '@/data/gradeData'; // Removed
 import Uraken from '@/icons/uraken';
+import { getBeltColorHex, getFormattedGradeName, getStripeNumber } from '../../../data/repo/gradeHelpers';
 
 import DraggableList from '../UI/DraggableList/DraggableList';
 import DraggableListItem from '../UI/DraggableList/DraggableListItem';
@@ -292,8 +293,8 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({combos, allCombos, setAl
                   .map(tr => {
                      const tech = techniqueMap.get(tr.techId);
                      if (!tech) return null;
-                     const g = FindGradeByTechniqueId(gradeData, tech.id);
-                     return g.rankName;
+                     const g = FindGradeByTechniqueId([], tech.id);
+                     return getFormattedGradeName(g);
                   })
                   .filter((rank): rank is string => rank !== null);
 
@@ -362,8 +363,11 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({combos, allCombos, setAl
                                           </DraggableListItem>
                                        );
                                     }
-                                    const g = FindGradeByTechniqueId(gradeData, tech.id);
+                                    const g = FindGradeByTechniqueId([], tech.id);
                                     const category = tech.type;
+                                    const beltColorHex = getBeltColorHex(g.beltColor);
+                                    const stripes = getStripeNumber(g);
+
                                     return (
                                        // Technique item
                                        <DraggableListItem key={item.id} id={item.id}>
@@ -379,7 +383,8 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({combos, allCombos, setAl
                                              {category === 'Block' && <BlockIcon sx={{fontSize: '2em', marginRight: '0.5em'}} />}
                                              {category === 'Strike' && <StrikeIcon sx={{fontSize: '2em', marginRight: '0.5em'}} />}
                                              <Box sx={{width: '5em'}}>
-                                                <KarateBelt sx={{width: '4em', height: '1em'}} borderRadius='0' stripes={g.stripeNumber} color={g.beltColor} thickness='0.5em' orientation='horizontal' />
+                                                <KarateBelt sx={{width: '4em', height: '1em'}} borderRadius='0' stripes={stripes} color={beltColorHex} thickness='0.5em' orientation='horizontal' />
+
                                              </Box>
 
                                              {/* Maybe show Uraken icon? */}

@@ -9,11 +9,13 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {v4 as uuidv4} from 'uuid';
 
 import {FindGradeByTechniqueId, Technique, TechniqueType, TechniqueTypes} from '@/app/Technique/TechniqueData';
-import {gradeData} from '@/data/gradeData';
-
-import KarateBelt from '../UI/KarateBelt';
-import {getLocalStorageItems, setLocalStorageItems} from '../utils/localStorageUtils';
+// import {gradeData} from '@/data/gradeData'; // Removed
+import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
+import { getBeltColorHex, getStripeNumber } from '../../../data/repo/gradeHelpers';
+import { TechniqueRecord } from '../../../data/model/technique';
+import { getLocalStorageItems, setLocalStorageItems} from '../utils/localStorageUtils';
 import ComboItemsList from './ComboItemsList';
+import KarateBelt from '../UI/KarateBelt';
 
 /* -------------------------------------------
    Types and Utility Classes
@@ -29,11 +31,26 @@ export class DividerItem {
 }
 
 export const techniqueMap = new Map<string, Technique>();
-for (const g of gradeData) {
-   for (const t of g.techniques) {
-      const tech = new Technique(t.id, t.type as TechniqueType, t.romaji, t.english, t.swedish, t.history, t.detailedDescription, t.youtubeKey, t.poster, undefined);
-      techniqueMap.set(t.id, tech);
-   }
+// Populate map from Repository
+const allTechs = KyokushinRepository.getAllTechniques();
+for (const t of allTechs) {
+    const techType = t.kind as unknown as TechniqueType; // Verify casting
+    // Note: TechniqueData.ts Technique class expects legacy fields.
+    // Creating Technique from TechniqueRecord
+    const tech = new Technique(
+        t.id, 
+        techType, 
+        t.name.romaji || '', 
+        t.name.en || '', 
+        t.name.sv || '', 
+        t.name.ja || '', 
+        t.history?.en || '', 
+        t.detailedDescription?.en || '', 
+        t.mediaIds?.find(m => m.startsWith('yt:'))?.replace('yt:', '') || '', // Hacky media ID extraction if needed
+        undefined, // Poster
+        t.tags
+    );
+    techniqueMap.set(t.id, tech);
 }
 
 export class TechniqueRef {
@@ -404,13 +421,16 @@ const KihonList: React.FC = React.memo(() => {
                            }}
                            renderValue={selected => (selected as string[]).join(', ')}>
                            {techniquesForType.map(technique => {
-                              const g = FindGradeByTechniqueId(gradeData, technique.id);
+                              const g = FindGradeByTechniqueId([], technique.id); // Pass empty array as it's ignored now
                               const isSelected = selectedForType.includes(technique.romaji);
+                              const beltColorHex = getBeltColorHex(g.beltColor);
+                              const stripes = getStripeNumber(g);
+                              
                               return (
                                  <MenuItem key={technique.id} value={technique.romaji}>
                                     <Box sx={{display: 'flex', alignItems: 'center'}}>
                                        <Box sx={{width: '4em', marginRight: '1em'}}>
-                                          <KarateBelt sx={{width: '3em', height: '1em'}} color={g.beltColor} thickness='10px' borderRadius='0' stripes={g.stripeNumber} />
+                                          <KarateBelt sx={{width: '3em', height: '1em'}} color={beltColorHex} thickness='10px' borderRadius='0' stripes={stripes} />
                                        </Box>
                                        <ListItemText primary={technique.romaji} sx={{fontWeight: isSelected ? 'bold' : 'normal'}} />
                                     </Box>

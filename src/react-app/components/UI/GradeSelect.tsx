@@ -2,11 +2,10 @@
 // * Path: ./src/components/UI/GradeSelect.tsx
 // HEADER-END
 import {Box, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import React from 'react';
+import React, { useMemo } from 'react';
 
-import {Grade} from '@/data/Grade';
-
-import {gradeData} from '../../data/gradeData';
+import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
+import { getBeltColorHex, getBeltName, getStripeNumber } from '../../../data/repo/gradeHelpers';
 import KarateBelt from '../UI/KarateBelt';
 
 interface GradeSelectProps {
@@ -14,9 +13,18 @@ interface GradeSelectProps {
    handleGradeChange: (event: SelectChangeEvent<string>) => void;
 }
 
-const GradeSelect: React.FC<GradeSelectProps> = ({selectedGradeId, handleGradeChange}) => (
+const GradeSelect: React.FC<GradeSelectProps> = ({selectedGradeId, handleGradeChange}) => {
+   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+
+   return (
    <Select labelId='grade-select-label' id='grade-select' value={selectedGradeId} onChange={handleGradeChange} label='Grade'>
-      {gradeData.map((grade: Grade) => (
+      {grades.map((grade) => {
+         const beltName = getBeltName(grade);
+         const rankName = grade.name.en || grade.name.romaji || 'Unknown';
+         const stripes = getStripeNumber(grade);
+         const beltColorHex = getBeltColorHex(grade.beltColor);
+
+         return (
          <MenuItem key={grade.id} value={grade.id}>
             <Box display='flex' alignItems='center'>
                <KarateBelt
@@ -25,16 +33,17 @@ const GradeSelect: React.FC<GradeSelectProps> = ({selectedGradeId, handleGradeCh
                      height: {xs: '1em', sm: '1.0em'},
                      mr: 2,
                   }}
-                  color={grade.beltColor}
+                  color={beltColorHex}
                   thickness={5}
-                  stripes={grade.stripeNumber}
+                  stripes={stripes}
                   borderRadius='10%'
                />
-               {`${grade.rankName} (${grade.beltName})`}
+               {`${rankName} (${beltName})`}
             </Box>
          </MenuItem>
-      ))}
+      )})}
    </Select>
-);
+   );
+};
 
 export default GradeSelect;

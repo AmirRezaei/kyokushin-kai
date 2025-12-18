@@ -58,12 +58,19 @@ export const DeckProvider: React.FC<{children: React.ReactNode}> = ({children}) 
    };
 
    // Combine native decks with user decks for consumption
-   const { decks: nativeDecks } = getInitialData();
+   const [nativeDecks, setNativeDecks] = useState<Deck[]>([]);
+
+   useEffect(() => {
+      getInitialData().then(({decks}) => {
+         setNativeDecks(decks);
+      });
+   }, []);
+
    // Filter out native decks if they are somehow in stored decks to avoid duplicates?
-   // Or just show both. User decks might be edits. 
+   // Or just show both. User decks might be edits.
    // The User asked to add them as "native predefined decks".
    // I will return (nativeDecks + decks) as the `decks` value exposed by provider.
-   const allDecks = [...nativeDecks, ...decks];
+   const allDecks = React.useMemo(() => [...nativeDecks, ...decks], [nativeDecks, decks]);
 
    return <DeckContext.Provider value={{decks: allDecks, addDeck, updateDeck, deleteDeck}}>{children}</DeckContext.Provider>;
 };

@@ -50,7 +50,8 @@
 		"react-youtube": "^10.1.0",
 		"tone": "^15.0.4",
 		"uuid": "^11.0.2",
-		"xlsx": "^0.18.5"
+		"xlsx": "^0.18.5",
+		"zod": "^4.2.1"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "1.15.3",

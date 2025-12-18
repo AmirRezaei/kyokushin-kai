@@ -50,8 +50,13 @@ export const FlashCardProvider: React.FC<{children: React.ReactNode}> = ({childr
       setFlashCards(prev => prev.filter(card => card.id !== id));
    };
 
-   const { flashCards: nativeFlashCards } = getInitialData();
-   const allFlashCards = [...nativeFlashCards, ...flashCards];
+   const [nativeFlashCards, setNativeFlashCards] = useState<FlashCard[]>([]);
+   
+   useEffect(() => {
+      getInitialData().then(({ flashCards }) => setNativeFlashCards(flashCards));
+   }, []);
+
+   const allFlashCards = React.useMemo(() => [...nativeFlashCards, ...flashCards], [nativeFlashCards, flashCards]);
 
    return <FlashCardContext.Provider value={{flashCards: allFlashCards, addFlashCard, updateFlashCard, deleteFlashCard}}>{children}</FlashCardContext.Provider>;
 };

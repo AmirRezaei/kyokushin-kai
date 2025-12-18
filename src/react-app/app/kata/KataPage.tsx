@@ -2,21 +2,27 @@
 // * Path: ./src/app/kata/KataPage.tsx
 // HEADER-END
 
-import {Typography, useTheme} from '@mui/material';
+import {Typography} from '@mui/material';
 import Box from '@mui/material/Box';
-import React, {useState} from 'react';
+import React, {useMemo} from 'react';
 
 import KarateBelt from '@/components/UI/KarateBelt';
-import {gradeData} from '@/data/gradeData';
+import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
+import { getBeltColorHex, getStripeNumber } from '../../../data/repo/gradeHelpers';
+import { KataRecord } from '../../../data/model/kata';
 
 const KataPage: React.FC = () => {
-   const [expandedCard] = useState<{gradeIndex: number; kataIndex: number} | null>(null);
-   const theme = useTheme(); // Initialize theme
-   const handleCardClick = () => {
-      if (expandedCard) {
-         window.open(`https://www.youtube.com/watch?v=${gradeData[expandedCard.gradeIndex].katas[expandedCard.kataIndex].youtubeKey}`, '_blank', 'noopener,noreferrer');
+   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+
+   const handleKataClick = (kata: KataRecord) => {
+      if (kata.mediaIds && kata.mediaIds.length > 0) {
+          const media = KyokushinRepository.getMedia(kata.mediaIds[0]);
+          if (media && media.url) {
+              window.open(media.url, '_blank', 'noopener,noreferrer');
+          }
       }
    };
+
    return (
       <Box
          sx={{
@@ -25,14 +31,24 @@ const KataPage: React.FC = () => {
             justifyContent: 'flex-start',
             gap: 0,
          }}>
-         {gradeData.map((grade, i) => (
-            <React.Fragment key={i}>
-               <KarateBelt sx={{m: 0, width: '100%', height: '1.5em', alignItems: 'flex-end'}} borderRadius='0' borderWidth='0.1em' thickness={'0.5em'} stripes={grade.stripeNumber} color={grade.beltColor} />
+         {grades.map((grade) => (
+            <React.Fragment key={grade.id}>
+               <KarateBelt 
+                    sx={{m: 0, width: '100%', height: '1.5em', alignItems: 'flex-end'}} 
+                    borderRadius='0' 
+                    borderWidth='0.1em' 
+                    thickness={'0.5em'} 
+                    stripes={getStripeNumber(grade)} 
+                    color={getBeltColorHex(grade.beltColor)} 
+               />
 
-               {grade.katas.map((kata, j) => {
-                  const isExpanded = expandedCard?.gradeIndex === i && expandedCard?.kataIndex === j;
+               {grade.katas.map((kata) => {
                   return (
-                     <Box>
+                     <Box 
+                        key={kata.id} 
+                        onClick={() => handleKataClick(kata)}
+                        sx={{ cursor: (kata.mediaIds?.length ?? 0) > 0 ? 'pointer' : 'default' }}
+                     >
                         <Typography
                            gutterBottom
                            variant='h5'
@@ -41,8 +57,11 @@ const KataPage: React.FC = () => {
                               mt: 2, // Add top margin
                               color: 'text.primary',
                               textAlign: 'left',
+                              '&:hover': {
+                                  color: (kata.mediaIds?.length ?? 0) > 0 ? 'primary.main' : 'text.primary'
+                              }
                            }}>
-                           {kata.japanese}
+                           {kata.name.ja || kata.name.romaji}
                         </Typography>
                         <Typography
                            variant='h6'
@@ -52,7 +71,7 @@ const KataPage: React.FC = () => {
                               color: 'text.secondary',
                               textAlign: 'left', // Align text to right
                            }}>
-                           {kata.description}
+                           {kata.name.en || kata.detailedDescription?.en || ''}
                         </Typography>
                      </Box>
                   );

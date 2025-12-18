@@ -20,11 +20,13 @@ import DragAndDropZone from '@/components/drag/DragAndDropZone';
 import {arraysAreEqual, shuffleArray} from '@/components/helper/helper';
 import BeltCircular from '@/components/UI/KarateBelt';
 import ScoreUI from '@/components/UI/ScoreUI';
-import {Grade} from '@/data/Grade';
-import {gradeData} from '@/data/gradeData';
-
-import {usePreventBodyScroll} from '../../../components/drag/usePreventBodyScroll';
+// import {Grade} from '@/data/Grade'; // Removed
+// import {gradeData} from '@/data/gradeData'; // Removed
+import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
+import { getLevelNumber, getStripeNumber } from '../../../../data/repo/gradeHelpers';
+import { usePreventBodyScroll } from '../../../components/drag/usePreventBodyScroll';
 import LevelSelector from './LevelSelector';
+import { TechniqueType } from '@/app/Technique/TechniqueData';
 
 /**
  * Main Component
@@ -34,14 +36,49 @@ const WordPlayPage: React.FC = () => {
    /**
     * Initialize Techniques starting from grade[1]
     */
-   const grades: Grade[] = useMemo(() => gradeData, []);
-   const allTechniques: Technique[] = useMemo(() => grades.flatMap((grade: Grade) => grade.techniques), [grades]);
+   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+   /**
+    * Map techniques by grade ID for easy access
+    */
+   const techniqueMap = useMemo(() => {
+        const map = new Map<string, Technique[]>();
+        grades.forEach(grade => {
+            const gradeTechniques = grade.techniques.map(t => new Technique(
+                t.id, 
+                t.kind as TechniqueType,
+                t.name.romaji || '',
+                t.name.en, 
+                t.name.sv,
+                t.name.ja,
+                t.history?.en,
+                t.detailedDescription?.en,
+                t.mediaIds?.find((m: string) => m.startsWith('yt:'))?.replace('yt:', ''),
+                undefined,
+                t.tags
+            ));
+            map.set(grade.id, gradeTechniques);
+        });
+        return map;
+   }, [grades]);
+
+   const allTechniques: Technique[] = useMemo(() => {
+        return Array.from(techniqueMap.values()).flat();
+   }, [techniqueMap]);
 
    /**
     * State Variables
     */
-   const [currentGradeIndex, setCurrentGradeIndex] = useState<number>(1);
-   const [currentTechnique, setCurrentTechnique] = useState<Technique | null>(grades[0]?.techniques[0] || null);
+   /**
+    * State Variables
+    */
+   const [currentTechnique, setCurrentTechnique] = useState<Technique | null>(() => {
+       if (grades.length > 0) {
+           const techList = techniqueMap.get(grades[0].id) || [];
+           return techList[0] || null;
+       }
+       return null;
+   });
+   
    const [items, setItems] = useState<{
       [key: string]: string[];
    }>({
@@ -55,7 +92,12 @@ const WordPlayPage: React.FC = () => {
    const [challengingTechniques, setChallengingTechniques] = useState<Set<string>>(new Set());
    const [attempted, setAttempted] = useState<boolean>(false);
    const [progressCompleted, setProgressCompleted] = useState<boolean>(false);
-   const [techniquesToShow, setTechniquesToShow] = useState<Technique[]>(grades[0]?.techniques || []);
+   const [techniquesToShow, setTechniquesToShow] = useState<Technique[]>(() => {
+       if (grades.length > 0) {
+           return techniqueMap.get(grades[0].id) || [];
+       }
+       return [];
+   });
    const [isReviewingChallengingTechniques, setIsReviewingChallengingTechniques] = useState<boolean>(false);
    const [openChallengingTechniquesModal, setOpenChallengingTechniquesModal] = useState<boolean>(false);
    const [activeId, setActiveId] = useState<string | null>(null);
@@ -68,7 +110,9 @@ const WordPlayPage: React.FC = () => {
    const [knownGradeIds, setKnownGradeIds] = useState<Set<string>>(new Set());
 
    // State for selected level
-   const [selectedLevel, setSelectedLevel] = useState<number>(grades.find(g => g.hasTechniques)?.levelNumber || 1);
+   const [selectedLevel, setSelectedLevel] = useState<number>(() => {
+       return getLevelNumber(grades.find(g => g.techniques.length > 0)!) || 1;
+   });
 
    /**
     * Sensors for Drag and Drop
@@ -85,9 +129,35 @@ const WordPlayPage: React.FC = () => {
     * Get previous grade techniques for distractors
     */
    const previousGradeTechniques = useMemo(() => {
-      const previousGrades = grades.filter(grade => grade.levelNumber < selectedLevel);
-      return previousGrades.flatMap(grade => grade.techniques);
-   }, [grades, selectedLevel]);
+      const previousGrades = grades.filter(grade => getLevelNumber(grade) < selectedLevel);
+      return previousGrades.flatMap(grade => techniqueMap.get(grade.id) || []);
+   }, [grades, selectedLevel, techniqueMap]);
+
+   /**
+    * Get Distractor Words Function
+    */
+   const getDistractorWords = useCallback((currentTechnique: Technique, count: number, previousGradeTechniques: Technique[]): string[] => {
+      const currentType = currentTechnique.type;
+
+      const nearbyTechniques = previousGradeTechniques.filter(tech => tech.type === currentType && tech.id !== currentTechnique.id);
+
+      const distractorWords: string[] = [];
+
+      const existingTexts = new Set(currentTechnique.words);
+
+      for (let i = 0; i < nearbyTechniques.length && distractorWords.length < count; i++) {
+         const technique = nearbyTechniques[i];
+
+         technique.words.forEach(wordText => {
+            if (distractorWords.length < count && !existingTexts.has(wordText) && !distractorWords.includes(wordText)) {
+               distractorWords.push(wordText);
+               existingTexts.add(wordText);
+            }
+         });
+      }
+
+      return distractorWords;
+   }, []);
 
    /**
     * Initialize Words
@@ -108,17 +178,16 @@ const WordPlayPage: React.FC = () => {
          assembledWords: [],
       });
       setHintedWordIds([]);
-   }, [currentTechnique, distractorCount, previousGradeTechniques]);
+   }, [currentTechnique, distractorCount, previousGradeTechniques, getDistractorWords]);
 
    /**
     * Handle Level Change
     */
    const handleLevelChangeByLevelNumber = useCallback((newLevel: number) => {
       setSelectedLevel(newLevel);
-      const gradeIndex = grades.findIndex(grade => grade.levelNumber === newLevel);
-      if (gradeIndex !== -1) {
-         setCurrentGradeIndex(gradeIndex);
-         const newTechniques = grades[gradeIndex].techniques;
+      const grade = grades.find(grade => getLevelNumber(grade) === newLevel);
+      if (grade) {
+         const newTechniques = techniqueMap.get(grade.id) || [];
          setTechniquesToShow(newTechniques);
          setCurrentIndex(0);
          setCurrentTechnique(newTechniques[0] || null);
@@ -132,7 +201,7 @@ const WordPlayPage: React.FC = () => {
          setTechniquesToShow([]);
          setCurrentTechnique(null);
       }
-   }, [grades]);
+   }, [grades, techniqueMap]);
 
    /**
     * Load knownTechniqueIds from localStorage on mount
@@ -148,7 +217,7 @@ const WordPlayPage: React.FC = () => {
             setKnownTechniqueIds(updatedKnownTechniqueIds);
 
             // Update the selected level based on known techniques
-            const levelNumber = grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id)))?.levelNumber ?? grades.find(g => g.hasTechniques)?.levelNumber ?? 1;
+            const levelNumber = grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))) ? getLevelNumber(grades.find(grade => !grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id)))!) : grades.find(g => g.techniques.length > 0) ? getLevelNumber(grades.find(g => g.techniques.length > 0)!) : 1;
 
             const knownGradeIds = grades.filter(grade => grade.techniques.length > 0 && grade.techniques.every(tech => updatedKnownTechniqueIds.has(tech.id))).map(grade => grade.id);
             setKnownGradeIds(new Set(knownGradeIds));
@@ -290,8 +359,6 @@ const WordPlayPage: React.FC = () => {
          setHintedWordIds([]);
       } else {
          setProgressCompleted(true);
-         //setScore(100);
-         // TODO: Play sound
       }
    };
 
@@ -377,10 +444,9 @@ const WordPlayPage: React.FC = () => {
     * Handle Restart Functionality
     */
    const handleRestart = () => {
-      const gradeIndex = grades.findIndex(grade => grade.levelNumber === selectedLevel);
-      if (gradeIndex !== -1) {
-         setCurrentGradeIndex(gradeIndex);
-         const newTechniques = grades[gradeIndex].techniques;
+      const grade = grades.find(grade => getLevelNumber(grade) === selectedLevel);
+      if (grade) {
+         const newTechniques = techniqueMap.get(grade.id) || [];
          setTechniquesToShow(newTechniques);
          setCurrentIndex(0);
          setCurrentTechnique(newTechniques[0] || null);
@@ -414,31 +480,7 @@ const WordPlayPage: React.FC = () => {
       );
    }
 
-   /**
-    * Get Distractor Words Function
-    */
-   const getDistractorWords = (currentTechnique: Technique, count: number, previousGradeTechniques: Technique[]): string[] => {
-      const currentType = currentTechnique.type;
 
-      const nearbyTechniques = previousGradeTechniques.filter(tech => tech.type === currentType && tech.id !== currentTechnique.id);
-
-      const distractorWords: string[] = [];
-
-      const existingTexts = new Set(currentTechnique.words);
-
-      for (let i = 0; i < nearbyTechniques.length && distractorWords.length < count; i++) {
-         const technique = nearbyTechniques[i];
-
-         technique.words.forEach(wordText => {
-            if (distractorWords.length < count && !existingTexts.has(wordText) && !distractorWords.includes(wordText)) {
-               distractorWords.push(wordText);
-               existingTexts.add(wordText);
-            }
-         });
-      }
-
-      return distractorWords;
-   };
 
    /**
     * Render Component
@@ -457,13 +499,14 @@ const WordPlayPage: React.FC = () => {
             }}>
             {Array.from(knownGradeIds).map(id => {
                const grade = grades.find(x => x.id === id)!; // `!` asserts that `grade` will not be null
+               const stripes = getStripeNumber(grade);
                return (
                   <BeltCircular
                      key={id} // Always provide a unique key when mapping
                      sx={{width: '1em', height: '1em'}}
                      color={grade.beltColor}
                      borderRadius='100%'
-                     stripes={grade.stripeNumber}
+                     stripes={stripes}
                      thickness={'0.25em'}
                      borderWidth='0.1em'
                   />
@@ -488,12 +531,14 @@ const WordPlayPage: React.FC = () => {
                         variant='contained'
                         color='primary'
                         onClick={() => {
-                           const gradeIndex = grades.findIndex(grade => grade.levelNumber === selectedLevel);
+                           const gradeIndex = grades.findIndex(grade => getLevelNumber(grade) === selectedLevel);
                            if (gradeIndex !== -1) {
                               setIsReviewingChallengingTechniques(false);
-                              setTechniquesToShow(grades[gradeIndex].techniques);
+                              const grade = grades[gradeIndex];
+                              const newTechniques = techniqueMap.get(grade.id) || [];
+                              setTechniquesToShow(newTechniques);
                               setCurrentIndex(0);
-                              setCurrentTechnique(grades[gradeIndex].techniques[0] || null);
+                              setCurrentTechnique(newTechniques[0] || null);
                               setRevealAnswerUsed(false);
                               setSolved(false);
                               setAttempted(false);

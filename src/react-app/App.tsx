@@ -147,26 +147,29 @@ function AppContent() {
                      }}
                      open={open}
                      onClose={handleClose}>
-                     {isAuthenticated ? (
-                        <>
-                           {user && (
-                              <MenuItem disabled>
-                                 <Typography variant='body2' sx={{fontWeight: 'bold'}}>
-                                    {user.name}
-                                 </Typography>
-                              </MenuItem>
-                           )}
-                           <MenuItem onClick={handleProfile}>
-                              <Typography>User Profile</Typography>
-                           </MenuItem>
-                           <MenuItem onClick={handleSettings}>
-                              <Typography>Settings</Typography>
-                           </MenuItem>
-                           <MenuItem onClick={handleLogout}>
-                              <Typography>Logout</Typography>
-                           </MenuItem>
-                        </>
-                     ) : (
+                     {isAuthenticated && user && (
+                        <MenuItem disabled>
+                           <Typography variant='body2' sx={{fontWeight: 'bold'}}>
+                              {user.name}
+                           </Typography>
+                        </MenuItem>
+                     )}
+                     {isAuthenticated && (
+                        <MenuItem onClick={handleProfile}>
+                           <Typography>User Profile</Typography>
+                        </MenuItem>
+                     )}
+                     {isAuthenticated && (
+                        <MenuItem onClick={handleSettings}>
+                           <Typography>Settings</Typography>
+                        </MenuItem>
+                     )}
+                     {isAuthenticated && (
+                        <MenuItem onClick={handleLogout}>
+                           <Typography>Logout</Typography>
+                        </MenuItem>
+                     )}
+                     {!isAuthenticated && (
                         <MenuItem onClick={handleGoogleLogin}>
                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                               <Typography>Login with Google</Typography>

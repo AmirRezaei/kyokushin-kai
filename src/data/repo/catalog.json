@@ -1,0 +1,2437 @@
+{
+  "store": {
+    "terms": {},
+    "techniques": {
+      "1": {
+        "id": "1",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Yoi Dachi",
+          "en": "Ready Stance",
+          "sv": "Redoställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "2": {
+        "id": "2",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Fudo Dachi",
+          "en": "Immovable Stance",
+          "sv": "Orörlig ställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "3": {
+        "id": "3",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Zenkutsu Dachi",
+          "en": "Front Stance",
+          "sv": "Främre ställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "4": {
+        "id": "4",
+        "kind": "Block",
+        "name": {
+          "romaji": "Seiken Jodan Uke",
+          "en": "Forefist Upper-Level Block",
+          "sv": "Forefist-block på övre nivå"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "5": {
+        "id": "5",
+        "kind": "Block",
+        "name": {
+          "romaji": "Seiken Mae Gedan Barai",
+          "en": "Forefist Lower-Level Sweep",
+          "sv": "Forefist-svep på nedre nivå"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "6": {
+        "id": "6",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Seiken Oi Tsuki (Jodan, Chudan, Gedan)",
+          "en": "Forefist Lunge Punch (Upper, Middle, Lower Level)",
+          "sv": "Forefist-framåtslaget (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "7": {
+        "id": "7",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Morote Tsuki (Jodan, Chudan, Gedan)",
+          "en": "Double Fist Punch (Upper, Middle, Lower Level)",
+          "sv": "Dubbel näveslag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "8": {
+        "id": "8",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Hiza Ganmen Geri",
+          "en": "Knee Strike to Face",
+          "sv": "Knäslag mot ansiktet"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "9": {
+        "id": "9",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Kin Geri",
+          "en": "Groin Kick",
+          "sv": "Knickspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "10": {
+        "id": "10",
+        "kind": "Block",
+        "name": {
+          "romaji": "Seiken Chudan Uchi Uke",
+          "en": "Forefist Inside Middle Block",
+          "sv": "Forefist-block inre mitt-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "11": {
+        "id": "11",
+        "kind": "Block",
+        "name": {
+          "romaji": "Seiken Chudan Soto Uke",
+          "en": "Forefist Outside Middle Block",
+          "sv": "Forefist-block yttre mitt-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "12": {
+        "id": "12",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Mae Geri",
+          "en": "Front Kick",
+          "sv": "Främre spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "13": {
+        "id": "13",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Chudan Chusoku",
+          "en": "Middle-Level Ball of Foot Kick",
+          "sv": "Mellersta nivåets fotbollsspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "14": {
+        "id": "14",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Sanchin Dachi",
+          "en": "Hourglass Stance",
+          "sv": "Timglasställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "15": {
+        "id": "15",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Kokutsu Dachi",
+          "en": "Back Stance",
+          "sv": "Bakställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "16": {
+        "id": "16",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Musubi Dachi",
+          "en": "Informal Attention Stance",
+          "sv": "Informell uppmärksamhetsställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "17": {
+        "id": "17",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Ago Uchi",
+          "en": "Chin Strike",
+          "sv": "Hakeslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "18": {
+        "id": "18",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Seiken Gyaku Tsuki (Jodan, Chudan, Gedan)",
+          "en": "Forefist Reverse Punch (Upper, Middle, Lower Level)",
+          "sv": "Forefist-omvänd slag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "19": {
+        "id": "19",
+        "kind": "Breathing",
+        "name": {
+          "romaji": "Nogare (Omote and Ura)",
+          "en": "Breathing Exercise",
+          "sv": "Andningsövning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "20": {
+        "id": "20",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Sanbon Kumite",
+          "en": "Three-Step Sparring",
+          "sv": "Tre-stegs sparring"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "21": {
+        "id": "21",
+        "kind": "Block",
+        "name": {
+          "romaji": "Morote Chudan Uchi Uke",
+          "en": "Augmented Middle Inside Block",
+          "sv": "Förstärkt inre mitt-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "22": {
+        "id": "22",
+        "kind": "Block",
+        "name": {
+          "romaji": "Chudan Uchi Uke Gedan Barai",
+          "en": "Middle Inside Block with Lower-Level Sweep",
+          "sv": "Inre mitt-block med nedre svep"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "23": {
+        "id": "23",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Mae Geri, Jodan",
+          "en": "Front Kick, Upper Level",
+          "sv": "Främre spark, övre nivå"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "24": {
+        "id": "24",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Kiba Dachi",
+          "en": "Horse Riding Stance",
+          "sv": "Hästställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "25": {
+        "id": "25",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shita Tsuki",
+          "en": "Lower Thrust Punch",
+          "sv": "Lågt framåtslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "26": {
+        "id": "26",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Jun Tsuki",
+          "en": "Straight Punch",
+          "sv": "Rakt slag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "27": {
+        "id": "27",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Tate Tsuki (Jodan, Chudan, Gedan)",
+          "en": "Vertical Punch (Upper, Middle, Lower Level)",
+          "sv": "Vertikalt slag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "28": {
+        "id": "28",
+        "kind": "Block",
+        "name": {
+          "romaji": "Mawashi Gedan Barai",
+          "en": "Circular Lower-Level Sweep",
+          "sv": "Cirkulärt nedre svep"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "29": {
+        "id": "29",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Mawashi Uke (in Kokutsu Dachi)",
+          "en": "Knife-Hand Circular Block (in Back Stance)",
+          "sv": "Knivhand cirkulärt block (i bakställning)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "30": {
+        "id": "30",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Mae Chusoku Keage",
+          "en": "Front Snap Kick with Ball of Foot",
+          "sv": "Främre snap-spark med fotboll"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "31": {
+        "id": "31",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Teisoku Mawashi Soto Keage",
+          "en": "Instep Outside Snap Kick",
+          "sv": "Insteg yttre snap-spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "32": {
+        "id": "32",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Haisoku Mawashi Uchi Keage",
+          "en": "Instep Inside Snap Kick",
+          "sv": "Insteg inre snap-spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "33": {
+        "id": "33",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Sokuto Yoko Keage",
+          "en": "Sword Foot Side Snap Kick",
+          "sv": "Sabelfot sidospel-spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "34": {
+        "id": "34",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Neko Ashi Dachi",
+          "en": "Cat Stance",
+          "sv": "Kattställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "35": {
+        "id": "35",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Tettsui Komi Kami",
+          "en": "Hammer Fist to Top of Head",
+          "sv": "Hammarslag till huvudtoppen"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "36": {
+        "id": "36",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Tettsui Oroshi Ganmen Uchi",
+          "en": "Hammer Fist Downward Face Strike",
+          "sv": "Hammarslag nedåt mot ansiktet"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "37": {
+        "id": "37",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Tettsui Hizo Uchi",
+          "en": "Hammer Fist to Spleen",
+          "sv": "Hammarslag mot mjälten"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "38": {
+        "id": "38",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Tettsui Yoko Uchi (Jodan, Chudan, Gedan)",
+          "en": "Hammer Fist Side Strike (Upper, Middle, Lower Level)",
+          "sv": "Hammarslag sidled (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "39": {
+        "id": "39",
+        "kind": "Breathing",
+        "name": {
+          "romaji": "Ibuki Sankai",
+          "en": "Three Times Ibuki Breathing",
+          "sv": "Tre gånger Ibuki-andning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "40": {
+        "id": "40",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite",
+          "en": "Free Sparring",
+          "sv": "Fri sparring"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "41": {
+        "id": "41",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Yakusoku Ippon Kumite",
+          "en": "Prearranged One-Step Sparring",
+          "sv": "Förhandsbestämd ett-stegs sparring"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "42": {
+        "id": "42",
+        "kind": "Block",
+        "name": {
+          "romaji": "Seiken Juji Uke (Jodan, Gedan)",
+          "en": "Forefist Cross Block (Upper, Lower Level)",
+          "sv": "Forefist korsblock (övre, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "43": {
+        "id": "43",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Kansetsu Geri",
+          "en": "Joint Kick",
+          "sv": "Led spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "44": {
+        "id": "44",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Chudan Yoko Geri (Sokuto)",
+          "en": "Middle Side Kick (Edge of Foot)",
+          "sv": "Mellan sidokick (fotens kant)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "45": {
+        "id": "45",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Mawashi Gedan Geri (Haisoku, Chusoku)",
+          "en": "Lower Roundhouse Kick (Instep, Ball of Foot)",
+          "sv": "Lägsta rundspark (insteg, fotboll)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "46": {
+        "id": "46",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Tsuru Ashi Dachi",
+          "en": "Crane Stance",
+          "sv": "Traställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "47": {
+        "id": "47",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Uraken Mawashi Ganmen Uchi",
+          "en": "Back Fist Strike to the Side of the Head",
+          "sv": "Baknäveslag mot sidodelen av huvudet"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "48": {
+        "id": "48",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Uraken Ganmen Uchi",
+          "en": "Back Fist Face Strike",
+          "sv": "Baknäveslag mot ansiktet"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "49": {
+        "id": "49",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Uraken Sayu Ganmen Uchi",
+          "en": "Back Fist Side Face Strike",
+          "sv": "Baknäveslag sidledes mot ansiktet"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "50": {
+        "id": "50",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Uraken Hizo Uchi",
+          "en": "Back Fist Spleen Strike",
+          "sv": "Baknäveslag mot mjälten"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "51": {
+        "id": "51",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Nihon Nukite (Me Tsuki)",
+          "en": "Two-Finger Spear Hand (Eye Thrust)",
+          "sv": "Tvåfingers spjuthand (ögonstöt)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "52": {
+        "id": "52",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Yonhon Nukite (Jodan, Chudan)",
+          "en": "Four-Finger Spear Hand (Upper, Middle Level)",
+          "sv": "Fyrafingers spjuthand (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "53": {
+        "id": "53",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite",
+          "en": "Free Sparring 10 rounds x 2 minutes",
+          "sv": "Fri sparring 10 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "54": {
+        "id": "54",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shotei Uke (Jodan, Chudan, Gedan)",
+          "en": "Palm Heel Block (Upper, Middle, Lower Level)",
+          "sv": "Handflata-block (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "55": {
+        "id": "55",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Chudan Mawashi Geri (Haisoku, Chusoku)",
+          "en": "Middle Roundhouse Kick (Instep, Ball of Foot)",
+          "sv": "Mellan rundspark (insteg, fotboll)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "56": {
+        "id": "56",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Ushiro Geri (Chudan, Gedan)",
+          "en": "Back Kick (Middle, Lower Level)",
+          "sv": "Bakspark (mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "57": {
+        "id": "57",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Moro Ashi Dachi",
+          "en": "One Foot Forward Stance",
+          "sv": "En fot framställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "58": {
+        "id": "58",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shotei Uchi (Jodan, Chudan, Gedan)",
+          "en": "Palm Heel Strike (Upper, Middle, Lower Level)",
+          "sv": "Handflata-slag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "59": {
+        "id": "59",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Jodan Hiji Ate",
+          "en": "Upper Elbow Strike",
+          "sv": "Övre armbågeslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "60": {
+        "id": "60",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite",
+          "en": "Free Sparring 15 rounds x 2 minutes",
+          "sv": "Fri sparring 15 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "61": {
+        "id": "61",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Jodan Uke",
+          "en": "Knife-Hand Upper-Level Block",
+          "sv": "Knivhand övre-nivå block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "62": {
+        "id": "62",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Chudan Soto Uke",
+          "en": "Knife-Hand Outside Middle Block",
+          "sv": "Knivhand yttre mitt-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "63": {
+        "id": "63",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Chudan Uchi Uke",
+          "en": "Knife-Hand Inside Middle Block",
+          "sv": "Knivhand inre mitt-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "64": {
+        "id": "64",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Mae Gedan Barai",
+          "en": "Knife-Hand Forward Lower Sweep",
+          "sv": "Knivhand framåt nedre svep"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "65": {
+        "id": "65",
+        "kind": "Block",
+        "name": {
+          "romaji": "Mawashi Uke (Mae Shuto Mawashi Uke)",
+          "en": "Forward Knife-Hand Circular Block",
+          "sv": "Framåt knivhand cirkulärt block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "66": {
+        "id": "66",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Jodan Uchi Uke",
+          "en": "Knife-Hand Upper-Level Inside Block",
+          "sv": "Knivhand övre inre block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "67": {
+        "id": "67",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Jodan Yoko Geri",
+          "en": "Upper-Level Side Kick",
+          "sv": "Övre nivåets sidokick"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "68": {
+        "id": "68",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Jodan Mawashi Geri (Chusoku, Haisoku)",
+          "en": "Upper Roundhouse Kick (Ball of Foot, Instep)",
+          "sv": "Övre rundspark (fotboll, insteg)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "69": {
+        "id": "69",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Jodan Ushiro Geri",
+          "en": "Upper-Level Back Kick",
+          "sv": "Övre nivåets bakspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "70": {
+        "id": "70",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Heisoku Dachi",
+          "en": "Feet Together Stance",
+          "sv": "Fötter tillsammans ställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "71": {
+        "id": "71",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Heiko Dachi",
+          "en": "Parallel Stance",
+          "sv": "Parallellställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "72": {
+        "id": "72",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Uchi Hachiji Dachi",
+          "en": "Inward Open-Leg Stance",
+          "sv": "Inåtvänd öppen bensställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "73": {
+        "id": "73",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shuto Sakotsu Uchi",
+          "en": "Knife-Hand Collarbone Strike",
+          "sv": "Knivhand kollarbensslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "74": {
+        "id": "74",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shuto Yoko Ganmen Uchi",
+          "en": "Knife-Hand Side Face Strike",
+          "sv": "Knivhand sidofaceslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "75": {
+        "id": "75",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shuto Uchi Komi",
+          "en": "Knife-Hand Thrust Strike",
+          "sv": "Knivhand stöt-slag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "76": {
+        "id": "76",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shuto Hizo Uchi",
+          "en": "Knife-Hand Spleen Strike",
+          "sv": "Knivhand mjältslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "77": {
+        "id": "77",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Shuto Jodan Uchi Uchi",
+          "en": "Knife-Hand Upper-Level Inside Strike",
+          "sv": "Knivhand övre inre slag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "78": {
+        "id": "78",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite",
+          "en": "Free Sparring 20 rounds x 2 minutes",
+          "sv": "Fri sparring 20 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "79": {
+        "id": "79",
+        "kind": "Block",
+        "name": {
+          "romaji": "Shuto Juji Uke (Jodan, Gedan)",
+          "en": "Knife-Hand Cross Block (Upper, Lower Level)",
+          "sv": "Knivhand korsblock (övre, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "80": {
+        "id": "80",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Mae Kakato Geri (Jodan, Chudan, Gedan)",
+          "en": "Front Heel Kick (Upper, Middle, Lower Level)",
+          "sv": "Främre hälspark (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "81": {
+        "id": "81",
+        "kind": "Stand",
+        "name": {
+          "romaji": "Kake Dachi",
+          "en": "Hooked Stance",
+          "sv": "Krokställning"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "82": {
+        "id": "82",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Hiji Ate",
+          "en": "Elbow Strike",
+          "sv": "Armbågeslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "83": {
+        "id": "83",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Age Hiji Ate (Jodan, Chudan)",
+          "en": "Rising Elbow Strike (Upper, Middle Level)",
+          "sv": "Uppåtgående armbågeslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "84": {
+        "id": "84",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Ushiro Hiji Ate",
+          "en": "Rear Elbow Strike",
+          "sv": "Bakåtgående armbågeslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "85": {
+        "id": "85",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Oroshi Hiji Ate",
+          "en": "Descending Elbow Strike",
+          "sv": "Nedåtgående armbågeslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "86": {
+        "id": "86",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite (fri fighting) 10 ronder x 2 minuter",
+          "en": "Free Sparring 10 rounds x 2 minutes",
+          "sv": "Fri sparring 10 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "87": {
+        "id": "87",
+        "kind": "Block",
+        "name": {
+          "romaji": "Koken Uke (Jodan, Chudan, Gedan)",
+          "en": "Bent Wrist Block (Upper, Middle, Lower Level)",
+          "sv": "Böjd handledsblock (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "88": {
+        "id": "88",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Tobi Nidan Geri",
+          "en": "Jumping Double Kick",
+          "sv": "Hoppande dubbel spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "89": {
+        "id": "89",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Tobi Mae Geri",
+          "en": "Jumping Front Kick",
+          "sv": "Hoppande främre spark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "90": {
+        "id": "90",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Hira Ken Tsuki (Jodan, Chudan)",
+          "en": "Flat Fist Punch (Upper, Middle Level)",
+          "sv": "Platt näveslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "91": {
+        "id": "91",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Hira Ken Oroshi Uchi",
+          "en": "Flat Fist Descending Strike",
+          "sv": "Platt näveslag nedåt"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "92": {
+        "id": "92",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Haishu (Jodan, Chudan)",
+          "en": "Back Hand Strike (Upper, Middle Level)",
+          "sv": "Bakhandsslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "93": {
+        "id": "93",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Hira Ken Mawashi Uchi",
+          "en": "Flat Fist Roundhouse Strike",
+          "sv": "Platt näveslag rundspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "94": {
+        "id": "94",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Age Jodan Tsuki",
+          "en": "Rising Upper-Level Punch",
+          "sv": "Uppåtriktat övre näveslag"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "95": {
+        "id": "95",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Koken Uchi (Jodan, Chudan, Gedan)",
+          "en": "Bent Wrist Strike (Upper, Middle, Lower Level)",
+          "sv": "Böjd handledsslag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "96": {
+        "id": "96",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite (fri fighting) 15 ronder x 2 minuter",
+          "en": "Free Sparring 15 rounds x 2 minutes",
+          "sv": "Fri sparring 15 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "97": {
+        "id": "97",
+        "kind": "Block",
+        "name": {
+          "romaji": "Kake Uke",
+          "en": "Hooking Block",
+          "sv": "Krokslag-block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "98": {
+        "id": "98",
+        "kind": "Block",
+        "name": {
+          "romaji": "Chudan Haito Uchi Uke",
+          "en": "Middle Ridge Hand Inside Block",
+          "sv": "Mellan ridge hand inre block"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "99": {
+        "id": "99",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Jodan Uchi Haisoku Geri",
+          "en": "Upper-Level Inside Instep Kick",
+          "sv": "Övre nivåets inre instegsspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "100": {
+        "id": "100",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Oroshi Soto Kakato Geri",
+          "en": "Descending Outside Heel Kick",
+          "sv": "Nedåtgående yttre hälspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "101": {
+        "id": "101",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Oroshi Uchi Kakato Geri",
+          "en": "Descending Inside Heel Kick",
+          "sv": "Nedåtgående inre hälspark"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "102": {
+        "id": "102",
+        "kind": "Kick",
+        "name": {
+          "romaji": "Tobi Yoko Geri",
+          "en": "Jumping Side Kick",
+          "sv": "Hoppande sidokick"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "103": {
+        "id": "103",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Ryuto Ken Tsuki (Jodan, Chudan)",
+          "en": "Dragon Head Fist Punch (Upper, Middle Level)",
+          "sv": "Drakhuvud näveslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "104": {
+        "id": "104",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Naka Yubi Ippon Ken Tsuki (Jodan, Chudan)",
+          "en": "Middle Finger One Knuckle Punch (Upper, Middle Level)",
+          "sv": "Mellanfinger en knogleslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "105": {
+        "id": "105",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Oya Yubi Ken Uchi (Jodan, Chudan, Gedan)",
+          "en": "Thumb Fist Strike (Upper, Middle, Lower Level)",
+          "sv": "Tumme näveslag (övre, mellersta, nedre nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "106": {
+        "id": "106",
+        "kind": "Strike",
+        "name": {
+          "romaji": "Hitosashi Yubi Ippon Ken Tsuki (Jodan, Chudan)",
+          "en": "Index Finger One Knuckle Punch (Upper, Middle Level)",
+          "sv": "Pekfinger en knogleslag (övre, mellersta nivå)"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "107": {
+        "id": "107",
+        "kind": "Fighting",
+        "name": {
+          "romaji": "Jiyu Kumite (fri fighting) 20 ronder x 2 minuter",
+          "en": "Free Sparring 20 rounds x 2 minutes",
+          "sv": "Fri sparring 20 ronder x 2 minuter"
+        },
+        "mediaIds": [],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      }
+    },
+    "katas": {
+      "1": {
+        "id": "1",
+        "name": {
+          "romaji": "Taikyoku Sono Ichi",
+          "ja": "太極その一",
+          "en": "First Cause/Grand Ultimate 1",
+          "sv": "Första Orsak/Det Stora Ultimata 1"
+        },
+        "detailedDescription": {
+          "en": "Basic kata focusing on fundamental movements and stances."
+        },
+        "mediaIds": [
+          "media_yt_5Q4nn8VeOCE"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "2": {
+        "id": "2",
+        "name": {
+          "romaji": "Taikyoku Sono Ni",
+          "ja": "太極その二",
+          "en": "First Cause/Grand Ultimate 2",
+          "sv": "Första Orsak/Det Stora Ultimata 2"
+        },
+        "detailedDescription": {
+          "en": "Builds upon Taikyoku Sono Ichi with increased complexity."
+        },
+        "mediaIds": [
+          "media_yt_uZK9TXhlJmA"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "3": {
+        "id": "3",
+        "name": {
+          "romaji": "Taikyoku Sono San",
+          "ja": "太極その三",
+          "en": "First Cause/Grand Ultimate 3",
+          "sv": "Första Orsak/Det Stora Ultimata 3"
+        },
+        "detailedDescription": {
+          "en": "Increased complexity with more dynamic movements."
+        },
+        "mediaIds": [
+          "media_yt_dlcuesWb610"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "4": {
+        "id": "4",
+        "name": {
+          "romaji": "Pinan Sono Ichi",
+          "ja": "平安その一",
+          "en": "Peaceful Mind 1",
+          "sv": "Fridfullt Sinne 1"
+        },
+        "detailedDescription": {
+          "en": "Focuses on basic techniques and movements."
+        },
+        "mediaIds": [
+          "media_yt_7H0cOOeEm10"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "5": {
+        "id": "5",
+        "name": {
+          "romaji": "Pinan Sono Ni",
+          "ja": "平安その二",
+          "en": "Peaceful Mind 2",
+          "sv": "Fridfullt Sinne 2"
+        },
+        "detailedDescription": {
+          "en": "Introduces more intermediate techniques and stances."
+        },
+        "mediaIds": [
+          "media_yt_RZjPbhuAnuo"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "6": {
+        "id": "6",
+        "name": {
+          "romaji": "Pinan Sono San",
+          "ja": "平安その三",
+          "en": "Peaceful Mind 3",
+          "sv": "Fridfullt Sinne 3"
+        },
+        "detailedDescription": {
+          "en": "Continues to build complexity from the previous Pinan katas."
+        },
+        "mediaIds": [
+          "media_yt_cVue7gmbD_c"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "7": {
+        "id": "7",
+        "name": {
+          "romaji": "Sanchin",
+          "ja": "三戦",
+          "en": "Three Battles",
+          "sv": "Tre Strider"
+        },
+        "detailedDescription": {
+          "en": "Focuses on breathing, posture, and strength with isometric tension."
+        },
+        "mediaIds": [
+          "media_yt_rovuL25INEs"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "8": {
+        "id": "8",
+        "name": {
+          "romaji": "Sokugi Taikyoku Sono Ichi",
+          "ja": "足技太極その一",
+          "en": "First Basic Kicking Form",
+          "sv": "Första Grundläggande Sparkform"
+        },
+        "detailedDescription": {
+          "en": "Focuses on basic kicks and their application in sequences."
+        },
+        "mediaIds": [
+          "media_yt_tesJTD8_VWk"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "9": {
+        "id": "9",
+        "name": {
+          "romaji": "Sokugi Taikyoku Sono Ni",
+          "ja": "足技太極その二",
+          "en": "Second Basic Kicking Form",
+          "sv": "Andra Grundläggande Sparkform"
+        },
+        "detailedDescription": {
+          "en": "Introduces additional kicks and emphasizes agility."
+        },
+        "mediaIds": [
+          "media_yt_HIamTik0ihk"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "10": {
+        "id": "10",
+        "name": {
+          "romaji": "Sokugi Taikyoku Sono San",
+          "ja": "足技太極その三",
+          "en": "Third Basic Kicking Form",
+          "sv": "Tredje Grundläggande Sparkform"
+        },
+        "detailedDescription": {
+          "en": "Focuses on combinations of various kicks with precision."
+        },
+        "mediaIds": [
+          "media_yt_FBy9C36khkQ"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "11": {
+        "id": "11",
+        "name": {
+          "romaji": "Pinan Sono Yon",
+          "ja": "平安その四",
+          "en": "Peaceful Mind 4",
+          "sv": "Fridfullt Sinne 4"
+        },
+        "detailedDescription": {
+          "en": "Contains more advanced movements and combinations."
+        },
+        "mediaIds": [
+          "media_yt_XOcecjcYEcg"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "12": {
+        "id": "12",
+        "name": {
+          "romaji": "Pinan Sono Go",
+          "ja": "平安その五",
+          "en": "Peaceful Mind 5",
+          "sv": "Fridfullt Sinne 5"
+        },
+        "detailedDescription": {
+          "en": "The most complex of the Pinan katas, emphasizing agility and power."
+        },
+        "mediaIds": [
+          "media_yt_-2LFjcWakuI"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "13": {
+        "id": "13",
+        "name": {
+          "romaji": "Gekisai Dai",
+          "ja": "撃砕大",
+          "en": "Attack and Smash",
+          "sv": "Anfall och Krossa"
+        },
+        "detailedDescription": {
+          "en": "Emphasizes powerful, smashing techniques and strong stances."
+        },
+        "mediaIds": [
+          "media_yt_5JV8-to2BO0"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "14": {
+        "id": "14",
+        "name": {
+          "romaji": "Yantsu",
+          "ja": "安三",
+          "en": "Keep Pure",
+          "sv": "Håll Ren"
+        },
+        "detailedDescription": {
+          "en": "Focuses on precision, control, and defensive techniques."
+        },
+        "mediaIds": [
+          "media_yt_2lsDALXMUz0"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "15": {
+        "id": "15",
+        "name": {
+          "romaji": "Tsuki No Kata",
+          "ja": "突きの型",
+          "en": "Punching Form",
+          "sv": "Slagform"
+        },
+        "detailedDescription": {
+          "en": "Dedicated to hand strikes and basic blocks."
+        },
+        "mediaIds": [
+          "media_yt_jDwHxDIRKNI"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "16": {
+        "id": "16",
+        "name": {
+          "romaji": "Saiha or Saifa",
+          "ja": "砕破",
+          "en": "Maximum Destruction",
+          "sv": "Maximal Förstörelse"
+        },
+        "detailedDescription": {
+          "en": "Involves breaking through the opponent's defense with powerful strikes."
+        },
+        "mediaIds": [
+          "media_yt_6z2xFl3sGKc"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "17": {
+        "id": "17",
+        "name": {
+          "romaji": "Kanku Dai or Kanku",
+          "ja": "観空大",
+          "en": "Viewing the Sky",
+          "sv": "Betrakta Himlen"
+        },
+        "detailedDescription": {
+          "en": "Long and complex kata focusing on various techniques and fluid movements."
+        },
+        "mediaIds": [
+          "media_yt_GSEEDN7J6Xc"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "18": {
+        "id": "18",
+        "name": {
+          "romaji": "Gekisai Sho",
+          "ja": "撃砕小",
+          "en": "Attack and Smash Minor",
+          "sv": "Anfall och Krossa Liten"
+        },
+        "detailedDescription": {
+          "en": "Similar to Gekisai Dai but with small variations in techniques and timing."
+        },
+        "mediaIds": [
+          "media_yt_HHhE4d1Vn4Q"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "19": {
+        "id": "19",
+        "name": {
+          "romaji": "Seienchin",
+          "ja": "制引戦",
+          "en": "Control in Battle",
+          "sv": "Kontroll i Strid"
+        },
+        "detailedDescription": {
+          "en": "Focuses on strong stances, body conditioning, and endurance."
+        },
+        "mediaIds": [
+          "media_yt_YifGmQpBXgY"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "20": {
+        "id": "20",
+        "name": {
+          "romaji": "Sushiho",
+          "ja": "五十四歩",
+          "en": "54 Steps",
+          "sv": "54 Steg"
+        },
+        "detailedDescription": {
+          "en": "Emphasizes quick movements, agility, and strategic techniques."
+        },
+        "mediaIds": [
+          "media_yt_S2KjEHxyfQY"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "21": {
+        "id": "21",
+        "name": {
+          "romaji": "Garyu",
+          "ja": "臥竜",
+          "en": "Reclining Dragon",
+          "sv": "Liggande Drake"
+        },
+        "detailedDescription": {
+          "en": "Depicts the movements of a reclining dragon, focusing on agility and power."
+        },
+        "mediaIds": [
+          "media_yt_pql4QvFxSo8"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "22": {
+        "id": "22",
+        "name": {
+          "romaji": "Seipai",
+          "ja": "十八手",
+          "en": "18 Steps",
+          "sv": "18 Steg"
+        },
+        "detailedDescription": {
+          "en": "Contains 18 steps, emphasizing a mix of hard and soft techniques."
+        },
+        "mediaIds": [
+          "media_yt_zQ-6gj0CY9g"
+        ],
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      }
+    },
+    "gradingSystems": {
+      "sys_kyokushin_main": {
+        "id": "sys_kyokushin_main",
+        "name": {
+          "en": "Kyokushin Interface"
+        },
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      }
+    },
+    "grades": {
+      "1": {
+        "id": "1",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 11,
+        "name": {
+          "en": "Mukyu"
+        },
+        "beltColor": "white",
+        "sortOrder": 9,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "2": {
+        "id": "2",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 10,
+        "name": {
+          "en": "10th Kyu"
+        },
+        "beltColor": "orange",
+        "sortOrder": 10,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "3": {
+        "id": "3",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 9,
+        "name": {
+          "en": "9th Kyu"
+        },
+        "beltColor": "orange",
+        "sortOrder": 11,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "4": {
+        "id": "4",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 8,
+        "name": {
+          "en": "8th Kyu"
+        },
+        "beltColor": "blue",
+        "sortOrder": 12,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "5": {
+        "id": "5",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 7,
+        "name": {
+          "en": "7th Kyu"
+        },
+        "beltColor": "blue",
+        "sortOrder": 13,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "6": {
+        "id": "6",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 6,
+        "name": {
+          "en": "6th Kyu"
+        },
+        "beltColor": "yellow",
+        "sortOrder": 14,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "7": {
+        "id": "7",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 5,
+        "name": {
+          "en": "5th Kyu"
+        },
+        "beltColor": "yellow",
+        "sortOrder": 15,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "8": {
+        "id": "8",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 4,
+        "name": {
+          "en": "4th Kyu"
+        },
+        "beltColor": "green",
+        "sortOrder": 16,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "9": {
+        "id": "9",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 3,
+        "name": {
+          "en": "3rd Kyu"
+        },
+        "beltColor": "green",
+        "sortOrder": 17,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "10": {
+        "id": "10",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 2,
+        "name": {
+          "en": "2nd Kyu"
+        },
+        "beltColor": "brown",
+        "sortOrder": 18,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "11": {
+        "id": "11",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Kyu",
+        "number": 1,
+        "name": {
+          "en": "1st Kyu"
+        },
+        "beltColor": "brown",
+        "sortOrder": 19,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "12": {
+        "id": "12",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Dan",
+        "number": 1,
+        "name": {
+          "en": "1st Dan"
+        },
+        "beltColor": "black",
+        "sortOrder": 101,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "13": {
+        "id": "13",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Dan",
+        "number": 2,
+        "name": {
+          "en": "2nd Dan"
+        },
+        "beltColor": "black",
+        "sortOrder": 102,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "14": {
+        "id": "14",
+        "gradingSystemId": "sys_kyokushin_main",
+        "kind": "Dan",
+        "number": 3,
+        "name": {
+          "en": "3rd Dan"
+        },
+        "beltColor": "black",
+        "sortOrder": 103,
+        "status": "published",
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      }
+    },
+    "media": {
+      "media_yt_5Q4nn8VeOCE": {
+        "id": "media_yt_5Q4nn8VeOCE",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=5Q4nn8VeOCE",
+        "title": {
+          "romaji": "Video for Taikyoku Sono Ichi"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_uZK9TXhlJmA": {
+        "id": "media_yt_uZK9TXhlJmA",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=uZK9TXhlJmA",
+        "title": {
+          "romaji": "Video for Taikyoku Sono Ni"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_dlcuesWb610": {
+        "id": "media_yt_dlcuesWb610",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=dlcuesWb610",
+        "title": {
+          "romaji": "Video for Taikyoku Sono San"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_7H0cOOeEm10": {
+        "id": "media_yt_7H0cOOeEm10",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=7H0cOOeEm10",
+        "title": {
+          "romaji": "Video for Pinan Sono Ichi"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_RZjPbhuAnuo": {
+        "id": "media_yt_RZjPbhuAnuo",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=RZjPbhuAnuo",
+        "title": {
+          "romaji": "Video for Pinan Sono Ni"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_cVue7gmbD_c": {
+        "id": "media_yt_cVue7gmbD_c",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=cVue7gmbD_c",
+        "title": {
+          "romaji": "Video for Pinan Sono San"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_rovuL25INEs": {
+        "id": "media_yt_rovuL25INEs",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=rovuL25INEs",
+        "title": {
+          "romaji": "Video for Sanchin"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_tesJTD8_VWk": {
+        "id": "media_yt_tesJTD8_VWk",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=tesJTD8_VWk",
+        "title": {
+          "romaji": "Video for Sokugi Taikyoku Sono Ichi"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_HIamTik0ihk": {
+        "id": "media_yt_HIamTik0ihk",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=HIamTik0ihk",
+        "title": {
+          "romaji": "Video for Sokugi Taikyoku Sono Ni"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_FBy9C36khkQ": {
+        "id": "media_yt_FBy9C36khkQ",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=FBy9C36khkQ",
+        "title": {
+          "romaji": "Video for Sokugi Taikyoku Sono San"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_XOcecjcYEcg": {
+        "id": "media_yt_XOcecjcYEcg",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=XOcecjcYEcg",
+        "title": {
+          "romaji": "Video for Pinan Sono Yon"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_-2LFjcWakuI": {
+        "id": "media_yt_-2LFjcWakuI",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=-2LFjcWakuI",
+        "title": {
+          "romaji": "Video for Pinan Sono Go"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_5JV8-to2BO0": {
+        "id": "media_yt_5JV8-to2BO0",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=5JV8-to2BO0",
+        "title": {
+          "romaji": "Video for Gekisai Dai"
+        },
+        "createdAt": "2025-12-17T22:47:54.234Z",
+        "updatedAt": "2025-12-17T22:47:54.234Z"
+      },
+      "media_yt_2lsDALXMUz0": {
+        "id": "media_yt_2lsDALXMUz0",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=2lsDALXMUz0",
+        "title": {
+          "romaji": "Video for Yantsu"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_jDwHxDIRKNI": {
+        "id": "media_yt_jDwHxDIRKNI",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=jDwHxDIRKNI",
+        "title": {
+          "romaji": "Video for Tsuki No Kata"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_6z2xFl3sGKc": {
+        "id": "media_yt_6z2xFl3sGKc",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=6z2xFl3sGKc",
+        "title": {
+          "romaji": "Video for Saiha or Saifa"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_GSEEDN7J6Xc": {
+        "id": "media_yt_GSEEDN7J6Xc",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=GSEEDN7J6Xc",
+        "title": {
+          "romaji": "Video for Kanku Dai or Kanku"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_HHhE4d1Vn4Q": {
+        "id": "media_yt_HHhE4d1Vn4Q",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=HHhE4d1Vn4Q",
+        "title": {
+          "romaji": "Video for Gekisai Sho"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_YifGmQpBXgY": {
+        "id": "media_yt_YifGmQpBXgY",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=YifGmQpBXgY",
+        "title": {
+          "romaji": "Video for Seienchin"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_S2KjEHxyfQY": {
+        "id": "media_yt_S2KjEHxyfQY",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=S2KjEHxyfQY",
+        "title": {
+          "romaji": "Video for Sushiho"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_pql4QvFxSo8": {
+        "id": "media_yt_pql4QvFxSo8",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=pql4QvFxSo8",
+        "title": {
+          "romaji": "Video for Garyu"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      },
+      "media_yt_zQ-6gj0CY9g": {
+        "id": "media_yt_zQ-6gj0CY9g",
+        "type": "youtube",
+        "url": "https://www.youtube.com/watch?v=zQ-6gj0CY9g",
+        "title": {
+          "romaji": "Video for Seipai"
+        },
+        "createdAt": "2025-12-17T22:47:54.235Z",
+        "updatedAt": "2025-12-17T22:47:54.235Z"
+      }
+    },
+    "sources": {}
+  },
+  "curriculum": {
+    "1": {
+      "techIds": [],
+      "kataIds": []
+    },
+    "2": {
+      "techIds": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      "kataIds": []
+    },
+    "3": {
+      "techIds": [
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20"
+      ],
+      "kataIds": [
+        "1",
+        "2"
+      ]
+    },
+    "4": {
+      "techIds": [
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27"
+      ],
+      "kataIds": [
+        "3"
+      ]
+    },
+    "5": {
+      "techIds": [
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41"
+      ],
+      "kataIds": [
+        "4"
+      ]
+    },
+    "6": {
+      "techIds": [
+        "42",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51",
+        "52",
+        "53"
+      ],
+      "kataIds": [
+        "5"
+      ]
+    },
+    "7": {
+      "techIds": [
+        "54",
+        "55",
+        "56",
+        "57",
+        "58",
+        "59",
+        "60"
+      ],
+      "kataIds": [
+        "6"
+      ]
+    },
+    "8": {
+      "techIds": [
+        "61",
+        "62",
+        "63",
+        "64",
+        "65",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70",
+        "71",
+        "72",
+        "73",
+        "74",
+        "75",
+        "76",
+        "77",
+        "78"
+      ],
+      "kataIds": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    "9": {
+      "techIds": [
+        "79",
+        "80",
+        "81",
+        "82",
+        "83",
+        "84",
+        "85",
+        "86"
+      ],
+      "kataIds": [
+        "11"
+      ]
+    },
+    "10": {
+      "techIds": [
+        "87",
+        "88",
+        "89",
+        "90",
+        "91",
+        "92",
+        "93",
+        "94",
+        "95",
+        "96"
+      ],
+      "kataIds": [
+        "12",
+        "13"
+      ]
+    },
+    "11": {
+      "techIds": [
+        "97",
+        "98",
+        "99",
+        "100",
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "107"
+      ],
+      "kataIds": [
+        "14",
+        "15"
+      ]
+    },
+    "12": {
+      "techIds": [],
+      "kataIds": [
+        "16"
+      ]
+    },
+    "13": {
+      "techIds": [],
+      "kataIds": [
+        "17",
+        "18",
+        "19"
+      ]
+    },
+    "14": {
+      "techIds": [],
+      "kataIds": [
+        "20",
+        "21",
+        "22"
+      ]
+    }
+  }
+}

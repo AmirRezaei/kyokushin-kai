@@ -1,17 +1,14 @@
-// HEADER-START
-// * Path: ./src/app/WordQuest/wordPlay/LevelSelector.tsx
-// HEADER-END
-
-'use client';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {Box, MenuItem, Select, SelectChangeEvent, Typography} from '@mui/material';
 import React from 'react';
 
 import KarateBelt from '@/components/UI/KarateBelt';
-import {Grade} from '@/data/Grade';
+// import {Grade} from '@/data/Grade'; // Removed
+import { GradeWithContent } from '../../../../data/repo/KyokushinRepository';
+import { getFormattedGradeName, getBeltName, getLevelNumber, getStripeNumber } from '../../../../data/repo/gradeHelpers';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface LevelSelectorProps {
-   grades: Grade[];
+   grades: GradeWithContent[];
    selectedLevel: number;
    handleLevelChange: (event: SelectChangeEvent<number>) => void;
    knownTechniqueIds: Set<string>;
@@ -25,27 +22,38 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({grades, selectedLevel, han
             value={selectedLevel}
             onChange={handleLevelChange}
             renderValue={value => {
-               const grade = grades.find(g => g.levelNumber === value)!;
+               const grade = grades.find(g => getLevelNumber(g) === value);
+               if (!grade) return null;
+               
                const isCompleted = grade.techniques.every(tech => knownTechniqueIds.has(tech.id));
+               const rankName = getFormattedGradeName(grade);
+               const beltName = getBeltName(grade);
+               const stripes = getStripeNumber(grade);
+               
                return (
                   <Box display='flex' alignItems='center' width='100%'>
-                     <KarateBelt sx={{width: '3em', height: '1em', mr: '1em'}} color={grade.beltColor} thickness={'0.3em'} borderWidth='1px' stripes={grade.stripeNumber} borderRadius='1' />
+                     <KarateBelt sx={{width: '3em', height: '1em', mr: '1em'}} color={grade.beltColor} thickness={'0.3em'} borderWidth='1px' stripes={stripes} borderRadius='1' />
 
-                     <Typography>{`${grade.rankName} - ${grade.beltName}`}</Typography>
+                     <Typography>{`${rankName} - ${beltName}`}</Typography>
                      {isCompleted && <CheckCircleIcon color='success' sx={{ml: 'auto'}} />}
                   </Box>
                );
             }}>
             {grades
-               .filter(x => x.hasTechniques)
+               .filter(x => x.techniques && x.techniques.length > 0)
                .map(grade => {
                   const isCompleted = grade.techniques.every(tech => knownTechniqueIds.has(tech.id));
+                  const rankName = getFormattedGradeName(grade);
+                  const beltName = getBeltName(grade);
+                  const stripes = getStripeNumber(grade);
+                  const levelNumber = getLevelNumber(grade);
+                  
                   return (
-                     <MenuItem key={grade.levelNumber} value={grade.levelNumber}>
+                     <MenuItem key={levelNumber} value={levelNumber}>
                         <Box display='flex' alignItems='center' width='100%'>
-                           <KarateBelt sx={{width: '3em', height: '1em', mr: '1em'}} color={grade.beltColor} thickness={'0.3em'} borderWidth='1px' stripes={grade.stripeNumber} borderRadius='1' />
+                           <KarateBelt sx={{width: '3em', height: '1em', mr: '1em'}} color={grade.beltColor} thickness={'0.3em'} borderWidth='1px' stripes={stripes} borderRadius='1' />
 
-                           <Typography>{`${grade.rankName} - ${grade.beltName}`}</Typography>
+                           <Typography>{`${rankName} - ${beltName}`}</Typography>
                            {isCompleted && <CheckCircleIcon color='success' sx={{ml: 'auto'}} />}
                         </Box>
                      </MenuItem>

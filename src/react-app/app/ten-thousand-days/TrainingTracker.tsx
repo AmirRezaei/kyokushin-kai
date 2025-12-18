@@ -4,19 +4,31 @@ import {Box, Button, Paper, Slider, Tooltip, Typography} from '@mui/material';
 import {CheckCircle2, Footprints, Info, Medal, Trophy} from 'lucide-react';
 import React, {useEffect, useMemo,useState} from 'react';
 
-import {gradeData} from '@/data/gradeData';
 import {SettingsManager} from '@/helper/SettingsManager';
 import type {GradeHistoryEntry} from '@/types/settings';
+import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
+import { getFormattedGradeName, getBeltColorHex, getBeltName } from '../../../data/repo/gradeHelpers';
 
 import {KYOKUSHIN_SKK_ADULT_RANK_REQUIREMENTS} from './kyokushinRankRequirements';
 
 export const TrainingTracker: React.FC = () => {
-    const [daysTrained, setDaysTrained] = useState<number>(0);
-    const [lastCheckIn, setLastCheckIn] = useState<string | null>(null);
-    const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(false);
-    const [timelineRange, setTimelineRange] = useState<number>(3000); // Start with 3000 days
-    const [history, setHistory] = useState<GradeHistoryEntry[]>([]);
+    const [daysTrained, setDaysTrained] = useState<number>(() => SettingsManager.getTrainedDays());
+    const [history, setHistory] = useState<GradeHistoryEntry[]>(() => SettingsManager.getGradeHistory());
+    
+    // Initialize check-in state
+    const [lastCheckIn, setLastCheckIn] = useState<string | null>(() => SettingsManager.getLastTrainingDate());
+    const [hasCheckedInToday, setHasCheckedInToday] = useState<boolean>(() => {
+         const storedDate = SettingsManager.getLastTrainingDate();
+         if (storedDate) {
+             const today = new Date().toDateString();
+             return storedDate === today;
+         }
+         return false;
+    });
 
+    const [timelineRange, setTimelineRange] = useState<number>(3000); // Start with 3000 days
+    
+    const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
 
     // Milestones
     const BEGINNER_MILESTONE = 1000;
@@ -85,34 +97,19 @@ export const TrainingTracker: React.FC = () => {
 
                 if (positionDay < 0) return null;
 
-                const grade = gradeData.find(g => g.id === entry.gradeId);
+                const grade = grades.find(g => g.id === entry.gradeId);
                 if (!grade) return null;
 
                 return {
                     day: positionDay,
-                    label: `${grade.rankName}`,
+                    label: getFormattedGradeName(grade),
                     date: entry.date,
-                    color: grade.beltColor,
-                    beltName: grade.beltName
+                    color: getBeltColorHex(grade.beltColor),
+                    beltName: getBeltName(grade)
                 };
             })
             .filter((item): item is NonNullable<typeof item> => item !== null);
-    }, [history, daysTrained]);
-
-
-   useEffect(() => {
-      setDaysTrained(SettingsManager.getTrainedDays());
-      setHistory(SettingsManager.getGradeHistory());
-
-      const storedDate = SettingsManager.getLastTrainingDate();
-      if (storedDate) {
-         setLastCheckIn(storedDate);
-         const today = new Date().toDateString();
-         if (storedDate === today) {
-            setHasCheckedInToday(true);
-         }
-      }
-   }, []);
+    }, [history, daysTrained, grades]);
 
    const handleCheckIn = () => {
       const today = new Date().toDateString();

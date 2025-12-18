@@ -1,14 +1,12 @@
-// HEADER-START
-// * Path: ./src/app/Technique/TechniquePage.tsx
-// HEADER-END
 
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import UploadIcon from '@mui/icons-material/Upload';
 import {Box, Button, Chip, InputAdornment, Stack, TextField} from '@mui/material';
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 
 import {getLocalStorageItem, setLocalStorageItem} from '@/components/utils/localStorageUtils';
+import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
 
 import KarateTimeline from './KarateTimeline';
 
@@ -16,6 +14,16 @@ const TechniquePage: React.FC = () => {
      const [searchTerm, setSearchTerm] = useState('');
      const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
      const [selectedType, setSelectedType] = useState<string | null>(null);
+
+     const [grades, setGrades] = useState<GradeWithContent[]>([]);
+     const [loading, setLoading] = useState(true);
+
+     useEffect(() => {
+        // Fetch data from repository
+        const data = KyokushinRepository.getCurriculumGrades();
+        setGrades(data);
+        setLoading(false);
+     }, []);
 
      React.useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -78,11 +86,13 @@ const TechniquePage: React.FC = () => {
 
     return (
        <Box>
+          {/* Export/Import Buttons */}
           <Stack direction='row' spacing={1} sx={{mt: 2, mb: 2, ml: 2}}>
              <Button startIcon={<DownloadIcon />} onClick={handleExport} size='small'>Export</Button>
              <Button startIcon={<UploadIcon />} onClick={() => document.getElementById('import-file')?.click()} size='small'>Import</Button>
              <input id="import-file" type="file" accept=".json" onChange={handleImport} style={{display: 'none'}} />
           </Stack>
+          
           <Box sx={{ mt: 2, mb: 2, ml: 2 }}>
              <TextField
                 fullWidth
@@ -122,7 +132,20 @@ const TechniquePage: React.FC = () => {
                 ))}
              </Stack>
           </Box>
-          <KarateTimeline searchTerm={debouncedSearchTerm} selectedType={selectedType} ratings={ratings} setRatings={setRatings} notes={notes} setNotes={setNotes} tags={tags} setTags={setTags} youtubeLinks={youtubeLinks} setYoutubeLinks={setYoutubeLinks} />
+          <KarateTimeline 
+             grades={grades} 
+             loading={loading}
+             searchTerm={debouncedSearchTerm} 
+             selectedType={selectedType} 
+             ratings={ratings} 
+             setRatings={setRatings} 
+             notes={notes} 
+             setNotes={setNotes} 
+             tags={tags} 
+             setTags={setTags} 
+             youtubeLinks={youtubeLinks} 
+             setYoutubeLinks={setYoutubeLinks} 
+          />
        </Box>
     );
 };

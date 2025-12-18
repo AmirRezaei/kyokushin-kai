@@ -26,16 +26,17 @@ import {
    MenuItem,
    Paper,
    Select,
-   SelectChangeEvent,
    TextField,
    Typography,
 } from '@mui/material';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 
 // import {getLocalStorageItem, setLocalStorageItem} from '@/components/utils/localStorageUtils'; // Removed as we use SettingsManager
 
-import {gradeData} from '@/data/gradeData';
-import {Grade} from '@/data/Grade';
+// import {gradeData} from '@/data/gradeData'; // Removed
+// import {Grade} from '@/data/Grade'; // Removed
+import { KyokushinRepository } from '../../data/repo/KyokushinRepository';
+import { getBeltColorHex, getFormattedGradeName, getStripeNumber } from '../../data/repo/gradeHelpers';
 
 
 import {SettingsManager} from '@/helper/SettingsManager';
@@ -49,20 +50,16 @@ import KarateBelt from './UI/KarateBelt';
 import PersistentSwitch from './UI/PersistentSwitch';
 
 const Settings: React.FC = () => {
-   const [history, setHistory] = useState<GradeHistoryEntry[]>([]);
+   const [history, setHistory] = useState<GradeHistoryEntry[]>(() => SettingsManager.getGradeHistory());
    const [openAddDialog, setOpenAddDialog] = useState(false);
    const [newGradeDate, setNewGradeDate] = useState(new Date().toISOString().split('T')[0]);
    const [newGradeId, setNewGradeId] = useState('1');
-   const [trainedDaysInput, setTrainedDaysInput] = useState<string>('0');
+   const [trainedDaysInput, setTrainedDaysInput] = useState<string>(() => SettingsManager.getTrainedDays().toString());
 
 
    // Initialize data
-   useEffect(() => {
-      setHistory(SettingsManager.getGradeHistory());
+   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
 
-      const savedTrainedDays = SettingsManager.getTrainedDays(); // Use SettingsManager
-      setTrainedDaysInput(savedTrainedDays.toString());
-   }, []);
 
    // Derived current grade
    const currentGradeId = useMemo(() => {
@@ -73,8 +70,8 @@ const Settings: React.FC = () => {
 
     // Find the current grade object
    const currentGradeObj = useMemo(() => {
-       return gradeData.find(g => g.id === currentGradeId);
-   }, [currentGradeId]);
+       return grades.find(g => g.id === currentGradeId);
+   }, [currentGradeId, grades]);
 
    const handleAddGrade = () => {
        SettingsManager.addGradeHistoryEntry(newGradeDate, newGradeId);
@@ -109,11 +106,11 @@ const Settings: React.FC = () => {
 
    const sortedHistory = useMemo(() => {
       return [...history].sort((a, b) => {
-         const indexA = gradeData.findIndex(g => g.id === a.gradeId);
-         const indexB = gradeData.findIndex(g => g.id === b.gradeId);
+         const indexA = grades.findIndex(g => g.id === a.gradeId);
+         const indexB = grades.findIndex(g => g.id === b.gradeId);
          return indexB - indexA;
       });
-   }, [history]);
+   }, [history, grades]);
 
    return (
       <Paper
@@ -161,12 +158,12 @@ const Settings: React.FC = () => {
                                     height: {xs: '1em', sm: '1.0em'},
                                     mr: 1,
                                  }}
-                                 color={currentGradeObj.beltColor}
+                                 color={getBeltColorHex(currentGradeObj.beltColor)}
                                  thickness={5}
-                                 stripes={currentGradeObj.stripeNumber}
+                                 stripes={getStripeNumber(currentGradeObj)}
                                  borderRadius='10%'
                               />
-                              <Typography>{`${currentGradeObj.rankName} (${currentGradeObj.beltName})`}</Typography>
+                              <Typography>{getFormattedGradeName(currentGradeObj)}</Typography>
                           </Box>
                       )}
                   </Box>
@@ -177,7 +174,7 @@ const Settings: React.FC = () => {
 
                <List dense>
                    {sortedHistory.map((entry, index) => {
-                       const grade = gradeData.find(g => g.id === entry.gradeId);
+                       const grade = grades.find(g => g.id === entry.gradeId);
                        if (!grade) return null;
                        return (
                            <ListItem key={index} divider>
@@ -187,14 +184,14 @@ const Settings: React.FC = () => {
                                         width: '2em',
                                         height: '1em',
                                      }}
-                                     color={grade.beltColor}
+                                     color={getBeltColorHex(grade.beltColor)}
                                      thickness={4}
-                                     stripes={grade.stripeNumber}
+                                     stripes={getStripeNumber(grade)}
                                      borderRadius='10%'
                                   />
                                </Box>
                                <ListItemText
-                                   primary={`${grade.rankName} (${grade.beltName})`}
+                                   primary={getFormattedGradeName(grade)}
                                    secondary={`Registered: ${entry.date}`}
                                />
                                <ListItemSecondaryAction>
@@ -235,9 +232,9 @@ const Settings: React.FC = () => {
                             onChange={(e) => setNewGradeId(e.target.value)}
                             label='Grade'
                         >
-                           {gradeData
+                           {grades
                               .filter(grade => !history.some(h => h.gradeId === grade.id))
-                              .map((grade: Grade) => (
+                              .map((grade) => (
                               <MenuItem key={grade.id} value={grade.id}>
                                  <Box display='flex' alignItems='center'>
                                     <KarateBelt
@@ -246,12 +243,12 @@ const Settings: React.FC = () => {
                                           height: '1em',
                                           mr: 2,
                                        }}
-                                       color={grade.beltColor}
+                                       color={getBeltColorHex(grade.beltColor)}
                                        thickness={5}
-                                       stripes={grade.stripeNumber}
+                                       stripes={getStripeNumber(grade)}
                                        borderRadius='10%'
                                     />
-                                    {`${grade.rankName} (${grade.beltName})`}
+                                    {getFormattedGradeName(grade)}
                                  </Box>
                               </MenuItem>
                            ))}
