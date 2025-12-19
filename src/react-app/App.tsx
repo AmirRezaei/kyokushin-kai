@@ -1,11 +1,11 @@
 // File: ./src/App.tsx
 
-import {AppBar, Avatar, Box, Checkbox, IconButton, ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography, useTheme} from '@mui/material';
-import {AccountCircle, Language as LanguageIcon, ChevronRight} from '@mui/icons-material';
+import {AppBar, Avatar, Box, IconButton, Menu, MenuItem, Toolbar, Tooltip, Typography, useTheme} from '@mui/material';
+import {AccountCircle} from '@mui/icons-material';
 import React, {useState} from 'react';
 import {Route, Routes, useNavigate} from 'react-router-dom';
 import {SnackbarProvider, useSnackbar} from './components/context/SnackbarContext';
-import {AuthProvider, useAuth} from './components/context/AuthContext';
+import {useAuth} from './components/context/AuthContext';
 
 import About from './About';
 import TrainingManagerPage from './app/TrainingManager/TrainingManagerPage';
@@ -30,6 +30,7 @@ import DarkModeToggle from './components/UI/DarkModeToggle';
 import LanguageSelector from './components/UI/LanguageSelector';
 import Home from './Home';
 import MottoPage from './app/motto/MottoPage';
+import Footer from './components/Footer';
 
 function AppContent() {
    const theme = useTheme();
@@ -207,7 +208,8 @@ function AppContent() {
                <Route path='/motto-explorer' element={<MottoPage />} />
                <Route path='/technique' element={<ProtectedRoute><TechniquePage /></ProtectedRoute>} />
                <Route path='/breathing' element={<BreathingTechniquesPage />} />
-               <Route path='/kihon' element={<KihonPage />} />
+               {/* Kihon - Development Only */}
+               {import.meta.env.DEV && <Route path='/kihon' element={<KihonPage />} />}
                <Route path='/terminology' element={<ProtectedRoute><TerminologyPage /></ProtectedRoute>} />
                <Route path='/WordQuest' element={<ProtectedRoute><WordPlayPage /></ProtectedRoute>} />
                <Route path='/flashcards' element={<ProtectedRoute><FlashCardPage /></ProtectedRoute>} />
@@ -222,6 +224,7 @@ function AppContent() {
                <Route path='/about' element={<About />} />
                <Route path='*' element={<AppNotFoundPage />} />
             </Routes>
+            <Footer />
          </Box>
 
       </>
@@ -230,11 +233,9 @@ function AppContent() {
 
 function App() {
    return (
-      <AuthProvider>
-         <SnackbarProvider>
-            <AppContent />
-         </SnackbarProvider>
-      </AuthProvider>
+      <SnackbarProvider>
+         <AppContent />
+      </SnackbarProvider>
    );
 }
 

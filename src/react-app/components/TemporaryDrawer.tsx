@@ -7,11 +7,9 @@ import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import GamepadIcon from '@mui/icons-material/Gamepad';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
-import StarIcon from '@mui/icons-material/Star';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import TimerIcon from '@mui/icons-material/Timer';
 import Box from '@mui/material/Box';
@@ -120,20 +118,22 @@ export default function TemporaryDrawer() {
             </ListItem>
             <Collapse in={openSection === 'training'} timeout='auto' unmountOnExit>
                <List component='div' disablePadding>
-                  {/* Kihon */}
-                  <ListItem disablePadding>
-                     <ListItemButton
-                        sx={{
-                           pl: 4,
-                           backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                        }}
-                        onClick={handleNavigation('/kihon')}>
-                        <ListItemIcon>
-                           <SportsMartialArtsIcon />
-                        </ListItemIcon>
-                        <ListItemText primary='Kihon' />
-                     </ListItemButton>
-                  </ListItem>
+                  {/* Kihon - Development Only */}
+                  {import.meta.env.DEV && (
+                     <ListItem disablePadding>
+                        <ListItemButton
+                           sx={{
+                              pl: 4,
+                              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                           }}
+                           onClick={handleNavigation('/kihon')}>
+                           <ListItemIcon>
+                              <SportsMartialArtsIcon />
+                           </ListItemIcon>
+                           <ListItemText primary='Kihon' />
+                        </ListItemButton>
+                     </ListItem>
+                  )}
                   {/* Session Tracker - Protected */}
                   {isAuthenticated && (
                      <ListItem disablePadding>

@@ -39,9 +39,18 @@ import {GetFlagEmoji, useLanguage} from '@/components/context/LanguageContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
 import CustomDivider from '@/components/UI/CustomDivider';
 import KarateBelt from '@/components/UI/KarateBelt';
-// import {getLocalStorageItem} from '@/components/utils/localStorageUtils'; // Removed
 import { TechniqueKind } from '../../../data/model/technique';
 import { GradeWithContent } from '../../../data/repo/KyokushinRepository';
+
+// Map LanguageEnum values to catalog.json field names
+const languageKeyMap: Record<string, string> = {
+   'english': 'en',
+   'swedish': 'sv',
+   'romaji': 'romaji',
+   'japanese': 'ja',
+};
+
+const getLanguageKey = (language: string): string => languageKeyMap[language] || language;
 
 import kyokushinRanks from '../../data/kyokushinRanks';
 
@@ -83,7 +92,7 @@ interface KarateTimelineProps {
    onSaveProgress: (techniqueId: string, data: { rating?: number; notes?: string; tags?: string[]; videoLinks?: string[] }) => void;
 }
 
-export default React.memo(function KarateTimeline({grades, loading, searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks, onSaveProgress}: KarateTimelineProps) {
+function KarateTimeline({grades, loading, searchTerm, selectedType, ratings, setRatings, notes, setNotes, tags, setTags, youtubeLinks, setYoutubeLinks, onSaveProgress}: KarateTimelineProps) {
    const theme = useTheme();
    const {selectedLanguages} = useLanguage();
 
@@ -330,8 +339,9 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                           <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
                                              <Stack spacing={0} direction='column' sx={{flexGrow: 1, alignItems: 'flex-start'}}>
                                                 {selectedLanguages.map(
-                                                   language =>
-                                                      technique.name[language as keyof typeof technique.name] && (
+                                                   language => {
+                                                      const langKey = getLanguageKey(language);
+                                                      return technique.name[langKey as keyof typeof technique.name] && (
                                                          <Typography
                                                             key={language}
                                                             align='left'
@@ -344,15 +354,16 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                             <span
                                                                onClick={(e) => {
                                                                   e.stopPropagation();
-                                                                  handleFlagClick(technique.name[language as keyof typeof technique.name] || '');
+                                                                  handleFlagClick(technique.name[langKey as keyof typeof technique.name] || '');
                                                                }}
                                                                style={{ cursor: 'pointer', marginRight: '4px' }}
                                                             >
                                                                {GetFlagEmoji(language)}
                                                             </span>
-                                                            {technique.name[language as keyof typeof technique.name] || 'Translation not available'}
+                                                            {technique.name[langKey as keyof typeof technique.name] || 'Translation not available'}
                                                          </Typography>
-                                                      ),
+                                                      );
+                                                   }
                                                 )}
                                              </Stack>
                                              <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5}}>
@@ -573,8 +584,9 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                        <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
                                           <Stack spacing={0} direction='column' sx={{flexGrow: 1, alignItems: 'flex-start'}}>
                                              {selectedLanguages.map(
-                                                language =>
-                                                   kata.name[language as keyof typeof kata.name] && (
+                                                language => {
+                                                   const langKey = getLanguageKey(language);
+                                                   return kata.name[langKey as keyof typeof kata.name] && (
                                                       <Typography
                                                          key={language}
                                                          align='left'
@@ -587,17 +599,18 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
                                                          <span
                                                             onClick={(e) => {
                                                                e.stopPropagation();
-                                                               handleFlagClick(kata.name[language as keyof typeof kata.name] || '');
+                                                               handleFlagClick(kata.name[langKey as keyof typeof kata.name] || '');
                                                             }}
                                                             style={{ cursor: 'pointer', marginRight: '4px' }}
                                                          >
                                                             {GetFlagEmoji(language)}
                                                          </span>
-                                                         {kata.name[language as keyof typeof kata.name] || 'Translation not available'}
+                                                         {kata.name[langKey as keyof typeof kata.name] || 'Translation not available'}
                                                       </Typography>
-                                                   ),
-                                             )}
-                                          </Stack>
+                                                   );
+                                                })
+                                             }
+                                             </Stack>
                                           <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5}}>
                                              <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
                                                 {notes[kataRomaji] && <ChatIcon fontSize='small' />}
@@ -802,4 +815,6 @@ export default React.memo(function KarateTimeline({grades, loading, searchTerm, 
          </Dialog>
       </>
    );
-});
+}
+
+export default KarateTimeline;
