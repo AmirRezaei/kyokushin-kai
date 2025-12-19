@@ -8,7 +8,7 @@ import {
   TechniqueId,
   TermId,
 } from './common';
-import {TechniqueNameParts} from './vocabulary';
+import { TechniqueNameParts } from './vocabulary';
 
 export enum TechniqueKind {
   Stand = 'Stand',

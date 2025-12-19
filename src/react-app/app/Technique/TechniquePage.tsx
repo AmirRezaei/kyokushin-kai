@@ -1,19 +1,24 @@
+// Refactored TechniquePage.tsx - Mobile-first with card-based layout
 import DownloadIcon from '@mui/icons-material/Download';
-import SearchIcon from '@mui/icons-material/Search';
 import UploadIcon from '@mui/icons-material/Upload';
-import { Box, Button, Chip, InputAdornment, Stack, TextField } from '@mui/material';
+import { Box, Button, Stack, Grid, CircularProgress, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 
 import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
+import { TechniqueRecord } from '../../../data/model/technique';
+import { KataRecord } from '../../../data/model/kata';
 
-import KarateTimeline from './KarateTimeline';
+import FilterBar, { FilterType } from './FilterBar';
+import GradeCard from './GradeCard';
+import TechniqueDetailDrawer from './TechniqueDetailDrawer';
 
 const TechniquePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<FilterType>('all');
 
   const [grades, setGrades] = useState<GradeWithContent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,22 +28,28 @@ const TechniquePage: React.FC = () => {
   const [tags, setTags] = useState<Record<string, string[]>>({});
   const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string[]>>({});
 
+  // DetailDrawer state
+  const [selectedTechnique, setSelectedTechnique] = useState<TechniqueRecord | KataRecord | null>(
+    null,
+  );
+  const [selectedGradeId, setSelectedGradeId] = useState<string>('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
 
   useEffect(() => {
-    // Fetch data from repository
     const data = KyokushinRepository.getCurriculumGrades();
     setGrades(data);
     setLoading(false);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch user progress on mount or when token changes
+  // Fetch user progress
   useEffect(() => {
     if (!token) return;
 
@@ -73,16 +84,40 @@ const TechniquePage: React.FC = () => {
       .catch((err) => console.error('Error fetching progress:', err));
   }, [token]);
 
-  const onSaveProgress = async (
-    techniqueId: string,
-    data: {
-      rating?: number;
-      notes?: string;
-      tags?: string[];
-      videoLinks?: string[];
-    },
-  ) => {
-    if (!token) {
+  const handleTechniqueClick = (technique: TechniqueRecord | KataRecord, gradeId: string) => {
+    setSelectedTechnique(technique);
+    setSelectedGradeId(gradeId);
+    setDrawerOpen(true);
+
+    // Pre-populate YouTube links from kata/technique mediaIds if not already in user progress
+    if (
+      technique.mediaIds &&
+      technique.mediaIds.length > 0 &&
+      (!youtubeLinks[technique.id] || youtubeLinks[technique.id].length === 0)
+    ) {
+      const mediaUrls = technique.mediaIds
+        .map((mediaId) => {
+          const media = KyokushinRepository.getMedia(mediaId);
+          return media?.url;
+        })
+        .filter(Boolean) as string[];
+
+      if (mediaUrls.length > 0) {
+        setYoutubeLinks((prev) => ({
+          ...prev,
+          [technique.id]: mediaUrls,
+        }));
+      }
+    }
+  };
+
+  const handleSaveProgress = async (data: {
+    rating?: number;
+    notes?: string;
+    tags?: string[];
+    videoLinks?: string[];
+  }) => {
+    if (!selectedTechnique || !token) {
       showSnackbar('Please log in to save progress', 'warning');
       return;
     }
@@ -94,13 +129,29 @@ const TechniquePage: React.FC = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ techniqueId, ...data }),
+        body: JSON.stringify({ techniqueId: selectedTechnique.id, ...data }),
       });
 
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to save');
       }
+
+      // Update local state
+      if (data.rating !== undefined) {
+        setRatings((prev) => ({ ...prev, [selectedTechnique.id]: data.rating! }));
+      }
+      if (data.notes !== undefined) {
+        setNotes((prev) => ({ ...prev, [selectedTechnique.id]: data.notes! }));
+      }
+      if (data.tags !== undefined) {
+        setTags((prev) => ({ ...prev, [selectedTechnique.id]: data.tags! }));
+      }
+      if (data.videoLinks !== undefined) {
+        setYoutubeLinks((prev) => ({ ...prev, [selectedTechnique.id]: data.videoLinks! }));
+      }
+
+      showSnackbar('Progress saved successfully', 'success');
     } catch (error) {
       console.error('Save failed:', error);
       showSnackbar('Failed to save changes. Please try again.', 'error');
@@ -139,17 +190,83 @@ const TechniquePage: React.FC = () => {
 
           showSnackbar('Data imported locally. Edit items to save to cloud.', 'info');
         } catch (error) {
-          alert('Invalid JSON file');
+          showSnackbar('Invalid JSON file', 'error');
         }
       };
       reader.readAsText(file);
     }
   };
 
+  // Filter grades and techniques
+  const filteredGrades = grades
+    .map((grade) => {
+      let techniques = [...grade.techniques];
+      let katas = [...grade.katas];
+
+      // Apply search filter
+      if (debouncedSearchTerm) {
+        const searchLower = debouncedSearchTerm.toLowerCase();
+        techniques = techniques.filter(
+          (t) =>
+            t.name.romaji?.toLowerCase().includes(searchLower) ||
+            t.name.en?.toLowerCase().includes(searchLower) ||
+            t.name.ja?.toLowerCase().includes(searchLower) ||
+            t.name.sv?.toLowerCase().includes(searchLower),
+        );
+        katas = katas.filter(
+          (k) =>
+            k.name.romaji?.toLowerCase().includes(searchLower) ||
+            k.name.en?.toLowerCase().includes(searchLower) ||
+            k.name.ja?.toLowerCase().includes(searchLower),
+        );
+      }
+
+      // Apply type filter
+      if (selectedType) {
+        if (selectedType === 'Kata') {
+          techniques = [];
+        } else {
+          techniques = techniques.filter((t) => t.kind === selectedType);
+          katas = [];
+        }
+      }
+
+      // Apply mastery filter
+      if (filterMode !== 'all') {
+        const allIds = [...techniques.map((t) => t.id), ...katas.map((k) => k.id)];
+        const filteredIds = allIds.filter((id) => {
+          const rating = ratings[id] || 0;
+          if (filterMode === 'mastered') return rating >= 4;
+          if (filterMode === 'learning') return rating > 0 && rating < 4;
+          return true;
+        });
+
+        techniques = techniques.filter((t) => filteredIds.includes(t.id));
+        katas = katas.filter((k) => filteredIds.includes(k.id));
+      }
+
+      return {
+        ...grade,
+        techniques,
+        katas,
+      };
+    })
+    .filter((grade) => grade.techniques.length > 0 || grade.katas.length > 0);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Box>
+    <Box sx={{ pb: 4 }}>
       {/* Export/Import Buttons */}
-      <Stack direction="row" spacing={1} sx={{ mt: 2, mb: 2, ml: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ p: 2, pb: 0 }}>
         <Button startIcon={<DownloadIcon />} onClick={handleExport} size="small">
           Export
         </Button>
@@ -169,84 +286,53 @@ const TechniquePage: React.FC = () => {
         />
       </Stack>
 
-      <Box sx={{ mt: 2, mb: 2, ml: 2 }}>
-        <TextField
-          fullWidth
-          label="Search Techniques"
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by Japanese, Romaji, Swedish or English"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <Stack
-          key="technique-filters"
-          direction="row"
-          spacing={1}
-          sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}
-          useFlexGap
-        >
-          {[
-            'Dachi',
-            'Hiji Ate',
-            'Juji',
-            'Mawashi',
-            'Nukite',
-            'Seiken',
-            'Shotei',
-            'Shuto',
-            'Tettsui',
-            'Uchi',
-            'Uke',
-            'Uraken',
-          ].map((filter) => (
-            <Chip
-              key={filter}
-              label={filter}
-              onClick={() => setSearchTerm(searchTerm === filter ? '' : filter)}
-              color={searchTerm === filter ? 'primary' : 'default'}
-              variant={searchTerm === filter ? 'filled' : 'outlined'}
-            />
-          ))}
-        </Stack>
-        <Stack
-          key="type-filters"
-          direction="row"
-          spacing={1}
-          sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}
-          useFlexGap
-        >
-          {['Stand', 'Strike', 'Block', 'Kick', 'Kata', 'Fighting', 'Breathing'].map((type) => (
-            <Chip
-              key={type}
-              label={type}
-              onClick={() => setSelectedType(selectedType === type ? null : type)}
-              color={selectedType === type ? 'secondary' : 'default'}
-              variant={selectedType === type ? 'filled' : 'outlined'}
-            />
-          ))}
-        </Stack>
-      </Box>
-      <KarateTimeline
-        grades={grades}
-        loading={loading}
-        searchTerm={debouncedSearchTerm}
+      {/* Sticky Filter Bar */}
+      <FilterBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
         selectedType={selectedType}
-        ratings={ratings}
-        setRatings={setRatings}
-        notes={notes}
-        setNotes={setNotes}
-        tags={tags}
-        setTags={setTags}
-        youtubeLinks={youtubeLinks}
-        setYoutubeLinks={setYoutubeLinks}
-        onSaveProgress={onSaveProgress}
+        onTypeChange={setSelectedType}
+        filterMode={filterMode}
+        onFilterModeChange={setFilterMode}
+      />
+
+      {/* Grade Cards */}
+      <Box sx={{ p: 2 }}>
+        {filteredGrades.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No techniques found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Try adjusting your filters
+            </Typography>
+          </Box>
+        ) : (
+          <Grid container spacing={2}>
+            {filteredGrades.map((grade) => (
+              <Grid item xs={12} sm={6} md={4} key={grade.id}>
+                <GradeCard
+                  grade={grade}
+                  onTechniqueClick={handleTechniqueClick}
+                  ratings={ratings}
+                  tags={tags}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Box>
+
+      {/* Technique Detail Drawer */}
+      <TechniqueDetailDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        technique={selectedTechnique}
+        rating={selectedTechnique ? ratings[selectedTechnique.id] || 0 : 0}
+        notes={selectedTechnique ? notes[selectedTechnique.id] || '' : ''}
+        tags={selectedTechnique ? tags[selectedTechnique.id] || [] : []}
+        youtubeLinks={selectedTechnique ? youtubeLinks[selectedTechnique.id] || [] : []}
+        onSave={handleSaveProgress}
       />
     </Box>
   );
