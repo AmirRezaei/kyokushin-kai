@@ -14,6 +14,7 @@ import {
   ListItemText,
   Chip,
   Stack,
+  Divider,
 } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -211,12 +212,12 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
               return (
                 <Box key={kind}>
                   {/* Section Divider */}
-                  <Box
+                  {/* <Box
                     sx={{
                       ml: 1, // Margin to avoid belt color band
                       px: 2,
                       py: 1,
-                      backgroundColor: 'action.hover',
+                      // backgroundColor: 'action.selected',
                       borderBottom: 1,
                       borderColor: 'divider',
                     }}
@@ -224,7 +225,19 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
                     <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
                       {kind}
                     </Typography>
-                  </Box>
+                  </Box> */}
+
+                  <Divider textAlign="left" sx={{ ml: 1 }} flexItem>
+                    {/* <Chip
+                      label={kind.toUpperCase()}
+                      size="small"
+                      variant="filled"
+                      color="primary"
+                    /> */}
+                    <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+                      {kind.toUpperCase()}
+                    </Typography>
+                  </Divider>
 
                   {/* Techniques in this section */}
                   {techniques.map((technique) => {
