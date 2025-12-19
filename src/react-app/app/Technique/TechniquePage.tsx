@@ -251,7 +251,9 @@ const TechniquePage: React.FC = () => {
         katas,
       };
     })
-    .filter((grade) => grade.techniques.length > 0 || grade.katas.length > 0);
+    .filter(
+      (grade) => grade.kind === 'Dan' || grade.techniques.length > 0 || grade.katas.length > 0,
+    );
 
   if (loading) {
     return (

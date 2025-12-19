@@ -107,7 +107,7 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
           flexDirection: 'column',
           justifyContent: 'flex-start',
           gap: '2px',
-          pt: '5px',
+          pt: '10px',
         }}
       >
         {(isIntermediateKyu || isDan) &&
@@ -116,7 +116,7 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
               key={idx}
               sx={{
                 my: '0px',
-                height: '4px',
+                height: '2px',
                 backgroundColor: isDan ? '#FFD700' : 'rgba(255, 255, 255, 1)', // Yellow for dans, dark for kyu
               }}
             />
@@ -128,9 +128,13 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-              {getPrimaryText(grade.name)}
+              {/* For Dan grades, show "1st Dan - Shodan"; for Kyu, show romaji (or English if no romaji) */}
+              {grade.kind === 'Dan' && grade.name.romaji
+                ? `${grade.name.en} - ${grade.name.romaji}`
+                : getPrimaryText(grade.name)}
             </Typography>
-            {getSecondaryText(grade.name) && (
+            {/* For non-Dan grades, show selected languages */}
+            {grade.kind !== 'Dan' && getSecondaryText(grade.name) && (
               <Typography variant="caption" color="text.secondary">
                 {getSecondaryText(grade.name)}
               </Typography>
