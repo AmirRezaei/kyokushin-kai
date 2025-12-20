@@ -250,6 +250,70 @@ const name =
 
 ---
 
+## UI/UX Best Practices
+
+### Design Principles
+
+**Material UI (MUI v6)**: Use MUI components as base - customize via `sx` prop and theme overrides
+
+**Units & Metrics**:
+
+- **Spacing/Margins/Padding**: Use `theme.spacing(n)` (multiplier of 8px) - NEVER hardcode `px`
+- **Font Sizes**: Use theme typography variants or `rem` units (scales with user preferences)
+- **Component Dimensions**: Prefer `rem` for accessibility, or `%`/`vh`/`vw` for fluid layouts
+- **Border/Shadow**: `px` acceptable for small fixed values (1px borders, etc.)
+
+**Typography**:
+
+- Use theme variants: `h1`-`h6` for headings, `body1`/`body2` for text
+- Maintain hierarchy: one `h1` per page, logical nesting
+
+**Spacing**: Use theme spacing units (`theme.spacing(n)`) for consistency
+
+**Colors**: Reference theme palette (`primary`, `secondary`, `error`, etc.) - avoid hardcoded values
+
+**Responsive**: Mobile-first approach - use `theme.breakpoints` for adaptive layouts
+
+### Component Standards
+
+**Loading States**: Show `CircularProgress` or skeleton loaders during data fetch
+
+**Error Handling**: Display user-friendly messages via `useSnackbar` (from `SnackbarContext`)
+
+**Empty States**: Provide helpful empty state UI when no data exists
+
+**Accessibility**:
+
+- Add `aria-label` to icon-only buttons
+- Ensure keyboard navigation works
+- Maintain color contrast ratios (WCAG AA minimum)
+
+**Forms**:
+
+- Use controlled components with validation
+- Provide clear error messages
+- Disable submit during processing
+
+### Interaction Patterns
+
+**Feedback**: Immediate visual response to user actions (hover, active states, animations)
+
+**Confirmation**: Require confirmation for destructive actions (delete, reset)
+
+**Progress**: Show progress indicators for multi-step processes
+
+**Navigation**: Clear breadcrumbs/back buttons for nested views
+
+### Performance
+
+**Lazy Loading**: Use `React.lazy()` for route-based code splitting
+
+**Memoization**: Apply `useMemo`/`useCallback` for expensive computations
+
+**Virtualization**: Use virtual lists for large datasets (e.g., `react-window`)
+
+---
+
 ## Authentication
 
 **Flow**: Google OAuth → Google ID token → Backend verifies → Issues custom JWT + refresh token
