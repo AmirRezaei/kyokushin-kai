@@ -1,6 +1,6 @@
 // File: ./src/app/WordQuest/FlashCard/FlashCardPage.tsx
 
-import { LibraryBooks, School, SportsEsports, Style } from '@mui/icons-material';
+import { Extension, LibraryBooks, School, SportsEsports, Style } from '@mui/icons-material';
 import { Box, Container, Fade, Paper, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -8,6 +8,7 @@ import { DeckProvider } from './Deck/DeckContext';
 import DeckManager from './Deck/DeckManager';
 import { FlashCardProvider } from './FlashCardContext';
 import FlashCardPlayer from './FlashCardPlayer';
+import FlashCardMatchGame from './FlashCardMatchGame';
 import FlashCardManager from './Manager/FlashCardManager';
 
 const FlashCardPage: React.FC = () => {
@@ -24,7 +25,6 @@ const FlashCardPage: React.FC = () => {
         width: '100%',
         minHeight: '100vh',
         background: `linear-gradient(135deg, ${theme.palette.primary.dark}22 0%, ${theme.palette.secondary.dark}22 100%)`,
-        py: theme.spacing(4),
       }}
     >
       <Container maxWidth="xl">
@@ -33,7 +33,7 @@ const FlashCardPage: React.FC = () => {
           <Paper
             elevation={2}
             sx={{
-              // mb: theme.spacing(2),
+              pt: theme.spacing(2),
               textAlign: 'center',
               bordderTopLeftRadius: theme.spacing(1),
               bordderTopRightRadius: theme.spacing(1),
@@ -132,7 +132,13 @@ const FlashCardPage: React.FC = () => {
                   <Tab
                     icon={<SportsEsports />}
                     iconPosition="start"
-                    label="Play"
+                    label="Practice"
+                    sx={{ minHeight: 'auto' }}
+                  />
+                  <Tab
+                    icon={<Extension />}
+                    iconPosition="start"
+                    label="Match"
                     sx={{ minHeight: 'auto' }}
                   />
                   <Tab
@@ -155,8 +161,9 @@ const FlashCardPage: React.FC = () => {
             <Fade in key={value} timeout={600}>
               <Box>
                 {value === 0 && <FlashCardPlayer />}
-                {value === 1 && <FlashCardManager />}
-                {value === 2 && <DeckManager />}
+                {value === 1 && <FlashCardMatchGame />}
+                {value === 2 && <FlashCardManager />}
+                {value === 3 && <DeckManager />}
               </Box>
             </Fade>
           </FlashCardProvider>
