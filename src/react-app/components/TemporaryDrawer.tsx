@@ -3,6 +3,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import GamepadIcon from '@mui/icons-material/Gamepad';
 import HomeIcon from '@mui/icons-material/Home';
@@ -21,216 +22,235 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import {useTheme} from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import * as React from 'react';
-import {useNavigate} from 'react-router-dom';
-import {useAuth} from './context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
 export default function TemporaryDrawer() {
-   const theme = useTheme(); // Add this line
-   const {isAuthenticated} = useAuth();
-   const [drawerOpen, setDrawerOpen] = React.useState(false);
-   const [openSection, setOpenSection] = React.useState<string | null>(null); // Replace multiple state variables
-   const navigate = useNavigate();
+  const theme = useTheme(); // Add this line
+  const { isAuthenticated } = useAuth();
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [openSection, setOpenSection] = React.useState<string | null>(null); // Replace multiple state variables
+  const navigate = useNavigate();
 
-   const toggleDrawer = (newOpen: boolean) => (event: React.MouseEvent | React.KeyboardEvent) => {
-      // Allow toggling with keyboard events as well
-      if (event.type === 'keydown' && ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')) {
-         return;
-      }
-      setDrawerOpen(newOpen);
-   };
+  const toggleDrawer = (newOpen: boolean) => (event: React.MouseEvent | React.KeyboardEvent) => {
+    // Allow toggling with keyboard events as well
+    if (
+      event.type === 'keydown' &&
+      ((event as React.KeyboardEvent).key === 'Tab' ||
+        (event as React.KeyboardEvent).key === 'Shift')
+    ) {
+      return;
+    }
+    setDrawerOpen(newOpen);
+  };
 
-   const handleNavigation = (path: string) => (event: React.MouseEvent) => {
-      event.stopPropagation(); // Prevent the event from bubbling up to Box
-      navigate(path);
-      setDrawerOpen(false); // Close the drawer after navigation
-   };
+  const handleNavigation = (path: string) => (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent the event from bubbling up to Box
+    navigate(path);
+    setDrawerOpen(false); // Close the drawer after navigation
+  };
 
-   // Update handler to set the open section
-   const handleSectionClick = (section: string) => (event: React.MouseEvent) => {
-      event.stopPropagation();
-      setOpenSection(prev => (prev === section ? null : section)); // Toggle section
-   };
+  // Update handler to set the open section
+  const handleSectionClick = (section: string) => (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setOpenSection((prev) => (prev === section ? null : section)); // Toggle section
+  };
 
-   const DrawerList = (
-      <Box sx={{width: 250}} role='presentation' onKeyDown={toggleDrawer(false)}>
-         <List>
-            {/* Home */}
-            <ListItem disablePadding>
-               <ListItemButton onClick={handleNavigation('/home')}>
+  const DrawerList = (
+    <Box sx={{ width: 250 }} role="presentation" onKeyDown={toggleDrawer(false)}>
+      <List>
+        {/* Home */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleNavigation('/home')}>
+            <ListItemIcon>
+              <HomeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Home" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleNavigation('/motto-explorer')}>
+            <ListItemIcon>
+              <FormatQuoteIcon />
+            </ListItemIcon>
+            <ListItemText primary="Motto Explorer" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleNavigation('/dojo-kun')}>
+            <ListItemIcon>
+              <FormatQuoteIcon />
+            </ListItemIcon>
+            <ListItemText primary="Dojo Kun" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleNavigation('/spirit-of-osu')}>
+            <ListItemIcon>
+              <FavoriteIcon />
+            </ListItemIcon>
+            <ListItemText primary="Spirit of Osu" />
+          </ListItemButton>
+        </ListItem>
+
+        {/* Technique - Protected */}
+        {isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleNavigation('Technique')}>
+              <ListItemIcon>
+                <CategoryIcon />
+              </ListItemIcon>
+              <ListItemText primary="Technique" />
+            </ListItemButton>
+          </ListItem>
+        )}
+        {/* Terminology - Protected */}
+        {isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleNavigation('/terminology')}>
+              <ListItemIcon>
+                <TextFieldsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Terminology" />
+            </ListItemButton>
+          </ListItem>
+        )}
+        {/* Training Section */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleSectionClick('training')}>
+            <ListItemIcon>
+              <DirectionsRunIcon />
+            </ListItemIcon>
+            <ListItemText primary="Training" />
+            {openSection === 'training' ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+        </ListItem>
+        <Collapse in={openSection === 'training'} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding>
+            {/* Kihon - Development Only */}
+            {import.meta.env.DEV && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{
+                    pl: 4,
+                    backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                  }}
+                  onClick={handleNavigation('/kihon')}
+                >
                   <ListItemIcon>
-                     <HomeIcon />
+                    <SportsMartialArtsIcon />
                   </ListItemIcon>
-                  <ListItemText primary='Home' />
-               </ListItemButton>
-            </ListItem>
-
-            <ListItem disablePadding>
-               <ListItemButton onClick={handleNavigation('/motto-explorer')}>
-                  <ListItemIcon>
-                     <FormatQuoteIcon />
-                  </ListItemIcon>
-                  <ListItemText primary='Motto Explorer' />
-               </ListItemButton>
-            </ListItem>
-
-            <ListItem disablePadding>
-               <ListItemButton onClick={handleNavigation('/dojo-kun')}>
-                  <ListItemIcon>
-                     <FormatQuoteIcon />
-                  </ListItemIcon>
-                  <ListItemText primary='Dojo Kun' />
-               </ListItemButton>
-            </ListItem>
-
-            {/* Technique - Protected */}
-            {isAuthenticated && (
-               <ListItem disablePadding>
-                  <ListItemButton onClick={handleNavigation('Technique')}>
-                     <ListItemIcon>
-                        <CategoryIcon />
-                     </ListItemIcon>
-                     <ListItemText primary='Technique' />
-                  </ListItemButton>
-               </ListItem>
+                  <ListItemText primary="Kihon" />
+                </ListItemButton>
+              </ListItem>
             )}
-            {/* Terminology - Protected */}
+            {/* Session Tracker - Protected */}
             {isAuthenticated && (
-               <ListItem disablePadding>
-                  <ListItemButton onClick={handleNavigation('/terminology')}>
-                     <ListItemIcon>
-                        <TextFieldsIcon />
-                     </ListItemIcon>
-                     <ListItemText primary='Terminology' />
-                  </ListItemButton>
-               </ListItem>
-            )}
-            {/* Training Section */}
-            <ListItem disablePadding>
-               <ListItemButton onClick={handleSectionClick('training')}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{
+                    pl: 4,
+                    backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                  }}
+                  onClick={handleNavigation('/trainingSession')}
+                >
                   <ListItemIcon>
-                     <DirectionsRunIcon />
+                    <ScheduleIcon />
                   </ListItemIcon>
-                  <ListItemText primary='Training' />
-                  {openSection === 'training' ? <ExpandLess /> : <ExpandMore />}
-               </ListItemButton>
+                  <ListItemText primary="Session Tracker" />
+                </ListItemButton>
+              </ListItem>
+            )}
+            {/* Training Manager - Protected */}
+            {isAuthenticated && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  sx={{
+                    pl: 4,
+                    backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                  }}
+                  onClick={handleNavigation('/training-manager')}
+                >
+                  <ListItemIcon>
+                    <ScheduleIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Training Manager" />
+                </ListItemButton>
+              </ListItem>
+            )}
+            {/* Timer */}
+            <ListItem disablePadding>
+              <ListItemButton
+                sx={{
+                  pl: 4,
+                  backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                }}
+                onClick={handleNavigation('/timer')}
+              >
+                <ListItemIcon>
+                  <TimerIcon />
+                </ListItemIcon>
+                <ListItemText primary="Timer" />
+              </ListItemButton>
             </ListItem>
-            <Collapse in={openSection === 'training'} timeout='auto' unmountOnExit>
-               <List component='div' disablePadding>
-                  {/* Kihon - Development Only */}
-                  {import.meta.env.DEV && (
-                     <ListItem disablePadding>
-                        <ListItemButton
-                           sx={{
-                              pl: 4,
-                              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                           }}
-                           onClick={handleNavigation('/kihon')}>
-                           <ListItemIcon>
-                              <SportsMartialArtsIcon />
-                           </ListItemIcon>
-                           <ListItemText primary='Kihon' />
-                        </ListItemButton>
-                     </ListItem>
-                  )}
-                  {/* Session Tracker - Protected */}
-                  {isAuthenticated && (
-                     <ListItem disablePadding>
-                        <ListItemButton
-                           sx={{
-                              pl: 4,
-                              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                           }}
-                           onClick={handleNavigation('/trainingSession')}>
-                           <ListItemIcon>
-                              <ScheduleIcon />
-                           </ListItemIcon>
-                           <ListItemText primary='Session Tracker' />
-                        </ListItemButton>
-                     </ListItem>
-                  )}
-                  {/* Training Manager - Protected */}
-                  {isAuthenticated && (
-                     <ListItem disablePadding>
-                        <ListItemButton
-                           sx={{
-                              pl: 4,
-                              backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                           }}
-                           onClick={handleNavigation('/training-manager')}>
-                           <ListItemIcon>
-                              <ScheduleIcon />
-                           </ListItemIcon>
-                           <ListItemText primary='Training Manager' />
-                        </ListItemButton>
-                     </ListItem>
-                  )}
-                  {/* Timer */}
-                  <ListItem disablePadding>
-                     <ListItemButton
-                        sx={{
-                           pl: 4,
-                           backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                        }}
-                        onClick={handleNavigation('/timer')}>
-                        <ListItemIcon>
-                           <TimerIcon />
-                        </ListItemIcon>
-                        <ListItemText primary='Timer' />
-                     </ListItemButton>
-                  </ListItem>
-               </List>
+          </List>
+        </Collapse>
+
+        {/* Games Section - Protected */}
+        {isAuthenticated && (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton onClick={handleSectionClick('games')}>
+                <ListItemIcon>
+                  <GamepadIcon />
+                </ListItemIcon>
+                <ListItemText primary="Games" />
+                {openSection === 'games' ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+            </ListItem>
+            <Collapse in={openSection === 'games'} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                {/* Word Quest */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/WordQuest')}
+                  >
+                    <ListItemIcon>
+                      <TextFieldsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Word Quest" />
+                  </ListItemButton>
+                </ListItem>
+                {/* Flash Cards */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/flashcards')}
+                  >
+                    <ListItemIcon>
+                      <TextFieldsIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Flash Cards" />
+                  </ListItemButton>
+                </ListItem>
+              </List>
             </Collapse>
+          </>
+        )}
 
-            {/* Games Section - Protected */}
-            {isAuthenticated && (
-               <>
-                  <ListItem disablePadding>
-                     <ListItemButton onClick={handleSectionClick('games')}>
-                        <ListItemIcon>
-                           <GamepadIcon />
-                        </ListItemIcon>
-                        <ListItemText primary='Games' />
-                        {openSection === 'games' ? <ExpandLess /> : <ExpandMore />}
-                     </ListItemButton>
-                  </ListItem>
-                  <Collapse in={openSection === 'games'} timeout='auto' unmountOnExit>
-                     <List component='div' disablePadding>
-                        {/* Word Quest */}
-                        <ListItem disablePadding>
-                           <ListItemButton
-                              sx={{
-                                 pl: 4,
-                                 backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                              }}
-                              onClick={handleNavigation('/WordQuest')}>
-                              <ListItemIcon>
-                                 <TextFieldsIcon />
-                              </ListItemIcon>
-                              <ListItemText primary='Word Quest' />
-                           </ListItemButton>
-                        </ListItem>
-                        {/* Flash Cards */}
-                        <ListItem disablePadding>
-                           <ListItemButton
-                              sx={{
-                                 pl: 4,
-                                 backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
-                              }}
-                              onClick={handleNavigation('/flashcards')}>
-                              <ListItemIcon>
-                                 <TextFieldsIcon />
-                              </ListItemIcon>
-                              <ListItemText primary='Flash Cards' />
-                           </ListItemButton>
-                        </ListItem>
-                     </List>
-                  </Collapse>
-               </>
-            )}
-
-            {/* <ListItem disablePadding>
+        {/* <ListItem disablePadding>
                <ListItemButton onClick={handleNavigation('/FlashCardManager')}>
                   <ListItemIcon>
                      <TextFieldsIcon />
@@ -247,7 +267,7 @@ export default function TemporaryDrawer() {
                </ListItemButton>
             </ListItem> */}
 
-            {/* <ListItem disablePadding>
+        {/* <ListItem disablePadding>
                <ListItemButton onClick={handleNavigation('/ten-thousand-days')}>
                   <ListItemIcon>
                      <SettingsIcon />
@@ -256,48 +276,55 @@ export default function TemporaryDrawer() {
                </ListItemButton>
             </ListItem> */}
 
-            {/* Training Tracker - Protected */}
-            {isAuthenticated && (
-               <ListItem disablePadding>
-                  <ListItemButton onClick={handleNavigation('/training-tracker')}>
-                     <ListItemIcon>
-                        <DirectionsRunIcon />
-                     </ListItemIcon>
-                     <ListItemText primary='Training Tracker' />
-                  </ListItemButton>
-               </ListItem>
-            )}
+        {/* Training Tracker - Protected */}
+        {isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleNavigation('/training-tracker')}>
+              <ListItemIcon>
+                <DirectionsRunIcon />
+              </ListItemIcon>
+              <ListItemText primary="Training Tracker" />
+            </ListItemButton>
+          </ListItem>
+        )}
 
-            {/* Settings - Protected */}
-            {isAuthenticated && (
-               <ListItem disablePadding>
-                  <ListItemButton onClick={handleNavigation('/settings')}>
-                     <ListItemIcon>
-                        <SettingsIcon />
-                     </ListItemIcon>
-                     <ListItemText primary='Settings' />
-                  </ListItemButton>
-               </ListItem>
-            )}
-         </List>
-      </Box>
-   );
+        {/* Settings - Protected */}
+        {isAuthenticated && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleNavigation('/settings')}>
+              <ListItemIcon>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Settings" />
+            </ListItemButton>
+          </ListItem>
+        )}
+      </List>
+    </Box>
+  );
 
-   return (
-      <Box>
-         <IconButton edge='start' color='inherit' aria-label='menu' sx={{mr: 2}} onClick={toggleDrawer(true)}>
-            <MenuIcon />
-         </IconButton>
+  return (
+    <Box>
+      <IconButton
+        edge="start"
+        color="inherit"
+        aria-label="menu"
+        sx={{ mr: 2 }}
+        onClick={toggleDrawer(true)}
+      >
+        <MenuIcon />
+      </IconButton>
 
-         <Drawer
-            variant='temporary'
-            open={drawerOpen}
-            onClose={toggleDrawer(false)}
-            ModalProps={{
-               keepMounted: true, // Better open performance on mobile.
-            }}>
-            {DrawerList}
-         </Drawer>
-      </Box>
-   );
+      <Drawer
+        variant="temporary"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+      >
+        {DrawerList}
+      </Drawer>
+    </Box>
+  );
 }
