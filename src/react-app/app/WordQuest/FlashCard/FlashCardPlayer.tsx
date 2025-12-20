@@ -3,13 +3,11 @@
 import { ArrowBack, ArrowForward, Flip, Shuffle, SwapHoriz } from '@mui/icons-material';
 import {
   Box,
-  Card,
-  CardContent,
-  CircularProgress,
+  Container,
   Fab,
   FormControl,
-  Grid,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Paper,
   Select,
@@ -62,6 +60,11 @@ const FlashCardPlayer: React.FC = () => {
     setShuffledCards(null);
     setCurrentIndex(0);
     setFlipped(false);
+  }
+
+  // Safety check: If currentIndex is out of bounds, reset it.
+  if (currentIndex >= orderedFlashCards.length && orderedFlashCards.length > 0) {
+    setCurrentIndex(0);
   }
 
   /**
@@ -188,280 +191,227 @@ const FlashCardPlayer: React.FC = () => {
     );
   }
 
-  const progress = ((currentIndex + 1) / orderedFlashCards.length) * 100;
-  const currentCard = orderedFlashCards[currentIndex];
+  const safeIndex = currentIndex >= 0 && currentIndex < orderedFlashCards.length ? currentIndex : 0;
+  const currentCard = orderedFlashCards[safeIndex];
+
+  if (!currentCard) {
+    return null; // Should be handled by empty check above, but safe guard.
+  }
+
+  const progress = ((safeIndex + 1) / orderedFlashCards.length) * 100;
 
   return (
-    <Box>
-      <Grid container spacing={3}>
-        {/* Progress Stats Card */}
-        <Grid item xs={12} md={3}>
-          <Card
-            elevation={3}
-            sx={{
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}22, ${theme.palette.secondary.main}22)`,
-              backdropFilter: 'blur(10px)',
-              borderRadius: theme.spacing(3),
-              p: theme.spacing(3),
-              height: '100%',
-            }}
-          >
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Progress
-              </Typography>
-
-              {/* Circular Progress */}
-              <Box sx={{ position: 'relative', display: 'inline-flex', my: theme.spacing(2) }}>
-                <CircularProgress
-                  variant="determinate"
-                  value={progress}
-                  size={120}
-                  thickness={5}
-                  sx={{
-                    color: theme.palette.primary.main,
-                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
-                  }}
-                />
-                <Box
-                  sx={{
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    right: 0,
-                    position: 'absolute',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                  }}
-                >
-                  <Typography
-                    variant="h4"
-                    component="div"
-                    color="text.primary"
-                    sx={{ fontWeight: 700 }}
-                  >
-                    {currentIndex + 1}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    of {orderedFlashCards.length}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Stats */}
-              <Box sx={{ mt: theme.spacing(2) }}>
-                <Stack spacing={1}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Remaining:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {orderedFlashCards.length - currentIndex - 1}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Cards:
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {orderedFlashCards.length}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Flashcard Display */}
-        <Grid item xs={12} md={9}>
+    <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
+      <Box
+        sx={{
+          perspective: '1500px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: { xs: '300px', sm: '400px', md: '500px' },
+          mb: 3,
+        }}
+      >
+        <Zoom in timeout={300}>
           <Box
             sx={{
-              perspective: '1500px',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              minHeight: { xs: '300px', sm: '400px', md: '500px' },
+              position: 'relative',
+              width: '100%',
+              maxWidth: { xs: '100%', sm: '450px', md: '500px' },
+              height: { xs: '300px', sm: '400px', md: '500px' },
             }}
           >
-            <Zoom in timeout={300}>
-              <Box
+            <Box
+              onClick={handleFlip}
+              sx={{
+                width: '100%',
+                height: '100%',
+                cursor: 'pointer',
+                transformStyle: 'preserve-3d',
+                transition: 'transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                transformOrigin: 'center',
+                '&:hover': {
+                  transform: flipped ? 'rotateY(180deg) scale(1.02)' : 'rotateY(0deg) scale(1.02)',
+                },
+              }}
+            >
+              {/* Front Face */}
+              <Paper
+                elevation={8}
                 sx={{
-                  position: 'relative',
+                  position: 'absolute',
                   width: '100%',
-                  maxWidth: { xs: '100%', sm: '450px', md: '500px' },
-                  height: { xs: '300px', sm: '400px', md: '500px' },
+                  height: '100%',
+                  backfaceVisibility: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: { xs: theme.spacing(2), sm: theme.spacing(3) },
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                  p: { xs: theme.spacing(2), sm: theme.spacing(3), md: theme.spacing(4) },
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
                 }}
               >
-                <Box
-                  onClick={handleFlip}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    cursor: 'pointer',
-                    transformStyle: 'preserve-3d',
-                    transition: 'transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                    transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                    transformOrigin: 'center',
-                    '&:hover': {
-                      transform: flipped
-                        ? 'rotateY(180deg) scale(1.02)'
-                        : 'rotateY(0deg) scale(1.02)',
-                    },
-                  }}
-                >
-                  {/* Front Face */}
-                  <Paper
-                    elevation={8}
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography
                     sx={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      backfaceVisibility: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: { xs: theme.spacing(2), sm: theme.spacing(3) },
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                      p: { xs: theme.spacing(2), sm: theme.spacing(3), md: theme.spacing(4) },
-                      boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                      color: theme.palette.primary.contrastText,
+                      fontWeight: 700,
+                      textShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                      wordBreak: 'break-word',
                     }}
                   >
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography
-                        sx={{
-                          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                          color: theme.palette.primary.contrastText,
-                          fontWeight: 700,
-                          textShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {isReversed ? currentCard.answer : currentCard.question}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: theme.palette.primary.contrastText,
-                          opacity: 0.7,
-                          mt: theme.spacing(2),
-                          display: 'block',
-                        }}
-                      >
-                        Click or press SPACE to flip
-                      </Typography>
-                    </Box>
-                  </Paper>
-
-                  {/* Back Face */}
-                  <Paper
-                    elevation={8}
+                    {isReversed ? currentCard.answer : currentCard.question}
+                  </Typography>
+                  <Typography
+                    variant="caption"
                     sx={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      backfaceVisibility: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: theme.spacing(3),
-                      background: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                      p: theme.spacing(4),
-                      transform: 'rotateY(180deg)',
-                      boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                      color: theme.palette.primary.contrastText,
+                      opacity: 0.7,
+                      mt: theme.spacing(2),
+                      display: 'block',
                     }}
                   >
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography
-                        sx={{
-                          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                          color: theme.palette.secondary.contrastText,
-                          fontWeight: 700,
-                          textShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {isReversed ? currentCard.question : currentCard.answer}
-                      </Typography>
-                    </Box>
-                  </Paper>
+                    Click or press SPACE to flip
+                  </Typography>
                 </Box>
-              </Box>
-            </Zoom>
+              </Paper>
+
+              {/* Back Face */}
+              <Paper
+                elevation={8}
+                sx={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  backfaceVisibility: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: theme.spacing(3),
+                  background: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
+                  p: theme.spacing(4),
+                  transform: 'rotateY(180deg)',
+                  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                }}
+              >
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography
+                    sx={{
+                      fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                      color: theme.palette.secondary.contrastText,
+                      fontWeight: 700,
+                      textShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {isReversed ? currentCard.question : currentCard.answer}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
           </Box>
+        </Zoom>
+      </Box>
 
-          {/* Navigation Controls */}
-          <Stack
-            direction="row"
-            spacing={{ xs: 1, sm: 2 }}
-            sx={{ mt: { xs: theme.spacing(2), sm: theme.spacing(3) }, justifyContent: 'center' }}
+      {/* Navigation Controls */}
+      <Stack direction="row" spacing={{ xs: 1, sm: 2 }} sx={{ mb: 4, justifyContent: 'center' }}>
+        <Tooltip title="Previous (←)" arrow>
+          <Fab
+            color="primary"
+            onClick={handlePrev}
+            sx={{
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.1)',
+              },
+            }}
           >
-            <Tooltip title="Previous (←)" arrow>
-              <Fab
-                color="primary"
-                onClick={handlePrev}
-                sx={{
-                  width: { xs: 48, sm: 56 },
-                  height: { xs: 48, sm: 56 },
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                  },
-                }}
-              >
-                <ArrowBack sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
-              </Fab>
-            </Tooltip>
+            <ArrowBack sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+          </Fab>
+        </Tooltip>
 
-            <Tooltip title="Flip Card (SPACE)" arrow>
-              <Fab
-                color="secondary"
-                onClick={handleFlip}
-                sx={{
-                  width: { xs: 48, sm: 56 },
-                  height: { xs: 48, sm: 56 },
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.1) rotate(180deg)',
-                  },
-                }}
-              >
-                <Flip sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
-              </Fab>
-            </Tooltip>
+        <Tooltip title="Flip Card (SPACE)" arrow>
+          <Fab
+            color="secondary"
+            onClick={handleFlip}
+            sx={{
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.1) rotate(180deg)',
+              },
+            }}
+          >
+            <Flip sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+          </Fab>
+        </Tooltip>
 
-            <Tooltip title="Next (→)" arrow>
-              <Fab
-                color="primary"
-                onClick={handleNext}
-                sx={{
-                  width: { xs: 48, sm: 56 },
-                  height: { xs: 48, sm: 56 },
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'scale(1.1)',
-                  },
-                }}
-              >
-                <ArrowForward sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
-              </Fab>
-            </Tooltip>
-          </Stack>
-        </Grid>
-      </Grid>
+        <Tooltip title="Next (→)" arrow>
+          <Fab
+            color="primary"
+            onClick={handleNext}
+            sx={{
+              width: { xs: 48, sm: 56 },
+              height: { xs: 48, sm: 56 },
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.1)',
+              },
+            }}
+          >
+            <ArrowForward sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+          </Fab>
+        </Tooltip>
+      </Stack>
+
+      {/* Progress Section */}
+      <Box sx={{ maxWidth: 600, mx: 'auto', mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, px: 1 }}>
+          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+            Progress
+          </Typography>
+          <Typography variant="body2" color="text.secondary" fontWeight={600}>
+            {currentIndex + 1} / {orderedFlashCards.length}
+          </Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          sx={{
+            height: 10,
+            borderRadius: 5,
+            backgroundColor:
+              theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+            '& .MuiLinearProgress-bar': {
+              borderRadius: 5,
+            },
+          }}
+        />
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ display: 'block', mt: 1, textAlign: 'center' }}
+        >
+          {orderedFlashCards.length - currentIndex - 1} cards remaining
+        </Typography>
+      </Box>
 
       {/* Filter and Action Controls */}
       <Paper
         elevation={2}
         sx={{
-          mt: { xs: theme.spacing(2), sm: theme.spacing(3) },
           p: { xs: theme.spacing(1.5), sm: theme.spacing(2) },
           borderRadius: theme.spacing(2),
           background:
             theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)',
           backdropFilter: 'blur(10px)',
+          mb: 2,
         }}
       >
         <Stack
@@ -541,7 +491,7 @@ const FlashCardPlayer: React.FC = () => {
           Keyboard shortcuts: SPACE/ENTER to flip • ← → to navigate
         </Typography>
       </Box>
-    </Box>
+    </Container>
   );
 };
 
