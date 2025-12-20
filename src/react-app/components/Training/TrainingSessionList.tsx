@@ -46,8 +46,22 @@
 // HEADER-END
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, List, ListItem, ListItemText, Typography} from '@mui/material';
-import React, {useState} from 'react';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  Typography,
+} from '@mui/material';
+import React, { useState } from 'react';
 
 import TrainingSessionForm from './TrainingSessionForm';
 
@@ -56,102 +70,134 @@ import { UserTrainingSession } from '../../../data/model/trainingSession';
 export type TrainingSession = UserTrainingSession;
 
 interface TrainingSessionListProps {
-   sessions: TrainingSession[];
-   onDeleteSession: (index: number) => void;
-   onEditSession: (index: number, updatedSession: TrainingSession) => void;
+  sessions: TrainingSession[];
+  onDeleteSession: (index: number) => void;
+  onEditSession: (index: number, updatedSession: TrainingSession) => void;
 }
 
-const TrainingSessionList: React.FC<TrainingSessionListProps> = ({sessions, onDeleteSession, onEditSession}) => {
-   const [isEditOpen, setIsEditOpen] = useState(false);
-   const [currentEditIndex, setCurrentEditIndex] = useState<number | null>(null);
-   const [editData, setEditData] = useState<TrainingSession | null>(null);
+const TrainingSessionList: React.FC<TrainingSessionListProps> = ({
+  sessions,
+  onDeleteSession,
+  onEditSession,
+}) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [currentEditIndex, setCurrentEditIndex] = useState<number | null>(null);
+  const [editData, setEditData] = useState<TrainingSession | null>(null);
 
-   const handleEditClick = (index: number) => {
-      setCurrentEditIndex(index);
-      setEditData(sessions[index]);
-      setIsEditOpen(true);
-   };
+  const handleEditClick = (index: number) => {
+    setCurrentEditIndex(index);
+    setEditData(sessions[index]);
+    setIsEditOpen(true);
+  };
 
-   const handleDeleteClick = (index: number) => {
-      if (window.confirm('Are you sure you want to delete this session?')) {
-         onDeleteSession(index);
-      }
-   };
+  const handleDeleteClick = (index: number) => {
+    if (window.confirm('Are you sure you want to delete this session?')) {
+      onDeleteSession(index);
+    }
+  };
 
-   const handleEditSubmit = (updatedSession: TrainingSession) => {
-      if (currentEditIndex !== null) {
-         onEditSession(currentEditIndex, updatedSession);
-         setIsEditOpen(false);
-         setCurrentEditIndex(null);
-         setEditData(null);
-      }
-   };
-
-   const handleClose = () => {
+  const handleEditSubmit = (updatedSession: TrainingSession) => {
+    if (currentEditIndex !== null) {
+      onEditSession(currentEditIndex, updatedSession);
       setIsEditOpen(false);
       setCurrentEditIndex(null);
       setEditData(null);
-   };
+    }
+  };
 
-   return (
-      <Box sx={{p: 2, maxWidth: 600, margin: '0 auto'}}>
-         <Typography variant='h6' mb={2}>
-            Training Sessions
-         </Typography>
-         {sessions.length === 0 ? (
-            <Typography>No sessions logged yet.</Typography>
-         ) : (
-            <List>
-               {sessions.map((session, index) => (
-                  <React.Fragment key={index}>
-                     <ListItem
-                        secondaryAction={
-                           <Box>
-                              <IconButton edge='end' aria-label='edit' onClick={() => handleEditClick(index)}>
-                                 <EditIcon />
-                              </IconButton>
-                              <IconButton edge='end' aria-label='delete' onClick={() => handleDeleteClick(index)}>
-                                 <DeleteIcon />
-                              </IconButton>
-                           </Box>
-                        }>
-                        <ListItemText
-                           primary={`${session.date} - ${session.type}`}
-                           secondary={
-                              <>
-                                 <Typography component='span' variant='body2' color='text.primary'>
-                                    Duration: {session.duration} minutes | Intensity: {session.intensity}
-                                 </Typography>
-                                 {session.notes && (
-                                    <>
-                                       <br />
-                                       <Typography component='span' variant='body2' color='text.secondary'>
-                                          Notes: {session.notes}
-                                       </Typography>
-                                    </>
-                                 )}
-                              </>
-                           }
-                        />
-                     </ListItem>
-                     {index < sessions.length - 1 && <Divider />}
-                  </React.Fragment>
-               ))}
-            </List>
-         )}
+  const handleClose = () => {
+    setIsEditOpen(false);
+    setCurrentEditIndex(null);
+    setEditData(null);
+  };
 
-         {/* Edit Dialog */}
-         <Dialog open={isEditOpen} onClose={handleClose} fullWidth maxWidth='sm'>
-            <DialogTitle>Edit Training Session</DialogTitle>
-            <DialogContent>{editData && <TrainingSessionForm key={editData.id} onAddSession={handleEditSubmit} initialData={editData} isEditMode />}</DialogContent>
-            <DialogActions>
-               <Button onClick={handleClose} color='secondary'>
-                  Cancel
-               </Button>
-            </DialogActions>
-         </Dialog>
+  return (
+    <Paper
+      elevation={2}
+      sx={{
+        p: { xs: 2, sm: 3 },
+        maxWidth: 700,
+        margin: '0 auto',
+        backgroundColor: 'background.paper',
+      }}
+    >
+      <Box>
+        <Typography variant="h6" mb={2}>
+          Training Sessions
+        </Typography>
+        {sessions.length === 0 ? (
+          <Typography>No sessions logged yet.</Typography>
+        ) : (
+          <List>
+            {sessions.map((session, index) => (
+              <React.Fragment key={index}>
+                <ListItem
+                  secondaryAction={
+                    <Box>
+                      <IconButton
+                        edge="end"
+                        aria-label="edit"
+                        onClick={() => handleEditClick(index)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        onClick={() => handleDeleteClick(index)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  }
+                >
+                  <ListItemText
+                    primary={`${session.date} - ${session.type}`}
+                    secondary={
+                      <>
+                        <Typography component="span" variant="body2" color="text.primary">
+                          Duration: {session.duration} minutes | Intensity: {session.intensity}
+                        </Typography>
+                        {session.notes && (
+                          <>
+                            <br />
+                            <Typography component="span" variant="body2" color="text.secondary">
+                              Notes: {session.notes}
+                            </Typography>
+                          </>
+                        )}
+                      </>
+                    }
+                  />
+                </ListItem>
+                {index < sessions.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        )}
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onClose={handleClose} fullWidth maxWidth="sm">
+          <DialogTitle>Edit Training Session</DialogTitle>
+          <DialogContent>
+            {editData && (
+              <TrainingSessionForm
+                key={editData.id}
+                onAddSession={handleEditSubmit}
+                initialData={editData}
+                isEditMode
+              />
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleClose} color="secondary">
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
-   );
+    </Paper>
+  );
 };
 
 export default TrainingSessionList;
