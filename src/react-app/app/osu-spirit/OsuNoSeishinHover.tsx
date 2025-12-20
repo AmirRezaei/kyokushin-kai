@@ -160,7 +160,7 @@ function TooltipContent({
                           variant="h6"
                           sx={{
                             fontWeight: isActive ? 900 : 'inherit',
-                            color: isActive ? 'error.main' : 'inherit',
+                            color: isActive ? 'red' : 'inherit',
                           }}
                         >
                           {k.char}
@@ -231,7 +231,7 @@ function TokenWithTooltip({ token, locale }: { token: TokenInfo; locale: 'en' | 
           px: 0.25,
 
           // Requirement: red on hover, no other styling
-          '&:hover': { color: 'error.main' },
+          '&:hover': { color: 'red' },
         }}
       >
         {token.kanji?.length ? (
