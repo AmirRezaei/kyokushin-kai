@@ -1,8 +1,10 @@
 // File: ./src/app/WordQuest/FlashCard/FlashCardPlayer.tsx
 
-import { ArrowBack, ArrowForward, Flip, Shuffle, SwapHoriz } from '@mui/icons-material';
+import { ArrowBack, ArrowForward, FilterList, Flip, Shuffle, SwapHoriz } from '@mui/icons-material';
 import {
   Box,
+  Button,
+  Collapse,
   Container,
   Fab,
   FormControl,
@@ -35,6 +37,7 @@ const FlashCardPlayer: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [shuffledCards, setShuffledCards] = useState<FlashCard[] | null>(null);
   const [isReversed, setIsReversed] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
 
   /**
    * Filter flashCards based on selected deck and category.
@@ -415,33 +418,19 @@ const FlashCardPlayer: React.FC = () => {
         }}
       >
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={{ xs: 1.5, sm: 2 }}
-          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'space-between', mb: showFilters ? 2 : 0 }}
         >
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={{ xs: 1, sm: 2 }}
-            sx={{ flex: 1, width: { xs: '100%', sm: 'auto' } }}
+          <Button
+            startIcon={<FilterList />}
+            onClick={() => setShowFilters(!showFilters)}
+            variant={showFilters ? 'contained' : 'outlined'}
+            size="small"
+            sx={{ borderRadius: theme.spacing(2) }}
           >
-            <FormControl variant="outlined" size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
-              <InputLabel>Deck</InputLabel>
-              <Select value={selectedDeckId} onChange={handleDeckChange} label="Deck">
-                <MenuItem value="All">All Decks</MenuItem>
-                {deckOptions.map((deck) => (
-                  <MenuItem key={deck.id} value={deck.id}>
-                    {deck.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
-              <CategorySelect
-                handleCategoryChange={handleCategoryChange}
-                selectedCategory={selectedCategory}
-              />
-            </Box>
-          </Stack>
+            {showFilters ? 'Hide Filters' : 'Filters'}
+          </Button>
 
           <Stack direction="row" spacing={1}>
             <Tooltip title="Shuffle Cards" arrow>
@@ -477,6 +466,41 @@ const FlashCardPlayer: React.FC = () => {
             </Tooltip>
           </Stack>
         </Stack>
+
+        <Collapse in={showFilters}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={{ xs: 1.5, sm: 2 }}
+            sx={{
+              pt: 2,
+              borderTop: 1,
+              borderColor: 'divider',
+              width: '100%',
+            }}
+          >
+            <FormControl
+              variant="outlined"
+              size="small"
+              sx={{ flex: 1, minWidth: { xs: '100%', sm: 150 } }}
+            >
+              <InputLabel>Deck</InputLabel>
+              <Select value={selectedDeckId} onChange={handleDeckChange} label="Deck">
+                <MenuItem value="All">All Decks</MenuItem>
+                {deckOptions.map((deck) => (
+                  <MenuItem key={deck.id} value={deck.id}>
+                    {deck.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box sx={{ flex: 1, width: { xs: '100%', sm: 'auto' } }}>
+              <CategorySelect
+                handleCategoryChange={handleCategoryChange}
+                selectedCategory={selectedCategory}
+              />
+            </Box>
+          </Stack>
+        </Collapse>
       </Paper>
 
       {/* Keyboard Shortcuts Help */}
