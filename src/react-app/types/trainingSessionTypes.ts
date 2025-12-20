@@ -28,12 +28,3 @@ export interface TrainingSessionHandlers {
   onEdit: (index: number, session: TrainingSession) => Promise<void> | void;
   onDelete: (indexOrId: number | string) => Promise<void> | void;
 }
-
-/**
- * Contribution data for contribution calendar visualization
- */
-export interface Contribution {
-  date: string | Date;
-  id?: string; // Optional unique identifier for the contribution
-  category?: string; // Optional category for different types of contributions
-}

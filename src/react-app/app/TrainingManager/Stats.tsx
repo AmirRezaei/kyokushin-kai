@@ -7,8 +7,8 @@ import { ExerciseContext } from './contexts/ExerciseContext';
 import { MuscleGroupContext } from './contexts/MuscleGroupContext';
 import { GymSessionContext } from './contexts/GymSessionContext';
 
-import ContributionCalendar from '../../components/Training/ContributionCalendar';
-import { Contribution } from '../../types/trainingSessionTypes';
+import ContributionCalendar from '../../components/UI/ContributionCalendar';
+import { Contribution } from '../../types/contribution';
 
 const Stats: React.FC = () => {
   const { gymSessions } = useContext(GymSessionContext);
@@ -60,21 +60,6 @@ const Stats: React.FC = () => {
     }
     return topMuscleGroups;
   }, [gymSessions, exercises, muscleGroups]);
-
-  // Workout Frequency (Sessions per Month)
-  const frequencyData = useMemo(() => {
-    const monthlySessions = gymSessions.reduce(
-      (acc, s) => {
-        const month = new Date(s.date).toISOString().slice(0, 7); // YYYY-MM
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-    return Object.entries(monthlySessions)
-      .map(([month, count]) => ({ month, count }))
-      .sort((a, b) => a.month.localeCompare(b.month));
-  }, [gymSessions]);
 
   return (
     <Paper

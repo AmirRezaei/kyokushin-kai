@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrainingSession } from '../../types/trainingSessionTypes';
-import ContributionCalendar from './ContributionCalendar';
+import ContributionCalendar from '../UI/ContributionCalendar';
 import TrainingStatistics from './TrainingStatistics';
 import TrainingTypeBreakdownChart from './TrainingTypeBreakdownChart';
 

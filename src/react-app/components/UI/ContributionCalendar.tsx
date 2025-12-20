@@ -11,7 +11,7 @@ import {
 } from 'date-fns';
 import React, { useMemo } from 'react';
 
-import { Contribution } from './types';
+import { Contribution } from '../../types/contribution';
 
 interface ContributionCalendarProps {
   contributions: Contribution[];
