@@ -345,9 +345,10 @@ const FlashCardPlayer: React.FC = () => {
             sx={{
               width: { xs: 48, sm: 56 },
               height: { xs: 48, sm: 56 },
-              transition: 'all 0.3s ease',
+              transition: 'transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)',
+              transform: flipped ? 'rotate(180deg)' : 'rotate(0deg)',
               '&:hover': {
-                transform: 'scale(1.1) rotate(180deg)',
+                transform: flipped ? 'scale(1.1) rotate(180deg)' : 'scale(1.1)',
               },
             }}
           >
