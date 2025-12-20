@@ -35,12 +35,12 @@ export const TrainingSessionRepository = {
   },
 
   /**
-   * Create or update a training session (upsert)
+   * Create a new training session
    * @param token - Authentication token
    * @param session - Training session data
    * @returns Promise resolving to boolean success
    */
-  upsertSession: async (token: string, session: UserTrainingSession): Promise<boolean> => {
+  createSession: async (token: string, session: UserTrainingSession): Promise<boolean> => {
     try {
       const res = await fetch(API_BASE, {
         method: 'POST',
@@ -52,13 +52,59 @@ export const TrainingSessionRepository = {
       });
 
       if (!res.ok) {
-        console.error(`Failed to upsert session: ${res.status} ${res.statusText}`);
+        console.error(`Failed to create session: ${res.status} ${res.statusText}`);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error upserting training session:', error);
+      console.error('Error creating training session:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Update an existing training session
+   * @param token - Authentication token
+   * @param session - Training session data
+   * @returns Promise resolving to boolean success
+   */
+  updateSession: async (token: string, session: UserTrainingSession): Promise<boolean> => {
+    try {
+      const expectedVersion = session.version ?? 0;
+      const res = await fetch(`${API_BASE}/${session.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          expectedVersion,
+          patch: {
+            date: session.date,
+            type: session.type,
+            duration: session.duration,
+            intensity: session.intensity,
+            notes: session.notes,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          console.warn('Training session conflict detected.');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('training-session-conflict'));
+          }
+          return false;
+        }
+        console.error(`Failed to update session: ${res.status} ${res.statusText}`);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating training session:', error);
       return false;
     }
   },

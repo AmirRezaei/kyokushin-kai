@@ -57,6 +57,33 @@ function AppContent() {
     }
   }, [authError, showSnackbar]);
 
+  React.useEffect(() => {
+    const handleSettingsConflict = () => {
+      showSnackbar('Settings updated from another device. Reloading latest.', 'warning');
+    };
+    const handleSessionConflict = () => {
+      showSnackbar('Training session updated from another device.', 'warning');
+    };
+    const handleFlashCardConflict = () => {
+      showSnackbar('Flashcard updated from another device. Reloading.', 'warning');
+    };
+    const handleDeckConflict = () => {
+      showSnackbar('Deck updated from another device. Reloading.', 'warning');
+    };
+
+    window.addEventListener('settings-conflict', handleSettingsConflict);
+    window.addEventListener('training-session-conflict', handleSessionConflict);
+    window.addEventListener('flashcard-conflict', handleFlashCardConflict);
+    window.addEventListener('deck-conflict', handleDeckConflict);
+
+    return () => {
+      window.removeEventListener('settings-conflict', handleSettingsConflict);
+      window.removeEventListener('training-session-conflict', handleSessionConflict);
+      window.removeEventListener('flashcard-conflict', handleFlashCardConflict);
+      window.removeEventListener('deck-conflict', handleDeckConflict);
+    };
+  }, [showSnackbar]);
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 

@@ -6,7 +6,7 @@ export type TrainingSessionId = string;
 export interface UserTrainingSession {
   id: TrainingSessionId;
   userId?: UserId; // Optional on frontend before save, required on backend
-  
+
   date: ISODateTimeString;
   type: string; // e.g. "Kihon", "Kata", "Sparring"
   duration: number; // minutes
@@ -15,4 +15,5 @@ export interface UserTrainingSession {
 
   createdAt?: ISODateTimeString;
   updatedAt?: ISODateTimeString;
+  version?: number;
 }

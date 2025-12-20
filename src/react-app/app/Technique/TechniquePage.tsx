@@ -27,12 +27,12 @@ const TechniquePage: React.FC = () => {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<Record<string, string[]>>({});
   const [youtubeLinks, setYoutubeLinks] = useState<Record<string, string[]>>({});
+  const [versions, setVersions] = useState<Record<string, number>>({});
 
   // DetailDrawer state
   const [selectedTechnique, setSelectedTechnique] = useState<TechniqueRecord | KataRecord | null>(
     null,
   );
-  const [selectedGradeId, setSelectedGradeId] = useState<string>('');
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { token } = useAuth();
@@ -66,6 +66,7 @@ const TechniquePage: React.FC = () => {
           const newNotes: Record<string, string> = {};
           const newTags: Record<string, string[]> = {};
           const newYoutubeLinks: Record<string, string[]> = {};
+          const newVersions: Record<string, number> = {};
 
           data.progress.forEach((item: any) => {
             if (item.rating) newRatings[item.techniqueId] = item.rating;
@@ -73,12 +74,14 @@ const TechniquePage: React.FC = () => {
             if (item.tags && item.tags.length) newTags[item.techniqueId] = item.tags;
             if (item.videoLinks && item.videoLinks.length)
               newYoutubeLinks[item.techniqueId] = item.videoLinks;
+            if (typeof item.version === 'number') newVersions[item.techniqueId] = item.version;
           });
 
           setRatings(newRatings);
           setNotes(newNotes);
           setTags(newTags);
           setYoutubeLinks(newYoutubeLinks);
+          setVersions(newVersions);
         }
       })
       .catch((err) => console.error('Error fetching progress:', err));
@@ -86,7 +89,6 @@ const TechniquePage: React.FC = () => {
 
   const handleTechniqueClick = (technique: TechniqueRecord | KataRecord, gradeId: string) => {
     setSelectedTechnique(technique);
-    setSelectedGradeId(gradeId);
     setDrawerOpen(true);
 
     // Pre-populate YouTube links from kata/technique mediaIds if not already in user progress
@@ -122,34 +124,58 @@ const TechniquePage: React.FC = () => {
       return;
     }
 
+    const currentVersion = versions[selectedTechnique.id] || 0;
+
     try {
-      const res = await fetch('/api/v1/technique-progress', {
-        method: 'POST',
+      const res = await fetch(`/api/v1/technique-progress/${selectedTechnique.id}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ techniqueId: selectedTechnique.id, ...data }),
+        body: JSON.stringify({
+          expectedVersion: currentVersion,
+          patch: data,
+        }),
       });
 
       if (!res.ok) {
+        if (res.status === 409) {
+          const body = await res.json();
+          const latest = body.latest;
+          if (latest) {
+            // Conflict: Update local state to latest
+            setRatings((prev) => ({ ...prev, [latest.techniqueId]: latest.rating }));
+            setNotes((prev) => ({ ...prev, [latest.techniqueId]: latest.notes }));
+            setTags((prev) => ({ ...prev, [latest.techniqueId]: latest.tags || [] }));
+            setYoutubeLinks((prev) => ({ ...prev, [latest.techniqueId]: latest.videoLinks || [] }));
+            setVersions((prev) => ({ ...prev, [latest.techniqueId]: latest.version }));
+            showSnackbar('Conflict detected. Updated to latest version.', 'warning');
+            return;
+          }
+        }
         const err = await res.json();
         throw new Error(err.error || 'Failed to save');
       }
 
-      // Update local state
+      const responseData = await res.json();
+      const newVersion = responseData.version;
+      const tid = selectedTechnique.id;
+
+      // Update local state with the saved data and new version
       if (data.rating !== undefined) {
-        setRatings((prev) => ({ ...prev, [selectedTechnique.id]: data.rating! }));
+        setRatings((prev) => ({ ...prev, [tid]: data.rating! }));
       }
       if (data.notes !== undefined) {
-        setNotes((prev) => ({ ...prev, [selectedTechnique.id]: data.notes! }));
+        setNotes((prev) => ({ ...prev, [tid]: data.notes! }));
       }
       if (data.tags !== undefined) {
-        setTags((prev) => ({ ...prev, [selectedTechnique.id]: data.tags! }));
+        setTags((prev) => ({ ...prev, [tid]: data.tags! }));
       }
       if (data.videoLinks !== undefined) {
-        setYoutubeLinks((prev) => ({ ...prev, [selectedTechnique.id]: data.videoLinks! }));
+        setYoutubeLinks((prev) => ({ ...prev, [tid]: data.videoLinks! }));
       }
+      setVersions((prev) => ({ ...prev, [tid]: newVersion }));
 
       showSnackbar('Progress saved successfully', 'success');
     } catch (error) {

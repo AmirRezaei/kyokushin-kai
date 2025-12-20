@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { TrainingSessionRepository } from '../../data/repo/TrainingSessionRepository';
-import { TrainingSession } from '../types/trainingSessionTypes';
+import { UserTrainingSession } from '../../data/model/trainingSession';
 
 /**
  * Custom hook for training session API operations
@@ -10,7 +10,7 @@ export const useTrainingSessionApi = (token: string | null) => {
   /**
    * Fetch all training sessions from the API
    */
-  const fetchSessions = useCallback(async (): Promise<TrainingSession[] | null> => {
+  const fetchSessions = useCallback(async (): Promise<UserTrainingSession[] | null> => {
     if (!token) return null;
     return await TrainingSessionRepository.getUserSessions(token);
   }, [token]);
@@ -19,9 +19,9 @@ export const useTrainingSessionApi = (token: string | null) => {
    * Create a new training session via API
    */
   const createSession = useCallback(
-    async (session: TrainingSession): Promise<boolean> => {
+    async (session: UserTrainingSession): Promise<boolean> => {
       if (!token) return false;
-      return await TrainingSessionRepository.upsertSession(token, session);
+      return await TrainingSessionRepository.createSession(token, session);
     },
     [token],
   );
@@ -30,9 +30,9 @@ export const useTrainingSessionApi = (token: string | null) => {
    * Update an existing training session via API
    */
   const updateSession = useCallback(
-    async (session: TrainingSession): Promise<boolean> => {
+    async (session: UserTrainingSession): Promise<boolean> => {
       if (!token) return false;
-      return await TrainingSessionRepository.upsertSession(token, session);
+      return await TrainingSessionRepository.updateSession(token, session);
     },
     [token],
   );
