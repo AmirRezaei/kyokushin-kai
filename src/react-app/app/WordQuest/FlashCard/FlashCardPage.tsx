@@ -34,9 +34,8 @@ const FlashCardPage: React.FC = () => {
             elevation={2}
             sx={{
               mb: theme.spacing(2),
-              p: { xs: theme.spacing(2), sm: theme.spacing(3) },
               textAlign: 'center',
-              borderRadius: theme.spacing(2),
+              borderRadius: theme.spacing(1),
               background: theme.palette.primary.main,
             }}
           >
@@ -86,7 +85,7 @@ const FlashCardPage: React.FC = () => {
                 elevation={3}
                 sx={{
                   mb: theme.spacing(3),
-                  borderRadius: theme.spacing(2),
+                  borderRadius: theme.spacing(1),
                   overflow: 'hidden',
                   background:
                     theme.palette.mode === 'dark'
