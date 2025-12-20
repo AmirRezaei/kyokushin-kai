@@ -1,6 +1,6 @@
 // File: ./src/app/WordQuest/FlashCard/FlashCardPage.tsx
 
-import { School } from '@mui/icons-material';
+import { LibraryBooks, School, SportsEsports, Style } from '@mui/icons-material';
 import { Box, Container, Fade, Paper, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -33,9 +33,12 @@ const FlashCardPage: React.FC = () => {
           <Paper
             elevation={2}
             sx={{
-              mb: theme.spacing(2),
+              // mb: theme.spacing(2),
               textAlign: 'center',
-              borderRadius: theme.spacing(1),
+              bordderTopLeftRadius: theme.spacing(1),
+              bordderTopRightRadius: theme.spacing(1),
+              borderBottomLeftRadius: theme.spacing(0),
+              borderBottomRightRadius: theme.spacing(0),
               background: theme.palette.primary.main,
             }}
           >
@@ -84,8 +87,11 @@ const FlashCardPage: React.FC = () => {
               <Paper
                 elevation={3}
                 sx={{
-                  mb: theme.spacing(3),
-                  borderRadius: theme.spacing(1),
+                  mb: theme.spacing(2),
+                  bordderTopLeftRadius: theme.spacing(10),
+                  bordderTopRightRadius: theme.spacing(0),
+                  borderBottomLeftRadius: theme.spacing(1),
+                  borderBottomRightRadius: theme.spacing(1),
                   overflow: 'hidden',
                   background:
                     theme.palette.mode === 'dark'
@@ -102,10 +108,11 @@ const FlashCardPage: React.FC = () => {
                   textColor="primary"
                   sx={{
                     '& .MuiTab-root': {
-                      py: theme.spacing(2),
-                      fontSize: '1rem',
+                      py: theme.spacing(1.5),
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
                       fontWeight: 600,
                       textTransform: 'none',
+                      minHeight: 48,
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         backgroundColor: theme.palette.action.hover,
@@ -122,9 +129,24 @@ const FlashCardPage: React.FC = () => {
                     },
                   }}
                 >
-                  <Tab label="🎮 Play" />
-                  <Tab label="📝 Manage Flashcards" />
-                  <Tab label="📚 Manage Decks" />
+                  <Tab
+                    icon={<SportsEsports />}
+                    iconPosition="start"
+                    label="Play"
+                    sx={{ minHeight: 'auto' }}
+                  />
+                  <Tab
+                    icon={<Style />}
+                    iconPosition="start"
+                    label="Flashcards"
+                    sx={{ minHeight: 'auto' }}
+                  />
+                  <Tab
+                    icon={<LibraryBooks />}
+                    iconPosition="start"
+                    label="Decks"
+                    sx={{ minHeight: 'auto' }}
+                  />
                 </Tabs>
               </Paper>
             </Fade>
