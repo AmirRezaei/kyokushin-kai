@@ -5,12 +5,8 @@ import {
   Box,
   Button,
   Container,
-  FormControl,
   Grid,
-  InputLabel,
-  MenuItem,
   Paper,
-  Select,
   Stack,
   ToggleButton,
   ToggleButtonGroup,
@@ -29,6 +25,7 @@ import {
   useLanguage,
 } from '../../../components/context/LanguageContext';
 import { useDecks } from './Deck/DeckContext';
+import DeckSelector from './Deck/DeckSelector';
 import { useFlashCards } from './FlashCardContext';
 
 // Game Card Interface
@@ -306,34 +303,12 @@ const FlashCardMatchGame: React.FC = () => {
           </Typography>
 
           <Stack spacing={3}>
-            <FormControl fullWidth>
-              <InputLabel>Select Deck</InputLabel>
-              <Select
-                value={selectedDeckId}
-                label="Select Deck"
-                onChange={(e) => setSelectedDeckId(e.target.value)}
-              >
-                {/* System Grades */}
-                {KyokushinRepository.getCurriculumGrades()
-                  .filter((g) => g.techniques.length > 0 || g.katas.length > 0)
-                  .map((grade) => (
-                    <MenuItem key={`deck-${grade.id}`} value={`deck-${grade.id}`}>
-                      {grade.name.en || grade.name.romaji} (
-                      {grade.techniques.length + grade.katas.length} Items)
-                    </MenuItem>
-                  ))}
-
-                {/* Divider if both exist */}
-                {decks.length > 0 && <MenuItem disabled>──────────</MenuItem>}
-
-                {/* Custom Decks */}
-                {decks.map((deck) => (
-                  <MenuItem key={deck.id} value={deck.id}>
-                    {deck.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <DeckSelector
+              selectedDeckId={selectedDeckId}
+              onDeckChange={setSelectedDeckId}
+              showCounts
+              filterEmpty
+            />
 
             <Box>
               <Typography variant="subtitle2" gutterBottom>

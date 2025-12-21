@@ -1,6 +1,6 @@
 // File: ./src/app/WordQuest/FlashCard/FlashCardPage.tsx
 
-import { Extension, LibraryBooks, School, SportsEsports, Style } from '@mui/icons-material';
+import { Extension, GridOn, LibraryBooks, School, SportsEsports, Style } from '@mui/icons-material';
 import { Box, Container, Fade, Paper, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import React, { useState } from 'react';
 
@@ -9,6 +9,7 @@ import DeckManager from './Deck/DeckManager';
 import { FlashCardProvider } from './FlashCardContext';
 import FlashCardPlayer from './FlashCardPlayer';
 import FlashCardMatchGame from './FlashCardMatchGame';
+import FlashCardCrossword from './FlashCardCrossword';
 import FlashCardManager from './Manager/FlashCardManager';
 
 const FlashCardPage: React.FC = () => {
@@ -142,6 +143,12 @@ const FlashCardPage: React.FC = () => {
                     sx={{ minHeight: 'auto' }}
                   />
                   <Tab
+                    icon={<GridOn />}
+                    iconPosition="start"
+                    label="Crossword"
+                    sx={{ minHeight: 'auto' }}
+                  />
+                  <Tab
                     icon={<Style />}
                     iconPosition="start"
                     label="Flashcards"
@@ -162,8 +169,9 @@ const FlashCardPage: React.FC = () => {
               <Box>
                 {value === 0 && <FlashCardPlayer />}
                 {value === 1 && <FlashCardMatchGame />}
-                {value === 2 && <FlashCardManager />}
-                {value === 3 && <DeckManager />}
+                {value === 2 && <FlashCardCrossword />}
+                {value === 3 && <FlashCardManager />}
+                {value === 4 && <DeckManager />}
               </Box>
             </Fade>
           </FlashCardProvider>

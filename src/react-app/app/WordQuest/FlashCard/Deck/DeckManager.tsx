@@ -1,6 +1,19 @@
 // File: ./src/app/WordQuest/FlashCard/Deck/DeckManager.tsx
 
-import { Alert, Box, Paper, Snackbar, Typography, useTheme } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Paper,
+  Snackbar,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import React, { useState } from 'react';
 
 import { Deck } from '../types';
@@ -10,8 +23,9 @@ import DeckList from './DeckList';
 
 const DeckManager: React.FC = () => {
   const theme = useTheme();
-  const { decks, addDeck, updateDeck, deleteDeck } = useDecks();
+  const { decks, addDeck, updateDeck, deleteDeck, deleteAllDecks } = useDecks();
   const [editingDeck, setEditingDeck] = useState<Deck | null>(null);
+  const [openDeleteAllDialog, setOpenDeleteAllDialog] = useState(false);
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -47,6 +61,12 @@ const DeckManager: React.FC = () => {
   const handleDeleteDeck = (id: string) => {
     deleteDeck(id);
     showNotification('Deck deleted successfully!', 'success');
+  };
+
+  const handleConfirmDeleteAll = () => {
+    deleteAllDecks();
+    setOpenDeleteAllDialog(false);
+    showNotification('All user decks deleted successfully!', 'success');
   };
 
   return (
@@ -110,6 +130,18 @@ const DeckManager: React.FC = () => {
           backdropFilter: 'blur(10px)',
         }}
       >
+        {decks.some((d) => !d.id.startsWith('deck-')) && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => setOpenDeleteAllDialog(true)}
+              size="small"
+            >
+              Delete All Custom Decks
+            </Button>
+          </Box>
+        )}
         <DeckList decks={decks} setEditingDeck={setEditingDeck} deleteDeck={handleDeleteDeck} />
       </Paper>
 
@@ -127,6 +159,22 @@ const DeckManager: React.FC = () => {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={openDeleteAllDialog} onClose={() => setOpenDeleteAllDialog(false)}>
+        <DialogTitle>Delete All Custom Decks?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete all your custom decks? This action cannot be undone.
+            System decks will remain.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteAllDialog(false)}>Cancel</Button>
+          <Button onClick={handleConfirmDeleteAll} color="error" autoFocus>
+            Delete All
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

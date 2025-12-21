@@ -81,17 +81,17 @@ src/
 
 ## Key Routes
 
-| Path                 | Component                    | Auth      | Description                     |
-| -------------------- | ---------------------------- | --------- | ------------------------------- |
-| `/`                  | `Home`                       | Public    | Landing page                    |
-| `/technique`         | `TechniquePage`              | Protected | Technique browser with progress |
-| `/training-manager`  | `TrainingManagerPage`        | Protected | Training session management     |
-| `/flashcards`        | `FlashCardPage`              | Protected | Flashcard study system          |
-| `/WordQuest`         | `WordPlayPage`               | Protected | Language learning game          |
-| `/settings`          | `SettingsPage`               | Protected | User preferences                |
-| `/ten-thousand-days` | `TenThousandDaysTrackerPage` | Protected | Long-term progress              |
-| `/timer`             | `TimerPage`                  | Public    | Training timers                 |
-| `/breathing`         | `BreathingTechniquesPage`    | Public    | Breathing exercises             |
+| Path                 | Component                    | Auth      | Description                                                                                  |
+| -------------------- | ---------------------------- | --------- | -------------------------------------------------------------------------------------------- |
+| `/`                  | `Home`                       | Public    | Landing page                                                                                 |
+| `/technique`         | `TechniquePage`              | Protected | Technique browser with progress                                                              |
+| `/training-manager`  | `TrainingManagerPage`        | Protected | Training session management                                                                  |
+| `/flashcards`        | `FlashCardPage`              | Protected | Flashcard study system with Practice, Match, Crossword, Flashcards, and Deck management tabs |
+| `/WordQuest`         | `WordPlayPage`               | Protected | Language learning game                                                                       |
+| `/settings`          | `SettingsPage`               | Protected | User preferences                                                                             |
+| `/ten-thousand-days` | `TenThousandDaysTrackerPage` | Protected | Long-term progress                                                                           |
+| `/timer`             | `TimerPage`                  | Public    | Training timers                                                                              |
+| `/breathing`         | `BreathingTechniquesPage`    | Public    | Breathing exercises                                                                          |
 
 **Protected routes**: Use `ProtectedRoute` wrapper → checks `AuthContext`
 

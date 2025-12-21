@@ -14,6 +14,7 @@ export interface DeckContextType {
   addDeck: (deck: Omit<Deck, 'id' | 'flashCardIds'>) => void;
   updateDeck: (deck: Deck) => void;
   deleteDeck: (id: string) => void;
+  deleteAllDecks: () => void;
 }
 
 export const DeckContext = createContext<DeckContextType | undefined>(undefined);
@@ -163,11 +164,47 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteAllDecks = async () => {
+    // Only delete user decks (managed in 'decks' state)
+    const decksToDelete = [...decks];
+
+    // Optimistic update
+    setDecks([]);
+
+    if (!token) {
+      const flashCards = getLocalStorageItem<FlashCard[]>('flashCards', []);
+      const updatedFlashCards = flashCards.map((card) =>
+        decksToDelete.some((d) => d.id === card.deckId) ? { ...card, deckId: undefined } : card,
+      );
+      setLocalStorageItem<FlashCard[]>('flashCards', updatedFlashCards);
+    } else {
+      try {
+        await Promise.all(
+          decksToDelete.map((deck) =>
+            fetch(`/api/v1/decks/${deck.id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+          ),
+        );
+      } catch (err) {
+        console.error('Failed to delete all decks', err);
+        fetch('/api/v1/decks', { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.decks) setDecks(d.decks);
+          });
+      }
+    }
+  };
+
   // Combine logic
   const allDecks = React.useMemo(() => [...nativeDecks, ...decks], [nativeDecks, decks]);
 
   return (
-    <DeckContext.Provider value={{ decks: allDecks, addDeck, updateDeck, deleteDeck }}>
+    <DeckContext.Provider
+      value={{ decks: allDecks, addDeck, updateDeck, deleteDeck, deleteAllDecks }}
+    >
       {children}
     </DeckContext.Provider>
   );

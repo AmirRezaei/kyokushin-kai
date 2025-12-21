@@ -7,12 +7,8 @@ import {
   Collapse,
   Container,
   Fab,
-  FormControl,
-  InputLabel,
   LinearProgress,
-  MenuItem,
   Paper,
-  Select,
   SelectChangeEvent,
   Stack,
   Tooltip,
@@ -22,14 +18,13 @@ import {
 import { useTheme } from '@mui/material/styles';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useDecks } from './Deck/DeckContext';
+import DeckSelector from './Deck/DeckSelector';
 import { useFlashCards } from './FlashCardContext';
 import { FlashCard } from './types';
 import CategorySelect from './UI/CategorySelect';
 
 const FlashCardPlayer: React.FC = () => {
   const theme = useTheme();
-  const { decks } = useDecks();
   const { flashCards } = useFlashCards();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [flipped, setFlipped] = useState<boolean>(false);
@@ -129,8 +124,8 @@ const FlashCardPlayer: React.FC = () => {
   /**
    * Handle deck selection change for filtering.
    */
-  const handleDeckChange = (event: SelectChangeEvent<string>) => {
-    setSelectedDeckId(event.target.value as string);
+  const handleDeckChange = (newDeckId: string) => {
+    setSelectedDeckId(newDeckId);
   };
 
   /**
@@ -139,12 +134,6 @@ const FlashCardPlayer: React.FC = () => {
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
     setSelectedCategory(event.target.value as string);
   };
-
-  // Get deck options
-  const deckOptions: { id: string; name: string }[] = decks.map((deck) => ({
-    id: deck.id,
-    name: deck.name,
-  }));
 
   if (orderedFlashCards.length === 0) {
     return (
@@ -174,17 +163,14 @@ const FlashCardPlayer: React.FC = () => {
           spacing={2}
           sx={{ justifyContent: 'center', alignItems: 'center' }}
         >
-          <FormControl variant="outlined" sx={{ minWidth: 200 }}>
-            <InputLabel>Deck</InputLabel>
-            <Select value={selectedDeckId} onChange={handleDeckChange} label="Deck">
-              <MenuItem value="All">All</MenuItem>
-              {deckOptions.map((deck) => (
-                <MenuItem key={deck.id} value={deck.id}>
-                  {deck.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Box sx={{ minWidth: 200 }}>
+            <DeckSelector
+              selectedDeckId={selectedDeckId}
+              onDeckChange={handleDeckChange}
+              includeAllOption
+              label="Deck"
+            />
+          </Box>
           <CategorySelect
             handleCategoryChange={handleCategoryChange}
             selectedCategory={selectedCategory}
@@ -479,21 +465,14 @@ const FlashCardPlayer: React.FC = () => {
               width: '100%',
             }}
           >
-            <FormControl
-              variant="outlined"
-              size="small"
-              sx={{ flex: 1, minWidth: { xs: '100%', sm: 150 } }}
-            >
-              <InputLabel>Deck</InputLabel>
-              <Select value={selectedDeckId} onChange={handleDeckChange} label="Deck">
-                <MenuItem value="All">All Decks</MenuItem>
-                {deckOptions.map((deck) => (
-                  <MenuItem key={deck.id} value={deck.id}>
-                    {deck.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Box sx={{ flex: 1, minWidth: { xs: '100%', sm: 150 } }}>
+              <DeckSelector
+                selectedDeckId={selectedDeckId}
+                onDeckChange={handleDeckChange}
+                includeAllOption
+                filterEmpty
+              />
+            </Box>
             <Box sx={{ flex: 1, width: { xs: '100%', sm: 'auto' } }}>
               <CategorySelect
                 handleCategoryChange={handleCategoryChange}
