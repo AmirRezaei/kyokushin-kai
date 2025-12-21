@@ -49,6 +49,10 @@ D1 Database (SQLite)
 - **Auth**: OAuth 2.0 → Custom JWT (1h) + Refresh token (30d)
 - **State**: React Context API (`AuthContext`, `LanguageContext`, `CustomThemeProvider`, `SnackbarContext`)
 - **Offline**: LocalStorage fallback for user data
+- **Concurrency**: Optimistic Concurrency Control (OCC) via versioning
+  - **Read**: Returns `version`
+  - **Write**: Requires `expectedVersion`, increments on success
+  - **Conflict**: Returns `409` with latest data if versions mismatch
 
 ---
 
@@ -173,17 +177,46 @@ export default function MyFeaturePage() {
 <Route path="/my-feature" element={<MyFeaturePage />} />
 ```
 
-**3. Add API endpoint** in [`worker/index.ts`](file:///c:/Users/itkom/source/kyokushin-kai/src/worker/index.ts):
+**3. Create Database Migration**:
+
+- Run `bun run db:create my_feature_init`
+- Define table with `version` column for OCC:
+
+```sql
+CREATE TABLE user_my_feature (
+  user_id TEXT NOT NULL,
+  id TEXT PRIMARY KEY,
+  data TEXT,
+  updated_at INTEGER,
+  version INTEGER DEFAULT 0 -- Required for concurrency control
+);
+```
+
+**4. Add API endpoint** in [`worker/index.ts`](file:///c:/Users/itkom/source/kyokushin-kai/src/worker/index.ts):
+
+- Use `performOptimisticUpdate` for writes:
 
 ```typescript
-app.get('/api/v1/my-feature', async (c) => {
+app.patch('/api/v1/my-feature/:id', async (c) => {
   const user = await requireUser(c);
-  if (!user) return c.json({ error: 'Unauthorized' }, 401);
-  // Query database, return JSON
+  // ... parse payload with expectedVersion ...
+
+  const result = await performOptimisticUpdate(
+    c.env.DB,
+    'user_my_feature',
+    user.id,
+    id,
+    payload.expectedVersion,
+    payload.patch,
+    ['data'],
+  );
+
+  if (!result.ok) return c.json({ error: 'conflict', latest: result.latest }, 409);
+  return c.json(result.data);
 });
 ```
 
-**4. Create repository**:
+**5. Create repository**:
 
 ```typescript
 // src/data/repo/MyFeatureRepository.ts
@@ -198,7 +231,7 @@ export const MyFeatureRepository = {
 };
 ```
 
-**5. Create hook**:
+**6. Create hook**:
 
 ```typescript
 // src/react-app/hooks/useMyFeature.ts
