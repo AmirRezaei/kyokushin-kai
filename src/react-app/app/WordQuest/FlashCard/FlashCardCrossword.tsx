@@ -1,5 +1,5 @@
 // File: src/react-app/components/games/flashcards/FlashCardCrossword.tsx
-import { ArrowBack, Lightbulb } from '@mui/icons-material';
+import { ArrowBack, Lightbulb, Refresh } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -14,8 +14,9 @@ import {
   Stack,
   Typography,
   useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { getBeltColorHex } from '../../../../data/repo/gradeHelpers';
 import { KyokushinRepository, GradeWithContent } from '../../../../data/repo/KyokushinRepository';
@@ -54,7 +55,16 @@ interface CrosswordPuzzle {
   size: number | { rows: number; cols: number };
 }
 
-const IMAGE_PLACEHOLDER = { rows: 8, cols: 8 } as const;
+const CROSSWORD_IMAGE_PATH = '/media/crossword/ditherlab-1766485677538.png';
+
+const PLACEHOLDER_CONFIG = {
+  position: 'center' as 'center' | 'top-right',
+};
+
+const PLACEHOLDER_LIMITS = {
+  desktop: { rows: 12, cols: 12 },
+  mobile: { rows: 8, cols: 8 },
+};
 
 const createEmptyCell = (row: number, col: number): CrosswordCell => ({
   row,
@@ -108,6 +118,7 @@ const expandGridWithTopRightPlaceholder = (
 
 const FlashCardCrossword: React.FC = () => {
   const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const { decks } = useDecks();
   const { flashCards } = useFlashCards();
 
@@ -119,6 +130,13 @@ const FlashCardCrossword: React.FC = () => {
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [draggedLetter, setDraggedLetter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number>(3); // 1-5 scale
+  const [imagePlaceholder, setImagePlaceholder] = useState<{ rows: number; cols: number }>({
+    rows: 12,
+    cols: 12,
+  });
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(
+    null,
+  );
 
   // Difficulty levels with reveal percentages
   const difficultyLevels = [
@@ -131,6 +149,39 @@ const FlashCardCrossword: React.FC = () => {
 
   // Alphabet for picker
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+  // Load image dimensions and calculate optimal placeholder grid size
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const { width, height } = img;
+      setImageDimensions({ width, height });
+
+      // Calculate aspect ratios
+      const imageAspect = width / height;
+
+      // Determine limits based on device
+      const limits = isDesktop ? PLACEHOLDER_LIMITS.desktop : PLACEHOLDER_LIMITS.mobile;
+
+      // Try to maximize within limits
+      // Use floor to ensure we snap to the "contained" integer steps, trimming any fractional overflow
+      let cols = limits.cols;
+      let rows = Math.floor(cols / imageAspect);
+
+      if (rows > limits.rows) {
+        // If height exceeds limit, constrain by height instead
+        rows = limits.rows;
+        cols = Math.floor(rows * imageAspect);
+      }
+
+      // Ensure at least 1x1
+      rows = Math.max(1, rows);
+      cols = Math.max(1, cols);
+
+      setImagePlaceholder({ rows, cols });
+    };
+    img.src = CROSSWORD_IMAGE_PATH;
+  }, [isDesktop]);
 
   // Get deck color for styling - using useMemo to avoid cascading renders
   const deckColor = useMemo(() => {
@@ -236,7 +287,7 @@ const FlashCardCrossword: React.FC = () => {
     if (wordList.length < 3) return null;
 
     // Larger grid to fit more words
-    const gridSize = 30;
+    const gridSize = 40;
     const grid: CrosswordCell[][] = Array(gridSize)
       .fill(null)
       .map((_, row) =>
@@ -251,13 +302,40 @@ const FlashCardCrossword: React.FC = () => {
           })),
       );
 
+    // Pre-fill placeholder if in center
+    if (PLACEHOLDER_CONFIG.position === 'center') {
+      const phStartRow = Math.floor((gridSize - imagePlaceholder.rows) / 2);
+      const phStartCol = Math.floor((gridSize - imagePlaceholder.cols) / 2);
+
+      for (let r = 0; r < imagePlaceholder.rows; r++) {
+        for (let c = 0; c < imagePlaceholder.cols; c++) {
+          if (phStartRow + r < gridSize && phStartCol + c < gridSize) {
+            grid[phStartRow + r][phStartCol + c] = {
+              row: phStartRow + r,
+              col: phStartCol + c,
+              letter: '',
+              value: '',
+              type: 'placeholder',
+            };
+          }
+        }
+      }
+    }
+
     const words: CrosswordWord[] = [];
     let wordNumber = 1;
 
     // Place first word horizontally in the middle
     const firstWord = wordList[0];
-    const startRow = Math.floor(gridSize / 2);
+    let startRow = Math.floor(gridSize / 2);
     const startCol = Math.floor((gridSize - firstWord.word.length) / 2);
+
+    // If center placeholder is used, move first word to avoid it
+    if (PLACEHOLDER_CONFIG.position === 'center') {
+      const phStartRow = Math.floor((gridSize - imagePlaceholder.rows) / 2);
+      // Try to place above the placeholder
+      startRow = Math.max(0, phStartRow - 2);
+    }
 
     let isFirstLetter = true;
     for (let i = 0; i < firstWord.word.length; i++) {
@@ -343,7 +421,13 @@ const FlashCardCrossword: React.FC = () => {
                 const checkCol = direction === 'across' ? newStartCol + m : newStartCol;
 
                 const cell = grid[checkRow][checkCol];
-                if (cell.type !== 'empty' && cell.letter !== currentWord.word[m]) {
+
+                // Check placeholder conflict: Allow spaces, block letters
+                if (cell.type === 'placeholder') {
+                  if (currentWord.word[m] !== ' ') {
+                    canPlace = false;
+                  }
+                } else if (cell.type !== 'empty' && cell.letter !== currentWord.word[m]) {
                   canPlace = false;
                 }
               }
@@ -356,30 +440,42 @@ const FlashCardCrossword: React.FC = () => {
                   const placeCol = direction === 'across' ? newStartCol + m : newStartCol;
                   const char = currentWord.word[m];
 
-                  if (char === ' ') {
-                    // Keep space as black box separator only if it was actually empty
-                    if (grid[placeRow][placeCol].type === 'empty') {
+                  // Do not overwrite placeholder with spaces or empty cells
+                  const existingCell = grid[placeRow][placeCol];
+                  if (existingCell.type === 'placeholder') {
+                    // Do nothing, just skip
+                  } else {
+                    if (char === ' ') {
+                      // Keep space as black box separator only if it was actually empty
+                      if (existingCell.type === 'empty') {
+                        grid[placeRow][placeCol] = {
+                          row: placeRow,
+                          col: placeCol,
+                          letter: '',
+                          value: '',
+                          type: 'space',
+                        };
+                      }
+                    } else if (existingCell.type === 'empty') {
+                      // Place letter
                       grid[placeRow][placeCol] = {
                         row: placeRow,
                         col: placeCol,
-                        letter: '',
+                        letter: char,
                         value: '',
-                        type: 'space',
+                        type: isFirstLetterInWord ? 'start' : 'filled',
+                        wordId: currentWord.word,
+                        direction,
+                        number: isFirstLetterInWord ? wordNumber : undefined,
                       };
+                      isFirstLetterInWord = false;
+                    } else if (existingCell.type === 'start' || existingCell.type === 'filled') {
+                      if (isFirstLetterInWord && !existingCell.number) {
+                        existingCell.number = wordNumber;
+                        existingCell.type = 'start';
+                      }
+                      isFirstLetterInWord = false;
                     }
-                  } else if (grid[placeRow][placeCol].type === 'empty') {
-                    // Place letter
-                    grid[placeRow][placeCol] = {
-                      row: placeRow,
-                      col: placeCol,
-                      letter: char,
-                      value: '',
-                      type: isFirstLetterInWord ? 'start' : 'filled',
-                      wordId: currentWord.word,
-                      direction,
-                      number: isFirstLetterInWord ? wordNumber : undefined,
-                    };
-                    isFirstLetterInWord = false;
                   }
                 }
 
@@ -407,7 +503,7 @@ const FlashCardCrossword: React.FC = () => {
       minCol = gridSize,
       maxCol = -1;
 
-    // Find bounding box of actual words
+    // Find bounding box including placeholders
     for (let row = 0; row < gridSize; row++) {
       for (let col = 0; col < gridSize; col++) {
         if (grid[row][col].type !== 'empty') {
@@ -417,6 +513,14 @@ const FlashCardCrossword: React.FC = () => {
           maxCol = Math.max(maxCol, col);
         }
       }
+    }
+
+    // Safety check
+    if (minRow > maxRow) {
+      minRow = 0;
+      maxRow = gridSize - 1;
+      minCol = 0;
+      maxCol = gridSize - 1;
     }
 
     // Create trimmed grid
@@ -442,16 +546,17 @@ const FlashCardCrossword: React.FC = () => {
       startCol: word.startCol - minCol,
     }));
 
-    const trimmedSize = {
-      rows: maxRow - minRow + 1,
-      cols: maxCol - minCol + 1,
+    if (PLACEHOLDER_CONFIG.position === 'top-right') {
+      const expanded = expandGridWithTopRightPlaceholder(trimmedGrid, imagePlaceholder);
+      return { grid: expanded.grid, words: updatedWords, size: expanded.size };
+    }
+
+    return {
+      grid: trimmedGrid,
+      words: updatedWords,
+      size: { rows: trimmedGrid.length, cols: trimmedGrid[0].length },
     };
-
-    // ✅ Expand grid to include a fixed 8x8 placeholder in the TOP-RIGHT of the displayed grid
-    const expanded = expandGridWithTopRightPlaceholder(trimmedGrid, IMAGE_PLACEHOLDER);
-
-    return { grid: expanded.grid, words: updatedWords, size: expanded.size };
-  }, [selectedDeckId, decks, flashCards]);
+  }, [selectedDeckId, decks, flashCards, imagePlaceholder]);
 
   const startGame = () => {
     const newPuzzle = generatePuzzle();
@@ -819,6 +924,71 @@ const FlashCardCrossword: React.FC = () => {
     return Math.round((completedWords.size / puzzle.words.length) * 100);
   }, [puzzle, completedWords]);
 
+  // Find placeholder bounds for rendering image correctly regardless of position
+  const placeholderBounds = useMemo(() => {
+    if (!puzzle) return null;
+    let minRow = Infinity,
+      minCol = Infinity;
+    let maxRow = -1,
+      maxCol = -1;
+    let hasPlaceholder = false;
+
+    for (let r = 0; r < puzzle.grid.length; r++) {
+      for (let c = 0; c < puzzle.grid[r].length; c++) {
+        if (puzzle.grid[r][c].type === 'placeholder') {
+          hasPlaceholder = true;
+          minRow = Math.min(minRow, r);
+          minCol = Math.min(minCol, c);
+          maxRow = Math.max(maxRow, r);
+          maxCol = Math.max(maxCol, c);
+        }
+      }
+    }
+
+    if (!hasPlaceholder) return null;
+
+    const rows = maxRow - minRow + 1;
+    const cols = maxCol - minCol + 1;
+
+    // Calculate "Cover" metrics if image dimensions are known
+    let bgOffsetX = 0;
+    let bgOffsetY = 0;
+    let bgScaleW = cols;
+    let bgScaleH = rows;
+
+    if (imageDimensions) {
+      const gridAspect = cols / rows;
+      const imageAspect = imageDimensions.width / imageDimensions.height;
+
+      if (imageAspect > gridAspect) {
+        // Image is wider than grid: Fit Height, Crop Width
+        bgScaleH = rows; // Total height matches grid height
+        bgScaleW = rows * imageAspect; // Total width is proportional
+        bgOffsetY = 0;
+        bgOffsetX = (bgScaleW - cols) / 2; // Center horizontally
+      } else {
+        // Image is taller than grid: Fit Width, Crop Height
+        bgScaleW = cols; // Total width matches grid width
+        bgScaleH = cols / imageAspect; // Total height is proportional
+        bgOffsetX = 0;
+        bgOffsetY = (bgScaleH - rows) / 2; // Center vertically
+      }
+    }
+
+    return {
+      minRow,
+      minCol,
+      maxRow,
+      maxCol,
+      rows,
+      cols,
+      bgScaleW,
+      bgScaleH,
+      bgOffsetX,
+      bgOffsetY,
+    };
+  }, [puzzle, imageDimensions]);
+
   // Deck selection screen
   if (!gameStarted) {
     return (
@@ -919,6 +1089,9 @@ const FlashCardCrossword: React.FC = () => {
             <IconButton onClick={quitGame} sx={{ color: 'white' }}>
               <ArrowBack />
             </IconButton>
+            <IconButton onClick={startGame} sx={{ color: 'white' }} title="Regenerate Puzzle">
+              <Refresh />
+            </IconButton>
             <Typography variant="h6" color="white" fontWeight={600}>
               Crossword Puzzle
             </Typography>
@@ -950,198 +1123,214 @@ const FlashCardCrossword: React.FC = () => {
           >
             <Box
               sx={{
-                display: 'inline-block',
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 0,
+                width: '100%',
                 overflow: 'auto',
-                maxWidth: '100%',
-                width: 'fit-content',
+                display: 'flex',
+                justifyContent: isDesktop ? 'center' : 'flex-start',
               }}
             >
-              {puzzle?.grid.map((row, rowIndex) => (
-                <Box key={rowIndex} sx={{ display: 'flex', width: '100%' }}>
-                  {row.map((cell, colIndex) => {
-                    const size = typeof puzzle.size === 'number' ? puzzle.size : puzzle.size;
-                    // Calculate cell size to fit container while maintaining square aspect ratio
-                    const cellSize = `min(calc((100vw - 32px) / ${size.cols}), calc((100vh - 400px) / ${size.rows}), 40px)`;
+              <Box
+                sx={{
+                  display: 'inline-block',
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 0,
+                  width: 'fit-content',
+                  minWidth: 'min-content',
+                }}
+              >
+                {puzzle?.grid.map((row, rowIndex) => (
+                  <Box key={rowIndex} sx={{ display: 'flex', width: 'fit-content' }}>
+                    {row.map((cell, colIndex) => {
+                      // Ensure size is always an object with rows and cols
+                      const gridSize =
+                        typeof puzzle.size === 'number'
+                          ? { rows: puzzle.size, cols: puzzle.size }
+                          : puzzle.size;
+                      // Calculate cell size to fit container while maintaining square aspect ratio, but enforce minimum usable size
+                      // On mobile, force at least 1.25rem so it's touchable (user will scroll)
+                      const minSize = isDesktop ? '2rem' : '1.25rem';
+                      const cellSize = `max(min(calc((${isDesktop ? '60vw' : '95vw'} - 2rem) / ${gridSize.cols}), calc((100vh - 25rem) / ${gridSize.rows}), 2.5rem), ${minSize})`;
 
-                    // Placeholder block (8x8) in top-right
-                    if (cell.type === 'placeholder') {
-                      const placeholderStartCol = size.cols - IMAGE_PLACEHOLDER.cols;
+                      // Placeholder block (displays image)
+                      if (cell.type === 'placeholder' && placeholderBounds) {
+                        const isTop = rowIndex === placeholderBounds.minRow;
+                        const isBottom = rowIndex === placeholderBounds.maxRow;
+                        const isLeft = colIndex === placeholderBounds.minCol;
+                        const isRight = colIndex === placeholderBounds.maxCol;
 
-                      const isTop = rowIndex === 0;
-                      const isBottom = rowIndex === IMAGE_PLACEHOLDER.rows - 1;
-                      const isLeft = colIndex === placeholderStartCol;
-                      const isRight = colIndex === size.cols - 1;
+                        // Calculate position within the grid for background positioning
+                        const relativeRow = rowIndex - placeholderBounds.minRow;
+                        const relativeCol = colIndex - placeholderBounds.minCol;
 
-                      const hatchLine =
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255,255,255,0.14)'
-                          : 'rgba(0,0,0,0.14)';
-                      const hatchBg =
-                        theme.palette.mode === 'dark'
-                          ? 'rgba(255,255,255,0.03)'
-                          : 'rgba(0,0,0,0.02)';
+                        return (
+                          <Box
+                            key={colIndex}
+                            sx={{
+                              width: cellSize,
+                              aspectRatio: '1',
+                              boxSizing: 'border-box',
+                              backgroundImage: `url(${CROSSWORD_IMAGE_PATH})`,
+                              // Size is calculated to cover the entire grid area relative to this single cell
+                              backgroundSize: `${placeholderBounds.bgScaleW * 100}% ${placeholderBounds.bgScaleH * 100}%`,
+                              // Position shifts the massive background image to:
+                              // 1. Account for the crop offset (centering)
+                              // 2. Account for the cell's position within the grid
+                              // Use cellSize directly because percentages depend on (container - image) size difference which distorts positioning
+                              backgroundPosition: `calc(${-placeholderBounds.bgOffsetX - relativeCol} * ${cellSize}) calc(${-placeholderBounds.bgOffsetY - relativeRow} * ${cellSize})`,
+                              backgroundRepeat: 'no-repeat',
+                              backgroundOrigin: 'border-box',
+                              overflow: 'hidden',
+                              borderStyle: 'solid',
+                              borderColor: 'rgba(0, 0, 0, 0.4)',
+                              borderTopWidth: isTop ? 2 : 1,
+                              borderBottomWidth: isBottom ? 2 : 1,
+                              borderLeftWidth: isLeft ? 2 : 1,
+                              borderRightWidth: isRight ? 2 : 1,
+                              cursor: 'default',
+                              pointerEvents: 'none',
+                              flexShrink: 0,
+                            }}
+                          />
+                        );
+                      }
+
+                      // Unused grid cells - normal disabled background
+                      if (cell.type === 'empty') {
+                        return (
+                          <Box
+                            key={colIndex}
+                            sx={{
+                              width: cellSize,
+                              aspectRatio: '1',
+                              background: theme.palette.action.disabledBackground,
+                              flexShrink: 0,
+                            }}
+                          />
+                        );
+                      }
+
+                      // Word separator spaces - diagonal striped pattern
+                      if (cell.type === 'space') {
+                        return (
+                          <Box
+                            key={colIndex}
+                            sx={{
+                              width: cellSize,
+                              aspectRatio: '1',
+                              backgroundColor:
+                                theme.palette.mode === 'dark'
+                                  ? 'rgba(100,100,120,0.3)'
+                                  : 'rgba(0,0,0,0.05)',
+                              background:
+                                theme.palette.mode === 'dark'
+                                  ? 'repeating-linear-gradient(-45deg, rgba(180,180,200,0.4), rgba(180,180,200,0.4) 1px, rgba(100,100,120,0.3) 1px, rgba(100,100,120,0.3) 4px)'
+                                  : 'repeating-linear-gradient(-45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 4px)',
+                              flexShrink: 0,
+                            }}
+                          />
+                        );
+                      }
+
+                      // Playable cells (filled/start)
+                      const isSelected =
+                        selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+                      const isInActiveWord = getActiveWord
+                        ? getActiveWord.direction === 'across'
+                          ? rowIndex === getActiveWord.startRow &&
+                            colIndex >= getActiveWord.startCol &&
+                            colIndex < getActiveWord.startCol + getActiveWord.word.length
+                          : colIndex === getActiveWord.startCol &&
+                            rowIndex >= getActiveWord.startRow &&
+                            rowIndex < getActiveWord.startRow + getActiveWord.word.length
+                        : false;
+
+                      const isCorrect = cell.value && cell.value === cell.letter;
 
                       return (
                         <Box
                           key={colIndex}
+                          onClick={() => handleCellClick(rowIndex, colIndex)}
+                          onDragOver={handleDragOver}
+                          onDrop={() => handleDrop(rowIndex, colIndex)}
                           sx={{
                             width: cellSize,
                             aspectRatio: '1',
                             boxSizing: 'border-box',
-                            backgroundColor: hatchBg,
-                            backgroundImage: `repeating-linear-gradient(45deg, ${hatchLine}, ${hatchLine} 1px, transparent 1px, transparent 6px), repeating-linear-gradient(-45deg, ${hatchLine}, ${hatchLine} 1px, transparent 1px, transparent 6px)`,
-                            borderStyle: 'solid',
-                            borderColor: theme.palette.divider,
-                            borderTopWidth: isTop ? 2 : 1,
-                            borderBottomWidth: isBottom ? 2 : 1,
-                            borderLeftWidth: isLeft ? 2 : 1,
-                            borderRightWidth: isRight ? 2 : 1,
-                            cursor: 'default',
-                            pointerEvents: 'none',
-                            flexShrink: 0,
-                          }}
-                        />
-                      );
-                    }
-
-                    // Unused grid cells - normal disabled background
-                    if (cell.type === 'empty') {
-                      return (
-                        <Box
-                          key={colIndex}
-                          sx={{
-                            width: cellSize,
-                            aspectRatio: '1',
-                            background: theme.palette.action.disabledBackground,
-                            flexShrink: 0,
-                          }}
-                        />
-                      );
-                    }
-
-                    // Word separator spaces - diagonal striped pattern
-                    if (cell.type === 'space') {
-                      return (
-                        <Box
-                          key={colIndex}
-                          sx={{
-                            width: cellSize,
-                            aspectRatio: '1',
-                            backgroundColor:
-                              theme.palette.mode === 'dark'
-                                ? 'rgba(100,100,120,0.3)'
-                                : 'rgba(0,0,0,0.05)',
-                            background:
-                              theme.palette.mode === 'dark'
-                                ? 'repeating-linear-gradient(-45deg, rgba(180,180,200,0.4), rgba(180,180,200,0.4) 1px, rgba(100,100,120,0.3) 1px, rgba(100,100,120,0.3) 4px)'
-                                : 'repeating-linear-gradient(-45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 4px)',
-                            flexShrink: 0,
-                          }}
-                        />
-                      );
-                    }
-
-                    // Playable cells (filled/start)
-                    const isSelected =
-                      selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-                    const isInActiveWord = getActiveWord
-                      ? getActiveWord.direction === 'across'
-                        ? rowIndex === getActiveWord.startRow &&
-                          colIndex >= getActiveWord.startCol &&
-                          colIndex < getActiveWord.startCol + getActiveWord.word.length
-                        : colIndex === getActiveWord.startCol &&
-                          rowIndex >= getActiveWord.startRow &&
-                          rowIndex < getActiveWord.startRow + getActiveWord.word.length
-                      : false;
-
-                    const isCorrect = cell.value && cell.value === cell.letter;
-
-                    return (
-                      <Box
-                        key={colIndex}
-                        onClick={() => handleCellClick(rowIndex, colIndex)}
-                        onDragOver={handleDragOver}
-                        onDrop={() => handleDrop(rowIndex, colIndex)}
-                        sx={{
-                          width: cellSize,
-                          aspectRatio: '1',
-                          boxSizing: 'border-box',
-                          border: isSelected
-                            ? `3px solid ${theme.palette.primary.main}`
-                            : `1px solid ${theme.palette.primary.dark}`,
-                          position: 'relative',
-                          cursor: 'pointer',
-                          background: isCorrect
-                            ? theme.palette.mode === 'dark'
-                              ? 'rgba(76, 175, 80, 0.3)'
-                              : theme.palette.success.light
-                            : isSelected
-                              ? theme.palette.mode === 'dark'
-                                ? 'rgba(66, 165, 245, 0.25)'
-                                : theme.palette.action.hover
-                              : isInActiveWord
-                                ? theme.palette.mode === 'dark'
-                                  ? 'rgba(255, 255, 255, 0.08)'
-                                  : theme.palette.action.hover
-                                : theme.palette.mode === 'dark'
-                                  ? 'rgba(48, 48, 54, 0.9)'
-                                  : theme.palette.background.paper,
-                          transition: 'all 0.2s',
-                          flexShrink: 0,
-                          ...(isSelected && {
-                            animation: 'pulse-border 1.5s ease-in-out infinite',
-                            '@keyframes pulse-border': {
-                              '0%, 100%': {
-                                borderColor: theme.palette.primary.main,
-                                boxShadow: `0 0 0 0 ${theme.palette.primary.main}40`,
-                              },
-                              '50%': {
-                                borderColor: theme.palette.primary.light,
-                                boxShadow: `0 0 8px 2px ${theme.palette.primary.main}60`,
-                              },
-                            },
-                          }),
-                          '&:hover': {
+                            border: isSelected
+                              ? `3px solid ${theme.palette.primary.main}`
+                              : `1px solid ${theme.palette.primary.dark}`,
+                            position: 'relative',
+                            cursor: 'pointer',
                             background: isCorrect
-                              ? theme.palette.success.light
-                              : theme.palette.action.hover,
-                          },
-                        }}
-                      >
-                        {cell.number && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              position: 'absolute',
-                              top: 1,
-                              left: 2,
-                              fontSize: 'clamp(0.5rem, 1.5vw, 0.6rem)',
-                              fontWeight: 600,
-                            }}
-                          >
-                            {cell.number}
-                          </Typography>
-                        )}
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            fontWeight: 600,
-                            fontSize: 'clamp(0.875rem, 2vw, 1.25rem)',
+                              ? theme.palette.mode === 'dark'
+                                ? 'rgba(76, 175, 80, 0.3)'
+                                : theme.palette.success.light
+                              : isSelected
+                                ? theme.palette.mode === 'dark'
+                                  ? 'rgba(66, 165, 245, 0.25)'
+                                  : theme.palette.action.hover
+                                : isInActiveWord
+                                  ? theme.palette.mode === 'dark'
+                                    ? 'rgba(255, 255, 255, 0.08)'
+                                    : theme.palette.action.hover
+                                  : theme.palette.mode === 'dark'
+                                    ? 'rgba(48, 48, 54, 0.9)'
+                                    : theme.palette.background.paper,
+                            transition: 'all 0.2s',
+                            flexShrink: 0,
+                            ...(isSelected && {
+                              animation: 'pulse-border 1.5s ease-in-out infinite',
+                              '@keyframes pulse-border': {
+                                '0%, 100%': {
+                                  borderColor: theme.palette.primary.main,
+                                  boxShadow: `0 0 0 0 ${theme.palette.primary.main}40`,
+                                },
+                                '50%': {
+                                  borderColor: theme.palette.primary.light,
+                                  boxShadow: `0 0 8px 2px ${theme.palette.primary.main}60`,
+                                },
+                              },
+                            }),
+                            '&:hover': {
+                              background: isCorrect
+                                ? theme.palette.success.light
+                                : theme.palette.action.hover,
+                            },
                           }}
                         >
-                          {cell.value}
-                        </Typography>
-                      </Box>
-                    );
-                  })}
-                </Box>
-              ))}
+                          {cell.number && (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                position: 'absolute',
+                                top: 1,
+                                left: 2,
+                                fontSize: 'clamp(0.5rem, 1.5vw, 0.6rem)',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {cell.number}
+                            </Typography>
+                          )}
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              fontWeight: 600,
+                              fontSize: 'clamp(0.875rem, 2vw, 1.25rem)',
+                            }}
+                          >
+                            {cell.value}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                ))}
+              </Box>
             </Box>
 
             {/* Alphabet Picker for Mobile */}
