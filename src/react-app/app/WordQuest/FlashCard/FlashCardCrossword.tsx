@@ -955,14 +955,18 @@ const FlashCardCrossword: React.FC = () => {
                 borderRadius: 0,
                 overflow: 'auto',
                 maxWidth: '100%',
+                width: 'fit-content',
               }}
             >
               {puzzle?.grid.map((row, rowIndex) => (
-                <Box key={rowIndex} sx={{ display: 'flex' }}>
+                <Box key={rowIndex} sx={{ display: 'flex', width: '100%' }}>
                   {row.map((cell, colIndex) => {
+                    const size = typeof puzzle.size === 'number' ? puzzle.size : puzzle.size;
+                    // Calculate cell size to fit container while maintaining square aspect ratio
+                    const cellSize = `min(calc((100vw - 32px) / ${size.cols}), calc((100vh - 400px) / ${size.rows}), 40px)`;
+
                     // Placeholder block (8x8) in top-right
                     if (cell.type === 'placeholder') {
-                      const size = typeof puzzle.size === 'number' ? puzzle.size : puzzle.size;
                       const placeholderStartCol = size.cols - IMAGE_PLACEHOLDER.cols;
 
                       const isTop = rowIndex === 0;
@@ -983,8 +987,8 @@ const FlashCardCrossword: React.FC = () => {
                         <Box
                           key={colIndex}
                           sx={{
-                            width: { xs: 32, sm: 40 },
-                            height: { xs: 32, sm: 40 },
+                            width: cellSize,
+                            aspectRatio: '1',
                             boxSizing: 'border-box',
                             backgroundColor: hatchBg,
                             backgroundImage: `repeating-linear-gradient(45deg, ${hatchLine}, ${hatchLine} 1px, transparent 1px, transparent 6px), repeating-linear-gradient(-45deg, ${hatchLine}, ${hatchLine} 1px, transparent 1px, transparent 6px)`,
@@ -996,6 +1000,7 @@ const FlashCardCrossword: React.FC = () => {
                             borderRightWidth: isRight ? 2 : 1,
                             cursor: 'default',
                             pointerEvents: 'none',
+                            flexShrink: 0,
                           }}
                         />
                       );
@@ -1007,9 +1012,10 @@ const FlashCardCrossword: React.FC = () => {
                         <Box
                           key={colIndex}
                           sx={{
-                            width: { xs: 32, sm: 40 },
-                            height: { xs: 32, sm: 40 },
+                            width: cellSize,
+                            aspectRatio: '1',
                             background: theme.palette.action.disabledBackground,
+                            flexShrink: 0,
                           }}
                         />
                       );
@@ -1021,8 +1027,8 @@ const FlashCardCrossword: React.FC = () => {
                         <Box
                           key={colIndex}
                           sx={{
-                            width: { xs: 32, sm: 40 },
-                            height: { xs: 32, sm: 40 },
+                            width: cellSize,
+                            aspectRatio: '1',
                             backgroundColor:
                               theme.palette.mode === 'dark'
                                 ? 'rgba(100,100,120,0.3)'
@@ -1031,6 +1037,7 @@ const FlashCardCrossword: React.FC = () => {
                               theme.palette.mode === 'dark'
                                 ? 'repeating-linear-gradient(-45deg, rgba(180,180,200,0.4), rgba(180,180,200,0.4) 1px, rgba(100,100,120,0.3) 1px, rgba(100,100,120,0.3) 4px)'
                                 : 'repeating-linear-gradient(-45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 4px)',
+                            flexShrink: 0,
                           }}
                         />
                       );
@@ -1058,8 +1065,8 @@ const FlashCardCrossword: React.FC = () => {
                         onDragOver={handleDragOver}
                         onDrop={() => handleDrop(rowIndex, colIndex)}
                         sx={{
-                          width: { xs: 32, sm: 40 },
-                          height: { xs: 32, sm: 40 },
+                          width: cellSize,
+                          aspectRatio: '1',
                           boxSizing: 'border-box',
                           border: isSelected
                             ? `3px solid ${theme.palette.primary.main}`
@@ -1082,6 +1089,7 @@ const FlashCardCrossword: React.FC = () => {
                                   ? 'rgba(48, 48, 54, 0.9)'
                                   : theme.palette.background.paper,
                           transition: 'all 0.2s',
+                          flexShrink: 0,
                           ...(isSelected && {
                             animation: 'pulse-border 1.5s ease-in-out infinite',
                             '@keyframes pulse-border': {
@@ -1109,7 +1117,7 @@ const FlashCardCrossword: React.FC = () => {
                               position: 'absolute',
                               top: 1,
                               left: 2,
-                              fontSize: '0.6rem',
+                              fontSize: 'clamp(0.5rem, 1.5vw, 0.6rem)',
                               fontWeight: 600,
                             }}
                           >
@@ -1124,6 +1132,7 @@ const FlashCardCrossword: React.FC = () => {
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
                             fontWeight: 600,
+                            fontSize: 'clamp(0.875rem, 2vw, 1.25rem)',
                           }}
                         >
                           {cell.value}
