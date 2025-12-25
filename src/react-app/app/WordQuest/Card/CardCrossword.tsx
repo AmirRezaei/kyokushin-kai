@@ -130,6 +130,7 @@ const CardCrossword: React.FC = () => {
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
   const [draggedLetter, setDraggedLetter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number>(3); // 1-5 scale
+  const [showAlphabetPicker, setShowAlphabetPicker] = useState<boolean>(true);
   const [imagePlaceholder, setImagePlaceholder] = useState<{ rows: number; cols: number }>({
     rows: 12,
     cols: 12,
@@ -1026,14 +1027,14 @@ const CardCrossword: React.FC = () => {
               <Typography variant="subtitle1" gutterBottom fontWeight={600} textAlign="center">
                 Select Difficulty
               </Typography>
-              <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" gap={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="center">
                 {difficultyLevels.map((level) => (
                   <Button
                     key={level.level}
                     variant={difficulty === level.level ? 'contained' : 'outlined'}
                     onClick={() => setDifficulty(level.level)}
                     sx={{
-                      minWidth: 100,
+                      minWidth: { xs: '100%', sm: 100 },
                       textTransform: 'none',
                       flexDirection: 'column',
                       py: theme.spacing(1),
@@ -1077,40 +1078,86 @@ const CardCrossword: React.FC = () => {
       <Paper
         elevation={2}
         sx={{
-          p: theme.spacing(2),
+          p: { xs: theme.spacing(1), sm: theme.spacing(2) },
           mb: theme.spacing(2),
           background: deckColor
             ? `linear-gradient(135deg, ${deckColor}dd 0%, ${deckColor}99 100%)`
             : theme.palette.primary.main,
         }}
       >
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Stack direction="row" alignItems="center" gap={2}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          justifyContent="space-between"
+          spacing={1}
+        >
+          <Stack direction="row" alignItems="center" gap={{ xs: 1, sm: 2 }}>
             <IconButton onClick={quitGame} sx={{ color: 'white' }}>
               <ArrowBack />
             </IconButton>
             <IconButton onClick={startGame} sx={{ color: 'white' }} title="Regenerate Puzzle">
               <Refresh />
             </IconButton>
-            <Typography variant="h6" color="white" fontWeight={600}>
+            <Typography
+              variant="h6"
+              color="white"
+              fontWeight={600}
+              sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+            >
               Crossword Puzzle
             </Typography>
           </Stack>
 
-          <Stack direction="row" alignItems="center" gap={2}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            gap={{ xs: 1, sm: 2 }}
+            justifyContent={{ xs: 'center', sm: 'flex-end' }}
+          >
             <Chip
               label={`${completedWords.size} / ${puzzle?.words.length || 0} words`}
               color="default"
-              sx={{ fontWeight: 600 }}
+              sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
             />
-            <Chip label={`${progress}%`} color="success" sx={{ fontWeight: 600 }} />
+            <Chip
+              label={`${progress}%`}
+              color="success"
+              sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+            />
           </Stack>
         </Stack>
       </Paper>
 
       <Grid container spacing={1}>
-        {/* Crossword Grid */}
-        <Grid item xs={12} md={8}>
+        {/* Crossword Grid - Full Width */}
+        <Grid item xs={12}>
+          {/* Active Clue Display */}
+          {getActiveWord && (
+            <Paper
+              elevation={2}
+              sx={{
+                p: theme.spacing(1.5),
+                mb: theme.spacing(1),
+                background:
+                  theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(66, 165, 245, 0.15), rgba(66, 165, 245, 0.05))'
+                    : 'linear-gradient(135deg, rgba(66, 165, 245, 0.1), rgba(66, 165, 245, 0.05))',
+                borderLeft: `4px solid ${theme.palette.primary.main}`,
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Chip
+                  label={getActiveWord.direction.toUpperCase()}
+                  size="small"
+                  color="primary"
+                  sx={{ fontWeight: 600 }}
+                />
+                <Typography variant="body2" fontWeight={600}>
+                  {getActiveWord.number}. {getActiveWord.clue}
+                </Typography>
+              </Stack>
+            </Paper>
+          )}
           <Paper
             elevation={3}
             sx={{
@@ -1141,15 +1188,12 @@ const CardCrossword: React.FC = () => {
                 {puzzle?.grid.map((row, rowIndex) => (
                   <Box key={rowIndex} sx={{ display: 'flex', width: 'fit-content' }}>
                     {row.map((cell, colIndex) => {
-                      // Ensure size is always an object with rows and cols
-                      const gridSize =
-                        typeof puzzle.size === 'number'
-                          ? { rows: puzzle.size, cols: puzzle.size }
-                          : puzzle.size;
-                      // Calculate cell size to fit container while maintaining square aspect ratio, but enforce minimum usable size
-                      // On mobile, force at least 1.25rem so it's touchable (user will scroll)
-                      const minSize = isDesktop ? '2rem' : '1.25rem';
-                      const cellSize = `max(min(calc((${isDesktop ? '60vw' : '95vw'} - 2rem) / ${gridSize.cols}), calc((100vh - 25rem) / ${gridSize.rows}), 2.5rem), ${minSize})`;
+                      // Simplified responsive cell sizing with proper touch targets
+                      // Mobile: 44px minimum (2.75rem) for touch accessibility, max 2rem
+                      // Desktop: 2rem minimum, max 3.5rem for better readability
+                      const cellSize = isDesktop
+                        ? 'clamp(2rem, 3vw, 3.5rem)'
+                        : 'clamp(2.75rem, 8vw, 2rem)';
 
                       // Placeholder block (displays image)
                       if (cell.type === 'placeholder' && placeholderBounds) {
@@ -1245,6 +1289,7 @@ const CardCrossword: React.FC = () => {
                         : false;
 
                       const isCorrect = cell.value && cell.value === cell.letter;
+                      const isIncorrect = cell.value && cell.value !== cell.letter;
 
                       return (
                         <Box
@@ -1258,26 +1303,41 @@ const CardCrossword: React.FC = () => {
                             boxSizing: 'border-box',
                             border: isSelected
                               ? `3px solid ${theme.palette.primary.main}`
-                              : `1px solid ${theme.palette.primary.dark}`,
+                              : isIncorrect
+                                ? `2px solid ${theme.palette.error.main}`
+                                : `1px solid ${theme.palette.primary.dark}`,
                             position: 'relative',
                             cursor: 'pointer',
+                            userSelect: 'none',
                             background: isCorrect
                               ? theme.palette.mode === 'dark'
                                 ? 'rgba(76, 175, 80, 0.3)'
                                 : theme.palette.success.light
-                              : isSelected
+                              : isIncorrect
                                 ? theme.palette.mode === 'dark'
-                                  ? 'rgba(66, 165, 245, 0.25)'
-                                  : theme.palette.action.hover
-                                : isInActiveWord
+                                  ? 'rgba(244, 67, 54, 0.15)'
+                                  : 'rgba(244, 67, 54, 0.1)'
+                                : isSelected
                                   ? theme.palette.mode === 'dark'
-                                    ? 'rgba(255, 255, 255, 0.08)'
+                                    ? 'rgba(66, 165, 245, 0.25)'
                                     : theme.palette.action.hover
-                                  : theme.palette.mode === 'dark'
-                                    ? 'rgba(48, 48, 54, 0.9)'
-                                    : theme.palette.background.paper,
+                                  : isInActiveWord
+                                    ? theme.palette.mode === 'dark'
+                                      ? 'rgba(255, 255, 255, 0.08)'
+                                      : theme.palette.action.hover
+                                    : theme.palette.mode === 'dark'
+                                      ? 'rgba(48, 48, 54, 0.9)'
+                                      : theme.palette.background.paper,
                             transition: 'all 0.2s',
                             flexShrink: 0,
+                            ...(isIncorrect && {
+                              animation: 'shake 0.5s',
+                              '@keyframes shake': {
+                                '0%, 100%': { transform: 'translateX(0)' },
+                                '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
+                                '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
+                              },
+                            }),
                             ...(isSelected && {
                               animation: 'pulse-border 1.5s ease-in-out infinite',
                               '@keyframes pulse-border': {
@@ -1294,7 +1354,9 @@ const CardCrossword: React.FC = () => {
                             '&:hover': {
                               background: isCorrect
                                 ? theme.palette.success.light
-                                : theme.palette.action.hover,
+                                : isIncorrect
+                                  ? theme.palette.error.light
+                                  : theme.palette.action.hover,
                             },
                           }}
                         >
@@ -1333,55 +1395,71 @@ const CardCrossword: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Alphabet Picker for Mobile */}
+            {/* Alphabet Picker - Collapsible */}
             <Box sx={{ mt: { xs: theme.spacing(1), sm: theme.spacing(2) } }}>
-              <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                Tap a letter then tap a cell, or drag letters to cells:
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: theme.spacing(0.5),
-                  justifyContent: 'center',
-                }}
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                sx={{ mb: 1 }}
               >
-                {alphabet.map((letter) => (
-                  <Box
-                    key={letter}
-                    draggable
-                    onDragStart={() => handleDragStart(letter)}
-                    onClick={() => placeLetter(letter)}
-                    sx={{
-                      width: { xs: 30, sm: 36 },
-                      height: { xs: 30, sm: 36 },
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: `2px solid ${theme.palette.primary.main}`,
-                      borderRadius: theme.spacing(0.5),
-                      background:
-                        draggedLetter === letter
-                          ? theme.palette.primary.light
-                          : theme.palette.background.paper,
-                      cursor: 'grab',
-                      userSelect: 'none',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        background: theme.palette.primary.light,
-                        transform: 'scale(1.1)',
-                      },
-                      '&:active': {
-                        cursor: 'grabbing',
-                      },
-                    }}
-                  >
-                    <Typography variant="body2" fontWeight={600}>
-                      {letter}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  {isDesktop ? 'Letter Picker (or use keyboard):' : 'Tap letter, then cell:'}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setShowAlphabetPicker(!showAlphabetPicker)}
+                  sx={{ minWidth: 'auto', px: 1 }}
+                >
+                  {showAlphabetPicker ? 'Hide' : 'Show'}
+                </Button>
+              </Stack>
+              {showAlphabetPicker && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: theme.spacing(0.5),
+                    justifyContent: 'center',
+                  }}
+                >
+                  {alphabet.map((letter) => (
+                    <Box
+                      key={letter}
+                      draggable
+                      onDragStart={() => handleDragStart(letter)}
+                      onClick={() => placeLetter(letter)}
+                      sx={{
+                        width: { xs: 40, sm: 36 },
+                        height: { xs: 40, sm: 36 },
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: `2px solid ${theme.palette.primary.main}`,
+                        borderRadius: theme.spacing(0.5),
+                        background:
+                          draggedLetter === letter
+                            ? theme.palette.primary.light
+                            : theme.palette.background.paper,
+                        cursor: 'grab',
+                        userSelect: 'none',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          background: theme.palette.primary.light,
+                          transform: 'scale(1.1)',
+                        },
+                        '&:active': {
+                          cursor: 'grabbing',
+                        },
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={600}>
+                        {letter}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
 
             <Stack direction="row" spacing={2} sx={{ mt: theme.spacing(2) }}>
@@ -1409,121 +1487,6 @@ const CardCrossword: React.FC = () => {
                 Reveal Letter
               </Button>
             </Stack>
-          </Paper>
-        </Grid>
-
-        {/* Clues */}
-        <Grid item xs={12} md={4}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: { xs: theme.spacing(1), sm: theme.spacing(2) },
-              maxHeight: 600,
-              overflow: 'auto',
-              background:
-                theme.palette.mode === 'dark'
-                  ? 'linear-gradient(145deg, rgba(30,30,36,0.95), rgba(40,40,48,0.95))'
-                  : 'rgba(255,255,255,0.9)',
-            }}
-          >
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              Clues
-            </Typography>
-
-            {/* Across */}
-            <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-              Across
-            </Typography>
-            {puzzle?.words
-              .filter((w) => w.direction === 'across')
-              .sort((a, b) => a.number - b.number)
-              .map((word) => (
-                <Box
-                  key={word.id}
-                  onClick={() => {
-                    // Find first letter cell (skip spaces)
-                    let firstLetterCol = word.startCol;
-                    for (let i = 0; i < word.word.length; i++) {
-                      if (word.word[i] !== ' ') {
-                        firstLetterCol = word.startCol + (word.direction === 'across' ? i : 0);
-                        const firstLetterRow = word.startRow + (word.direction === 'down' ? i : 0);
-                        setSelectedCell({ row: firstLetterRow, col: firstLetterCol });
-                        setCurrentDirection(word.direction);
-                        break;
-                      }
-                    }
-                  }}
-                  sx={{
-                    mb: 1,
-                    p: 1,
-                    borderRadius: theme.spacing(0.5),
-                    cursor: 'pointer',
-                    background: completedWords.has(word.id)
-                      ? theme.palette.success.light
-                      : getActiveWord?.id === word.id
-                        ? theme.palette.action.selected
-                        : 'transparent',
-                    '&:hover': {
-                      background: completedWords.has(word.id)
-                        ? theme.palette.success.main
-                        : theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <Typography variant="body2">
-                    <strong>{word.number}.</strong> {word.clue}
-                    {completedWords.has(word.id) && ' ✓'}
-                  </Typography>
-                </Box>
-              ))}
-
-            {/* Down */}
-            <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-              Down
-            </Typography>
-            {puzzle?.words
-              .filter((w) => w.direction === 'down')
-              .sort((a, b) => a.number - b.number)
-              .map((word) => (
-                <Box
-                  key={word.id}
-                  onClick={() => {
-                    // Find first letter cell (skip spaces)
-                    let firstLetterRow = word.startRow;
-                    for (let i = 0; i < word.word.length; i++) {
-                      if (word.word[i] !== ' ') {
-                        firstLetterRow = word.startRow + (word.direction === 'down' ? i : 0);
-                        const firstLetterCol =
-                          word.startCol + (word.direction === 'across' ? i : 0);
-                        setSelectedCell({ row: firstLetterRow, col: firstLetterCol });
-                        setCurrentDirection(word.direction);
-                        break;
-                      }
-                    }
-                  }}
-                  sx={{
-                    mb: 1,
-                    p: 1,
-                    borderRadius: theme.spacing(0.5),
-                    cursor: 'pointer',
-                    background: completedWords.has(word.id)
-                      ? theme.palette.success.light
-                      : getActiveWord?.id === word.id
-                        ? theme.palette.action.selected
-                        : 'transparent',
-                    '&:hover': {
-                      background: completedWords.has(word.id)
-                        ? theme.palette.success.main
-                        : theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <Typography variant="body2">
-                    <strong>{word.number}.</strong> {word.clue}
-                    {completedWords.has(word.id) && ' ✓'}
-                  </Typography>
-                </Box>
-              ))}
           </Paper>
         </Grid>
       </Grid>
