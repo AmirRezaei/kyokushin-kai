@@ -6,10 +6,12 @@ import { GridOn } from '@mui/icons-material';
 
 import { DeckProvider } from './Deck/DeckContext';
 import { CardProvider } from './CardContext';
+import { useFullscreen } from '../../../components/context/FullscreenContext';
 import CardCrossword from './CardCrossword';
 
 const CardCrosswordPage: React.FC = () => {
   const theme = useTheme();
+  const { isFullscreen } = useFullscreen();
 
   return (
     <Box
@@ -20,55 +22,57 @@ const CardCrosswordPage: React.FC = () => {
       }}
     >
       <Container maxWidth="xl">
-        {/* Header Section */}
-        <Fade in timeout={800}>
-          <Paper
-            elevation={2}
-            sx={{
-              pt: theme.spacing(2),
-              pb: theme.spacing(2),
-              textAlign: 'center',
-              borderRadius: theme.spacing(1),
-              background: theme.palette.primary.main,
-              mb: theme.spacing(2),
-            }}
-          >
-            <Box
+        {/* Header Section - Hidden in fullscreen */}
+        {!isFullscreen && (
+          <Fade in timeout={800}>
+            <Paper
+              elevation={2}
               sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: theme.spacing(1.5),
+                pt: theme.spacing(2),
+                pb: theme.spacing(2),
+                textAlign: 'center',
+                borderRadius: theme.spacing(1),
+                background: theme.palette.primary.main,
+                mb: theme.spacing(2),
               }}
             >
-              <GridOn
+              <Box
                 sx={{
-                  fontSize: { xs: '2rem', sm: '2.5rem' },
-                  color: theme.palette.primary.contrastText,
-                }}
-              />
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: { xs: '1.5rem', sm: '2rem' },
-                  color: theme.palette.primary.contrastText,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: theme.spacing(1.5),
                 }}
               >
-                Crossword Puzzle
+                <GridOn
+                  sx={{
+                    fontSize: { xs: '2rem', sm: '2.5rem' },
+                    color: theme.palette.primary.contrastText,
+                  }}
+                />
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: { xs: '1.5rem', sm: '2rem' },
+                    color: theme.palette.primary.contrastText,
+                  }}
+                >
+                  Crossword Puzzle
+                </Typography>
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.primary.contrastText,
+                  opacity: 0.9,
+                  mt: 1,
+                }}
+              >
+                Solve crossword puzzles using karate techniques and katas
               </Typography>
-            </Box>
-            <Typography
-              variant="body2"
-              sx={{
-                color: theme.palette.primary.contrastText,
-                opacity: 0.9,
-                mt: 1,
-              }}
-            >
-              Solve crossword puzzles using karate techniques and katas
-            </Typography>
-          </Paper>
-        </Fade>
+            </Paper>
+          </Fade>
+        )}
 
         <DeckProvider>
           <CardProvider>

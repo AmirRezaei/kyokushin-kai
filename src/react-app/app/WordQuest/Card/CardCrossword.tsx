@@ -1,5 +1,5 @@
 // File: src/react-app/components/games/cards/CardCrossword.tsx
-import { ArrowBack, Lightbulb, Refresh } from '@mui/icons-material';
+import { ArrowBack, Refresh, FullscreenExit } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -17,6 +17,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFullscreen } from '../../../components/context/FullscreenContext';
 
 import { getBeltColorHex } from '../../../../data/repo/gradeHelpers';
 import { KyokushinRepository, GradeWithContent } from '../../../../data/repo/KyokushinRepository';
@@ -119,6 +120,7 @@ const expandGridWithTopRightPlaceholder = (
 const CardCrossword: React.FC = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { decks } = useDecks();
   const { cards } = useCards();
 
@@ -128,9 +130,14 @@ const CardCrossword: React.FC = () => {
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
   const [currentDirection, setCurrentDirection] = useState<'across' | 'down'>('across');
   const [completedWords, setCompletedWords] = useState<Set<string>>(new Set());
-  const [draggedLetter, setDraggedLetter] = useState<string | null>(null);
   const [difficulty, setDifficulty] = useState<number>(3); // 1-5 scale
-  const [showAlphabetPicker, setShowAlphabetPicker] = useState<boolean>(true);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Panning state
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
+  const [scrollStart, setScrollStart] = useState<{ left: number; top: number } | null>(null);
+  const gridContainerRef = React.useRef<HTMLDivElement>(null);
   const [imagePlaceholder, setImagePlaceholder] = useState<{ rows: number; cols: number }>({
     rows: 12,
     cols: 12,
@@ -147,9 +154,6 @@ const CardCrossword: React.FC = () => {
     { level: 4, name: 'Hard', revealPercent: 20 },
     { level: 5, name: 'Expert', revealPercent: 0 },
   ];
-
-  // Alphabet for picker
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   // Load image dimensions and calculate optimal placeholder grid size
   useEffect(() => {
@@ -622,6 +626,9 @@ const CardCrossword: React.FC = () => {
   };
 
   const handleCellClick = (row: number, col: number) => {
+    // Don't select cell if we were panning
+    if (isPanning) return;
+
     if (!puzzle) return;
     const cell = puzzle.grid[row][col];
     if (isBlockedCellType(cell.type)) return;
@@ -638,52 +645,119 @@ const CardCrossword: React.FC = () => {
     }
   };
 
-  // Drag and drop handlers for mobile
-  const handleDragStart = (letter: string) => {
-    setDraggedLetter(letter);
+  // Panning handlers for desktop (mouse)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only pan with left mouse button, and not if clicking on a cell
+    if (e.button !== 0) return;
+
+    setPanStart({ x: e.clientX, y: e.clientY });
+    if (gridContainerRef.current) {
+      setScrollStart({
+        left: gridContainerRef.current.scrollLeft,
+        top: gridContainerRef.current.scrollTop,
+      });
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!panStart || !scrollStart || !gridContainerRef.current) return;
+
+    const deltaX = e.clientX - panStart.x;
+    const deltaY = e.clientY - panStart.y;
+
+    // If moved more than 5px, consider it a pan (not a click)
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      e.preventDefault(); // Prevent default drag behavior
+      setIsPanning(true);
+    }
+
+    gridContainerRef.current.scrollLeft = scrollStart.left - deltaX;
+    gridContainerRef.current.scrollTop = scrollStart.top - deltaY;
+  };
+
+  const handleMouseUp = () => {
+    setPanStart(null);
+    setScrollStart(null);
+    // Reset panning flag after a short delay to prevent cell selection
+    setTimeout(() => setIsPanning(false), 100);
+  };
+
+  // Panning handlers for mobile (touch)
+  const handleTouchStartPan = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return; // Only single finger
+
+    const touch = e.touches[0];
+    setPanStart({ x: touch.clientX, y: touch.clientY });
+    if (gridContainerRef.current) {
+      setScrollStart({
+        left: gridContainerRef.current.scrollLeft,
+        top: gridContainerRef.current.scrollTop,
+      });
+    }
+  };
+
+  const handleTouchMovePan = (e: React.TouchEvent) => {
+    if (!panStart || !scrollStart || !gridContainerRef.current) return;
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - panStart.x;
+    const deltaY = touch.clientY - panStart.y;
+
+    // If moved more than 5px, consider it a pan
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      e.preventDefault(); // Prevent default scrolling
+      setIsPanning(true);
+      // Cancel long-press if panning
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+    }
+
+    gridContainerRef.current.scrollLeft = scrollStart.left - deltaX;
+    gridContainerRef.current.scrollTop = scrollStart.top - deltaY;
+  };
+
+  const handleTouchEndPan = () => {
+    setPanStart(null);
+    setScrollStart(null);
+    // Reset panning flag after a short delay
+    setTimeout(() => setIsPanning(false), 100);
+  };
+  const handleContextMenu = (e: React.MouseEvent, row: number, col: number) => {
     e.preventDefault();
-  };
-
-  const handleDrop = (row: number, col: number) => {
-    if (!puzzle || !draggedLetter) return;
+    if (!puzzle) return;
     const cell = puzzle.grid[row][col];
     if (isBlockedCellType(cell.type)) return;
 
-    // Don't override correct letters
-    if (cell.value && cell.value === cell.letter) return;
-
-    // Place letter
+    // Reveal the letter
     const newGrid = [...puzzle.grid];
-    newGrid[row][col] = { ...cell, value: draggedLetter };
+    newGrid[row][col] = { ...cell, value: cell.letter };
     setPuzzle({ ...puzzle, grid: newGrid });
-
     checkWordCompletion(row, col);
-    setDraggedLetter(null);
   };
 
-  // Helper to place letter in selected cell (for both keyboard and alphabet picker)
-  const placeLetter = (letter: string) => {
-    if (!puzzle || !selectedCell) return;
+  // Long-press handlers for mobile
+  const handleTouchStart = (row: number, col: number) => {
+    const timer = setTimeout(() => {
+      if (!puzzle) return;
+      const cell = puzzle.grid[row][col];
+      if (isBlockedCellType(cell.type)) return;
 
-    const { row, col } = selectedCell;
-    const cell = puzzle.grid[row][col];
-    if (isBlockedCellType(cell.type)) return;
+      // Reveal the letter on long press
+      const newGrid = [...puzzle.grid];
+      newGrid[row][col] = { ...cell, value: cell.letter };
+      setPuzzle({ ...puzzle, grid: newGrid });
+      checkWordCompletion(row, col);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
 
-    // Don't override correct letters (green cells)
-    if (cell.value && cell.value === cell.letter) return;
-
-    const newGrid = [...puzzle.grid];
-    newGrid[row][col] = { ...cell, value: letter };
-    setPuzzle({ ...puzzle, grid: newGrid });
-
-    checkWordCompletion(row, col);
-
-    // Only move to next cell if the letter is correct
-    if (letter === cell.letter) {
-      moveToNextCell();
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
   };
 
@@ -886,20 +960,6 @@ const CardCrossword: React.FC = () => {
     });
   };
 
-  const revealHint = () => {
-    if (!puzzle || !selectedCell) return;
-
-    const { row, col } = selectedCell;
-    const cell = puzzle.grid[row][col];
-    if (isBlockedCellType(cell.type)) return;
-
-    const newGrid = [...puzzle.grid];
-    newGrid[row][col] = { ...cell, value: cell.letter };
-    setPuzzle({ ...puzzle, grid: newGrid });
-
-    checkWordCompletion(row, col);
-  };
-
   const getActiveWord = useMemo(() => {
     if (!puzzle || !selectedCell) return null;
 
@@ -1078,31 +1138,34 @@ const CardCrossword: React.FC = () => {
       <Paper
         elevation={2}
         sx={{
-          p: { xs: theme.spacing(1), sm: theme.spacing(2) },
-          mb: theme.spacing(2),
+          p: { xs: theme.spacing(0.5), sm: theme.spacing(1) },
+          mb: theme.spacing(1),
           background: deckColor
             ? `linear-gradient(135deg, ${deckColor}dd 0%, ${deckColor}99 100%)`
             : theme.palette.primary.main,
         }}
       >
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          justifyContent="space-between"
-          spacing={1}
-        >
-          <Stack direction="row" alignItems="center" gap={{ xs: 1, sm: 2 }}>
-            <IconButton onClick={quitGame} sx={{ color: 'white' }}>
-              <ArrowBack />
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={0.5}>
+          <Stack direction="row" alignItems="center" gap={{ xs: 0.5, sm: 1 }}>
+            <IconButton onClick={quitGame} sx={{ color: 'white', p: 0.5 }} size="small">
+              <ArrowBack fontSize="small" />
             </IconButton>
-            <IconButton onClick={startGame} sx={{ color: 'white' }} title="Regenerate Puzzle">
-              <Refresh />
+            <IconButton
+              onClick={startGame}
+              sx={{ color: 'white', p: 0.5 }}
+              size="small"
+              title="Regenerate Puzzle"
+            >
+              <Refresh fontSize="small" />
             </IconButton>
             <Typography
               variant="h6"
               color="white"
               fontWeight={600}
-              sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+              sx={{
+                fontSize: { xs: '0.95rem', sm: '1.1rem' },
+                display: { xs: 'none', sm: 'block' },
+              }}
             >
               Crossword Puzzle
             </Typography>
@@ -1111,26 +1174,46 @@ const CardCrossword: React.FC = () => {
           <Stack
             direction="row"
             alignItems="center"
-            gap={{ xs: 1, sm: 2 }}
+            gap={{ xs: 0.5, sm: 1 }}
             justifyContent={{ xs: 'center', sm: 'flex-end' }}
           >
             <Chip
               label={`${completedWords.size} / ${puzzle?.words.length || 0} words`}
               color="default"
-              sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              size="small"
+              sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem' }, height: 24 }}
             />
             <Chip
               label={`${progress}%`}
               color="success"
-              sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+              size="small"
+              sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem' }, height: 24 }}
             />
+            {isFullscreen && (
+              <IconButton
+                onClick={toggleFullscreen}
+                sx={{ color: 'white', p: 0.5 }}
+                size="small"
+                title="Exit Fullscreen"
+              >
+                <FullscreenExit fontSize="small" />
+              </IconButton>
+            )}
           </Stack>
         </Stack>
       </Paper>
 
-      <Grid container spacing={1}>
+      <Grid
+        container
+        spacing={1}
+        sx={{
+          height: isFullscreen ? 'calc(100vh - 80px)' : 'calc(100vh - 180px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {/* Crossword Grid - Full Width */}
-        <Grid item xs={12}>
+        <Grid item xs={12} sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {/* Active Clue Display */}
           {getActiveWord && (
             <Paper
@@ -1166,14 +1249,34 @@ const CardCrossword: React.FC = () => {
                 theme.palette.mode === 'dark'
                   ? 'linear-gradient(145deg, rgba(30,30,36,0.95), rgba(40,40,48,0.95))'
                   : 'rgba(255,255,255,0.9)',
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              overflow: 'hidden',
             }}
           >
             <Box
+              ref={gridContainerRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStartPan}
+              onTouchMove={handleTouchMovePan}
+              onTouchEnd={handleTouchEndPan}
               sx={{
                 width: '100%',
-                overflow: 'auto',
+                flex: 1,
                 display: 'flex',
-                justifyContent: isDesktop ? 'center' : 'flex-start',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start',
+                overflow: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                // Disable default touch actions to handle panning manually
+                touchAction: 'none',
+                cursor: panStart ? 'grabbing' : 'grab',
+                userSelect: 'none',
+                p: 1, // Add padding to prevent edge clipping
               }}
             >
               <Box
@@ -1188,12 +1291,25 @@ const CardCrossword: React.FC = () => {
                 {puzzle?.grid.map((row, rowIndex) => (
                   <Box key={rowIndex} sx={{ display: 'flex', width: 'fit-content' }}>
                     {row.map((cell, colIndex) => {
-                      // Simplified responsive cell sizing with proper touch targets
-                      // Mobile: 44px minimum (2.75rem) for touch accessibility, max 2rem
-                      // Desktop: 2rem minimum, max 3.5rem for better readability
+                      // Calculate grid dimensions
+                      const gridRows = puzzle.grid.length;
+                      const gridCols = puzzle.grid[0]?.length || 0;
+
+                      // Calculate cell size to fit viewport
+                      // Available height = viewport - (header ~80px + clue banner ~60px + buttons ~60px + padding ~40px)
+                      // Available width = viewport width - padding
+                      const availableHeight = isDesktop
+                        ? 'calc(100vh - 300px)'
+                        : 'calc(100vh - 240px)'; // No alphabet picker anymore
+                      const availableWidth = isDesktop
+                        ? 'calc(100vw - 100px)'
+                        : 'calc(100vw - 20px)';
+
+                      // Cell size fits the smaller dimension to ensure grid fits
+                      // But enforce minimum readable sizes: 2.5rem (40px) mobile, 2rem (32px) desktop
                       const cellSize = isDesktop
-                        ? 'clamp(2rem, 3vw, 3.5rem)'
-                        : 'clamp(2.75rem, 8vw, 2rem)';
+                        ? `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 3.5rem), 2rem)`
+                        : `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 3rem), 2.5rem)`;
 
                       // Placeholder block (displays image)
                       if (cell.type === 'placeholder' && placeholderBounds) {
@@ -1295,8 +1411,10 @@ const CardCrossword: React.FC = () => {
                         <Box
                           key={colIndex}
                           onClick={() => handleCellClick(rowIndex, colIndex)}
-                          onDragOver={handleDragOver}
-                          onDrop={() => handleDrop(rowIndex, colIndex)}
+                          onContextMenu={(e) => handleContextMenu(e, rowIndex, colIndex)}
+                          onTouchStart={() => handleTouchStart(rowIndex, colIndex)}
+                          onTouchEnd={handleTouchEnd}
+                          onTouchCancel={handleTouchEnd}
                           sx={{
                             width: cellSize,
                             aspectRatio: '1',
@@ -1395,98 +1513,23 @@ const CardCrossword: React.FC = () => {
               </Box>
             </Box>
 
-            {/* Alphabet Picker - Collapsible */}
-            <Box sx={{ mt: { xs: theme.spacing(1), sm: theme.spacing(2) } }}>
-              <Stack
-                direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{ mb: 1 }}
-              >
-                <Typography variant="subtitle2" fontWeight={600}>
-                  {isDesktop ? 'Letter Picker (or use keyboard):' : 'Tap letter, then cell:'}
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={() => setShowAlphabetPicker(!showAlphabetPicker)}
-                  sx={{ minWidth: 'auto', px: 1 }}
-                >
-                  {showAlphabetPicker ? 'Hide' : 'Show'}
-                </Button>
-              </Stack>
-              {showAlphabetPicker && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: theme.spacing(0.5),
-                    justifyContent: 'center',
-                  }}
-                >
-                  {alphabet.map((letter) => (
-                    <Box
-                      key={letter}
-                      draggable
-                      onDragStart={() => handleDragStart(letter)}
-                      onClick={() => placeLetter(letter)}
-                      sx={{
-                        width: { xs: 40, sm: 36 },
-                        height: { xs: 40, sm: 36 },
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: `2px solid ${theme.palette.primary.main}`,
-                        borderRadius: theme.spacing(0.5),
-                        background:
-                          draggedLetter === letter
-                            ? theme.palette.primary.light
-                            : theme.palette.background.paper,
-                        cursor: 'grab',
-                        userSelect: 'none',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          background: theme.palette.primary.light,
-                          transform: 'scale(1.1)',
-                        },
-                        '&:active': {
-                          cursor: 'grabbing',
-                        },
-                      }}
-                    >
-                      <Typography variant="body2" fontWeight={600}>
-                        {letter}
-                      </Typography>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Box>
-
-            <Stack direction="row" spacing={2} sx={{ mt: theme.spacing(2) }}>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  if (!puzzle || !selectedCell) return;
-                  const { row, col } = selectedCell;
-                  const cell = puzzle.grid[row][col];
-                  if (isBlockedCellType(cell.type)) return;
-                  const newGrid = [...puzzle.grid];
-                  newGrid[row][col] = { ...cell, value: '' };
-                  setPuzzle({ ...puzzle, grid: newGrid });
+            {/* Hint: Right-click or long-press to reveal - Hidden in fullscreen */}
+            {!isFullscreen && (
+              <Typography
+                variant="caption"
+                sx={{
+                  mt: 1,
+                  display: 'block',
+                  textAlign: 'center',
+                  color: 'text.secondary',
+                  fontStyle: 'italic',
                 }}
-                disabled={!selectedCell}
               >
-                Clear
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Lightbulb />}
-                onClick={revealHint}
-                disabled={!selectedCell}
-              >
-                Reveal Letter
-              </Button>
-            </Stack>
+                {isDesktop
+                  ? 'Right-click a cell to reveal its letter'
+                  : 'Long-press a cell to reveal its letter'}
+              </Typography>
+            )}
           </Paper>
         </Grid>
       </Grid>
