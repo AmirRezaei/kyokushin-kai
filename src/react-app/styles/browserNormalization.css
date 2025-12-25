@@ -1,0 +1,93 @@
+/* Cross-Browser Normalization - Ensures consistent rendering */
+
+/* Universal box-sizing (keep this - it's essential) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Font rendering consistency */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Remove default input/select appearance (but not button - MUI handles that) */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  font-family: inherit;
+}
+
+/* Typography consistency */
+.MuiTypography-root {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scrollbar consistency */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Prevent zoom on iOS - use max() to respect MUI typography */
+input[type='text'],
+input[type='number'],
+input[type='email'],
+input[type='tel'],
+input[type='password'],
+textarea,
+select {
+  font-size: max(16px, 1em);
+}
+
+/* Fix for Firefox button padding */
+button::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* Prevent unwanted text selection on interactive elements */
+.MuiIconButton-root,
+.MuiButton-root,
+.MuiChip-root {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}

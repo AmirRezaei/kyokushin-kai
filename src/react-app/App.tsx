@@ -128,15 +128,15 @@ function AppContent() {
         <AppBar
           position="fixed"
           sx={{
-            backgroundColor: theme.palette.background.paper, // Background based on theme
-            color: theme.palette.text.primary, // Text color based on theme
-            boxShadow: theme.shadows[4], // Optional: Add a shadow for depth
-            maxWidth: '100%', // Ensure AppBar does not exceed viewport width
-            height: `${appBarHeight}px`, // Set AppBar height based on theme
-            overflowX: 'hidden', // Prevent horizontal scroll
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            boxShadow: theme.shadows[4],
+            maxWidth: '100%',
+            minHeight: `${appBarHeight}px`,
+            overflow: 'hidden',
           }}
         >
-          <Toolbar variant="dense">
+          <Toolbar variant="dense" sx={{ minHeight: `${appBarHeight}px`, overflow: 'hidden' }}>
             {/* Temporary Drawer Icon */}
             <TemporaryDrawer />
 
@@ -146,14 +146,21 @@ function AppContent() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                ml: 2,
+                ml: { xs: 1, sm: 2 },
                 userSelect: 'none',
+                minWidth: 0,
+                flex: '0 1 auto',
               }}
             >
               <Typography
                 variant="h6"
                 color="inherit"
-                sx={{ textAlign: 'center', lineHeight: 1.2 }}
+                sx={{
+                  textAlign: 'center',
+                  lineHeight: 1.2,
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' },
+                }}
               >
                 <Tooltip title="Ultimate Truth">
                   <Box
@@ -202,7 +209,13 @@ function AppContent() {
               <Typography
                 variant="caption"
                 color="inherit"
-                sx={{ textAlign: 'center', lineHeight: 1 }}
+                sx={{
+                  textAlign: 'center',
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                  fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                  display: { xs: 'none', sm: 'block' },
+                }}
               >
                 Association of the Ultimate Truth
               </Typography>

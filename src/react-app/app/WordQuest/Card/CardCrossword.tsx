@@ -138,6 +138,7 @@ const CardCrossword: React.FC = () => {
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
   const [scrollStart, setScrollStart] = useState<{ left: number; top: number } | null>(null);
   const gridContainerRef = React.useRef<HTMLDivElement>(null);
+  const hiddenInputRef = React.useRef<HTMLInputElement>(null);
   const [imagePlaceholder, setImagePlaceholder] = useState<{ rows: number; cols: number }>({
     rows: 12,
     cols: 12,
@@ -643,6 +644,11 @@ const CardCrossword: React.FC = () => {
         setCurrentDirection(cell.direction);
       }
     }
+
+    // Focus hidden input to trigger mobile keyboard
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.focus();
+    }
   };
 
   // Panning handlers for desktop (mouse)
@@ -1133,7 +1139,39 @@ const CardCrossword: React.FC = () => {
 
   // Game screen
   return (
-    <Box onKeyDown={handleKeyPress} tabIndex={0}>
+    <Box onKeyDown={handleKeyPress} tabIndex={0} sx={{ position: 'relative' }}>
+      {/* Hidden input for mobile keyboard */}
+      <input
+        ref={hiddenInputRef}
+        type="text"
+        inputMode="text"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="characters"
+        spellCheck="false"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1px',
+          height: '1px',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+        onInput={(e) => {
+          const input = e.target as HTMLInputElement;
+          const letter = input.value.toUpperCase().slice(-1);
+          if (letter && /^[A-Z]$/.test(letter)) {
+            handleKeyPress({ key: letter, preventDefault: () => {} } as React.KeyboardEvent);
+          }
+          input.value = ''; // Clear after each letter
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Backspace') {
+            handleKeyPress(e as React.KeyboardEvent);
+          }
+        }}
+      />
       {/* Header */}
       <Paper
         elevation={2}
