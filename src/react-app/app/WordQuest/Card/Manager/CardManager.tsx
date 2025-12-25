@@ -46,7 +46,7 @@ const CardManager: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
       {/* Form Section */}
       <Paper
         elevation={2}

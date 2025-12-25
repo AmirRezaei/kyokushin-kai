@@ -10,10 +10,11 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Stack } from '@mui/system';
+import { Spellcheck } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/context/AuthContext';
 
-import { TechniqueRecord } from '../../../../data/model/technique';
+import { TechniqueRecord } from '../../../../data/repo/KyokushinRepository';
 import {
   getTechniqueCorrectOrder,
   getTechniqueWords,
@@ -30,6 +31,8 @@ import ScoreUI from '@/components/UI/ScoreUI';
 import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
 import { getLevelNumber, getStripeNumber } from '../../../../data/repo/gradeHelpers';
 import { usePreventBodyScroll } from '../../../components/drag/usePreventBodyScroll';
+import { useFullscreen } from '../../../components/context/FullscreenContext';
+import GamePageLayout from '../components/GamePageLayout';
 import LevelSelector from './LevelSelector';
 
 /**
@@ -70,12 +73,28 @@ const WordPlayPage: React.FC = () => {
     return null;
   });
 
+  // Initialize items state with proper lazy initialization
   const [items, setItems] = useState<{
     [key: string]: string[];
-  }>({
-    availableWords: [],
-    assembledWords: [],
+  }>(() => {
+    if (!currentTechnique) {
+      return {
+        availableWords: [],
+        assembledWords: [],
+      };
+    }
+    const allWords = [
+      ...getTechniqueWords(currentTechnique),
+      // Note: previousGradeTechniques and distractorCount might not be fully initialized here
+      // The useEffect below will handle proper initialization once dependencies are ready.
+      ...getDistractorWords(currentTechnique, distractorCount, []),
+    ];
+    return {
+      availableWords: shuffleArray(allWords),
+      assembledWords: [],
+    };
   });
+
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
   const [revealAnswerUsed, setRevealAnswerUsed] = useState<boolean>(false);
@@ -94,6 +113,9 @@ const WordPlayPage: React.FC = () => {
   const [openChallengingTechniquesModal, setOpenChallengingTechniquesModal] =
     useState<boolean>(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Fullscreen state
+  const { isFullscreen } = useFullscreen();
 
   // State for hinted words
   const [hintedWordIds, setHintedWordIds] = useState<string[]>([]);
@@ -127,48 +149,27 @@ const WordPlayPage: React.FC = () => {
   }, [grades, selectedLevel, techniqueMap]);
 
   /**
-   * Get Distractor Words Function
+   * Distractor Words
    */
   const getDistractorWords = useCallback(
-    (
-      currentTechnique: TechniqueRecord,
-      count: number,
-      previousGradeTechniques: TechniqueRecord[],
-    ): string[] => {
-      const currentType = currentTechnique.kind;
+    (technique: TechniqueRecord, count: number, previousGradeTechniques: TechniqueRecord[]) => {
+      const techniqueWords = getTechniqueWords(technique);
+      const techniqueWordSet = new Set(techniqueWords.map((w) => w.toLowerCase()));
 
-      const nearbyTechniques = previousGradeTechniques.filter(
-        (tech) => tech.kind === currentType && tech.id !== currentTechnique.id,
-      );
+      const candidates = previousGradeTechniques.flatMap((tech) => {
+        const words = getTechniqueWords(tech);
+        return words.filter((w) => !techniqueWordSet.has(w.toLowerCase()));
+      });
 
-      const distractorWords: string[] = [];
-
-      const currentWords = getTechniqueWords(currentTechnique);
-      const existingTexts = new Set(currentWords);
-
-      for (let i = 0; i < nearbyTechniques.length && distractorWords.length < count; i++) {
-        const technique = nearbyTechniques[i];
-        const words = getTechniqueWords(technique);
-
-        words.forEach((wordText) => {
-          if (
-            distractorWords.length < count &&
-            !existingTexts.has(wordText) &&
-            !distractorWords.includes(wordText)
-          ) {
-            distractorWords.push(wordText);
-            existingTexts.add(wordText);
-          }
-        });
-      }
-
-      return distractorWords;
+      const uniqueCandidates = Array.from(new Set(candidates));
+      const shuffled = shuffleArray(uniqueCandidates);
+      return shuffled.slice(0, count);
     },
     [],
   );
 
   /**
-   * Initialize Words
+   * Initialize Words - Reset when technique changes
    */
   useEffect(() => {
     if (!currentTechnique) {
@@ -189,7 +190,8 @@ const WordPlayPage: React.FC = () => {
       assembledWords: [],
     });
     setHintedWordIds([]);
-  }, [currentTechnique, distractorCount, previousGradeTechniques, getDistractorWords]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTechnique?.id, distractorCount, previousGradeTechniques, getDistractorWords]); // Only re-run when technique ID changes
 
   /**
    * Handle Level Change
@@ -245,7 +247,9 @@ const WordPlayPage: React.FC = () => {
         if (storedKnownTechniques) {
           try {
             loadedIds = JSON.parse(storedKnownTechniques);
-          } catch {}
+          } catch (parseError) {
+            console.warn('Failed to parse stored known techniques:', parseError);
+          }
         }
       }
 
@@ -289,7 +293,9 @@ const WordPlayPage: React.FC = () => {
     if (knownTechniqueIds.size > 0) {
       try {
         localStorage.setItem('knownTechniqueIds', JSON.stringify(Array.from(knownTechniqueIds)));
-      } catch {}
+      } catch (storageError) {
+        console.warn('Failed to save known techniques to localStorage:', storageError);
+      }
     }
   }, [knownTechniqueIds]);
 
@@ -310,23 +316,34 @@ const WordPlayPage: React.FC = () => {
   /**
    * Load/Save Score
    */
+  // Load score on mount or when token changes
   useEffect(() => {
-    if (!token) {
-      const storedScore = localStorage.getItem('Score');
-      if (storedScore) setScore(parseInt(storedScore, 10) || 0);
-      return;
-    }
-
-    fetch('/api/v1/wordquest/state/wordquest', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : {}))
-      .then((data: { state?: { score: number } }) => {
-        if (data.state?.score) {
-          setScore(data.state.score);
+    const loadScore = async () => {
+      if (!token) {
+        const storedScore = localStorage.getItem('Score');
+        if (storedScore) {
+          const parsedScore = parseInt(storedScore, 10) || 0;
+          setScore(parsedScore);
         }
-      })
-      .catch((err) => console.warn('Failed to load score', err));
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/wordquest/state/wordquest', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data: { state?: { score: number } } = await res.json();
+          if (data.state?.score) {
+            setScore(data.state.score);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load score from API:', error);
+      }
+    };
+
+    loadScore();
   }, [token]);
 
   useEffect(() => {
@@ -537,22 +554,25 @@ const WordPlayPage: React.FC = () => {
   /**
    * Effect to Update Score When Correct Order is Achieved
    */
+  // Handle score update when puzzle is solved
   useEffect(() => {
-    if (!currentTechnique) return;
+    if (!currentTechnique || !isCorrectOrder || solved) return;
 
-    if (isCorrectOrder && !solved) {
+    const updateScoreAndProgress = () => {
       const baseScore = 10;
       const correctOrder = getTechniqueCorrectOrder(currentTechnique);
       const scoreToReduce = Math.ceil((baseScore * hintedWordIds.length) / correctOrder.length);
+
       setScore((prevScore) =>
         revealAnswerUsed
           ? Math.max(0, prevScore - baseScore)
           : prevScore + baseScore - scoreToReduce,
       );
       setSolved(true);
-
       setKnownTechniqueIds((prev) => new Set(prev).add(currentTechnique.id));
-    }
+    };
+
+    updateScoreAndProgress();
   }, [isCorrectOrder, solved, revealAnswerUsed, hintedWordIds.length, currentTechnique]);
 
   /**
@@ -610,7 +630,12 @@ const WordPlayPage: React.FC = () => {
    * Render Component
    */
   return (
-    <Box>
+    <GamePageLayout
+      icon={<Spellcheck />}
+      title="Word Quest"
+      description="Arrange words to form karate technique names"
+      showHeader={!isFullscreen}
+    >
       <Box display="flex" justifyContent="center" sx={{ mt: 0.5, mb: 0.5 }}>
         {/* storageKey is required but we manage persistence in parent now, so we pass a dummy key or rely on sync */}
         <ScoreUI initialScore={score} storageKey="Score_Sync" />
@@ -781,7 +806,7 @@ const WordPlayPage: React.FC = () => {
         knownTechniqueIds={Array.from(knownTechniqueIds)}
         currentLevelNumber={selectedLevel}
       />
-    </Box>
+    </GamePageLayout>
   );
 };
 

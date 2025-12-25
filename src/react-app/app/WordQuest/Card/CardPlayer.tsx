@@ -5,7 +5,6 @@ import {
   Box,
   Button,
   Collapse,
-  Container,
   Fab,
   LinearProgress,
   Paper,
@@ -190,7 +189,7 @@ const CardPlayer: React.FC = () => {
   const progress = ((safeIndex + 1) / orderedCards.length) * 100;
 
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
+    <Box sx={{ py: { xs: 2, md: 4 }, maxWidth: 800, mx: 'auto', px: { xs: 2, sm: 3 } }}>
       <Box
         sx={{
           perspective: '1500px',
@@ -495,7 +494,7 @@ const CardPlayer: React.FC = () => {
           Keyboard shortcuts: SPACE/ENTER to flip • ← → to navigate
         </Typography>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

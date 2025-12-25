@@ -123,197 +123,195 @@ function AppContent() {
 
   return (
     <>
-      {/* Fixed AppBar - Hidden in fullscreen */}
-      {!isFullscreen && (
-        <AppBar
-          position="fixed"
-          sx={{
-            backgroundColor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            boxShadow: theme.shadows[4],
-            maxWidth: '100%',
-            minHeight: `${appBarHeight}px`,
-            overflow: 'hidden',
-          }}
-        >
-          <Toolbar variant="dense" sx={{ minHeight: `${appBarHeight}px`, overflow: 'hidden' }}>
-            {/* Temporary Drawer Icon */}
-            <TemporaryDrawer />
+      {/* Fixed AppBar - Always visible */}
+      <AppBar
+        position="fixed"
+        sx={{
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          boxShadow: theme.shadows[4],
+          maxWidth: '100%',
+          minHeight: `${appBarHeight}px`,
+          overflow: 'hidden',
+        }}
+      >
+        <Toolbar variant="dense" sx={{ minHeight: `${appBarHeight}px`, overflow: 'hidden' }}>
+          {/* Temporary Drawer Icon */}
+          <TemporaryDrawer />
 
-            {/* App Title */}
-            <Box
+          {/* App Title */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              ml: { xs: 1, sm: 2 },
+              userSelect: 'none',
+              minWidth: 0,
+              flex: '0 1 auto',
+            }}
+          >
+            <Typography
+              variant="h6"
+              color="inherit"
               sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                ml: { xs: 1, sm: 2 },
-                userSelect: 'none',
-                minWidth: 0,
-                flex: '0 1 auto',
+                textAlign: 'center',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' },
               }}
             >
-              <Typography
-                variant="h6"
-                color="inherit"
-                sx={{
-                  textAlign: 'center',
-                  lineHeight: 1.2,
-                  whiteSpace: 'nowrap',
-                  fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' },
-                }}
-              >
-                <Tooltip title="Ultimate Truth">
-                  <Box
-                    component="span"
-                    sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                  >
-                    Kyokushin
-                  </Box>
-                </Tooltip>
-                -
-                <Tooltip title="Association/Society">
-                  <Box
-                    component="span"
-                    sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                  >
-                    Kai
-                  </Box>
-                </Tooltip>
-                {' ('}
-                <Tooltip title="Ultimate">
-                  <Box
-                    component="span"
-                    sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                  >
-                    極
-                  </Box>
-                </Tooltip>
-                <Tooltip title="Truth">
-                  <Box
-                    component="span"
-                    sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                  >
-                    真
-                  </Box>
-                </Tooltip>
-                <Tooltip title="Association/Society">
-                  <Box
-                    component="span"
-                    sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                  >
-                    会
-                  </Box>
-                </Tooltip>
-                )
-              </Typography>
-              <Typography
-                variant="caption"
-                color="inherit"
-                sx={{
-                  textAlign: 'center',
-                  lineHeight: 1,
-                  whiteSpace: 'nowrap',
-                  fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
-                  display: { xs: 'none', sm: 'block' },
-                }}
-              >
-                Association of the Ultimate Truth
-              </Typography>
-            </Box>
-
-            <Box
+              <Tooltip title="Ultimate Truth">
+                <Box
+                  component="span"
+                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+                >
+                  Kyokushin
+                </Box>
+              </Tooltip>
+              -
+              <Tooltip title="Association/Society">
+                <Box
+                  component="span"
+                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+                >
+                  Kai
+                </Box>
+              </Tooltip>
+              {' ('}
+              <Tooltip title="Ultimate">
+                <Box
+                  component="span"
+                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+                >
+                  極
+                </Box>
+              </Tooltip>
+              <Tooltip title="Truth">
+                <Box
+                  component="span"
+                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+                >
+                  真
+                </Box>
+              </Tooltip>
+              <Tooltip title="Association/Society">
+                <Box
+                  component="span"
+                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+                >
+                  会
+                </Box>
+              </Tooltip>
+              )
+            </Typography>
+            <Typography
+              variant="caption"
+              color="inherit"
               sx={{
-                flexGrow: 1,
-                display: 'flex',
-                justifyContent: 'flex-end',
-                alignItems: 'center',
+                textAlign: 'center',
+                lineHeight: 1,
+                whiteSpace: 'nowrap',
+                fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                display: { xs: 'none', sm: 'block' },
               }}
             >
-              <DarkModeToggle />
-              <LanguageSelector />
+              Association of the Ultimate Truth
+            </Typography>
+          </Box>
 
-              {/* Fullscreen Toggle */}
-              <IconButton
-                size="large"
-                aria-label="toggle fullscreen"
-                onClick={toggleFullscreen}
-                color="inherit"
-                sx={{ mr: 1 }}
-              >
-                {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
-              </IconButton>
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+            }}
+          >
+            <DarkModeToggle />
+            <LanguageSelector />
 
-              {/* User Account Menu */}
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenu}
-                color="inherit"
-              >
-                {isAuthenticated && user?.imageUrl ? (
-                  <Avatar src={user.imageUrl} />
-                ) : (
-                  <AccountCircle />
-                )}
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                keepMounted
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'right',
-                }}
-                open={open}
-                onClose={handleClose}
-              >
-                {isAuthenticated && user && (
-                  <MenuItem disabled>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                      {user.name}
-                    </Typography>
-                  </MenuItem>
-                )}
-                {isAuthenticated && (
-                  <MenuItem onClick={handleProfile}>
-                    <Typography>User Profile</Typography>
-                  </MenuItem>
-                )}
-                {isAuthenticated && (
-                  <MenuItem onClick={handleSettings}>
-                    <Typography>Settings</Typography>
-                  </MenuItem>
-                )}
-                {isAuthenticated && (
-                  <MenuItem onClick={handleLogout}>
-                    <Typography>Logout</Typography>
-                  </MenuItem>
-                )}
-                {!isAuthenticated && (
-                  <MenuItem onClick={handleGoogleLogin}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography>Login with Google</Typography>
-                    </Box>
-                  </MenuItem>
-                )}
-              </Menu>
-            </Box>
-          </Toolbar>
-        </AppBar>
-      )}
+            {/* Fullscreen Toggle */}
+            <IconButton
+              size="large"
+              aria-label="toggle fullscreen"
+              onClick={toggleFullscreen}
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
+              {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+            </IconButton>
+
+            {/* User Account Menu */}
+            <IconButton
+              size="large"
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              {isAuthenticated && user?.imageUrl ? (
+                <Avatar src={user.imageUrl} />
+              ) : (
+                <AccountCircle />
+              )}
+            </IconButton>
+            <Menu
+              id="menu-appbar"
+              anchorEl={anchorEl}
+              anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              keepMounted
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              open={open}
+              onClose={handleClose}
+            >
+              {isAuthenticated && user && (
+                <MenuItem disabled>
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    {user.name}
+                  </Typography>
+                </MenuItem>
+              )}
+              {isAuthenticated && (
+                <MenuItem onClick={handleProfile}>
+                  <Typography>User Profile</Typography>
+                </MenuItem>
+              )}
+              {isAuthenticated && (
+                <MenuItem onClick={handleSettings}>
+                  <Typography>Settings</Typography>
+                </MenuItem>
+              )}
+              {isAuthenticated && (
+                <MenuItem onClick={handleLogout}>
+                  <Typography>Logout</Typography>
+                </MenuItem>
+              )}
+              {!isAuthenticated && (
+                <MenuItem onClick={handleGoogleLogin}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography>Login with Google</Typography>
+                  </Box>
+                </MenuItem>
+              )}
+            </Menu>
+          </Box>
+        </Toolbar>
+      </AppBar>
 
       {/* Main Content */}
       <Box
         component="main"
         sx={{
           position: 'relative',
-          marginTop: isFullscreen ? 0 : `${appBarHeight}px`,
+          marginTop: `${appBarHeight}px`, // Always account for AppBar since it's always visible
           marginLeft: 0,
           marginRight: 0,
           marginBottom: 0,
@@ -321,7 +319,7 @@ function AppContent() {
           width: '100%',
           overflowX: 'hidden',
           overflowY: 'auto',
-          height: isFullscreen ? '100vh' : `calc(100vh - ${appBarHeight}px)`,
+          height: `calc(100vh - ${appBarHeight}px)`, // Always subtract AppBar height
           boxSizing: 'border-box',
         }}
       >
