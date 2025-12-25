@@ -1,4 +1,4 @@
-// File: ./src/app/WordQuest/FlashCard/Deck/DeckList.tsx
+// File: ./src/app/WordQuest/Card/Deck/DeckList.tsx
 
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';

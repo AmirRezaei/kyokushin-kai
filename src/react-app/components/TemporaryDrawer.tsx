@@ -13,6 +13,10 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import TimerIcon from '@mui/icons-material/Timer';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import StyleIcon from '@mui/icons-material/Style';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
@@ -237,35 +241,78 @@ export default function TemporaryDrawer() {
                       pl: 4,
                       backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
                     }}
-                    onClick={handleNavigation('/flashcards')}
+                    onClick={handleNavigation('/cards')}
                   >
                     <ListItemIcon>
                       <TextFieldsIcon />
                     </ListItemIcon>
-                    <ListItemText primary="Flash Cards" />
+                    <ListItemText primary="Cards" />
+                  </ListItemButton>
+                </ListItem>
+                {/* Match Game */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/cards/match')}
+                  >
+                    <ListItemIcon>
+                      <ExtensionIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Match Game" />
+                  </ListItemButton>
+                </ListItem>
+                {/* Crossword */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/cards/crossword')}
+                  >
+                    <ListItemIcon>
+                      <GridOnIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Crossword" />
+                  </ListItemButton>
+                </ListItem>
+                {/* Card Manager */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/card-manager')}
+                  >
+                    <ListItemIcon>
+                      <StyleIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Card Manager" />
+                  </ListItemButton>
+                </ListItem>
+                {/* Deck Manager */}
+                <ListItem disablePadding>
+                  <ListItemButton
+                    sx={{
+                      pl: 4,
+                      backgroundColor: theme.palette.mode === 'dark' ? '#333333' : 'inherit',
+                    }}
+                    onClick={handleNavigation('/deck-manager')}
+                  >
+                    <ListItemIcon>
+                      <LibraryBooksIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Deck Manager" />
                   </ListItemButton>
                 </ListItem>
               </List>
             </Collapse>
           </>
         )}
-
-        {/* <ListItem disablePadding>
-               <ListItemButton onClick={handleNavigation('/FlashCardManager')}>
-                  <ListItemIcon>
-                     <TextFieldsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary='Flash Card Manager' />
-               </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-               <ListItemButton onClick={handleNavigation('/FlashCardPlayer')}>
-                  <ListItemIcon>
-                     <TextFieldsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary='Flash Card' />
-               </ListItemButton>
-            </ListItem> */}
 
         {/* <ListItem disablePadding>
                <ListItemButton onClick={handleNavigation('/ten-thousand-days')}>

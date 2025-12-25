@@ -1,4 +1,4 @@
-// File: ./src/app/WordQuest/FlashCard/FlashCardMatchGame.tsx
+// File: ./src/app/WordQuest/Card/CardMatchGame.tsx
 
 import { ArrowBack, Refresh } from '@mui/icons-material';
 import {
@@ -26,7 +26,7 @@ import {
 } from '../../../components/context/LanguageContext';
 import { useDecks } from './Deck/DeckContext';
 import DeckSelector from './Deck/DeckSelector';
-import { useFlashCards } from './FlashCardContext';
+import { useCards } from './CardContext';
 
 // Game Card Interface
 interface GameCard {
@@ -41,10 +41,10 @@ interface GameCard {
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
-const FlashCardMatchGame: React.FC = () => {
+const CardMatchGame: React.FC = () => {
   const theme = useTheme();
   const { decks } = useDecks();
-  const { flashCards } = useFlashCards();
+  const { cards: userCards } = useCards();
   const { selectedLanguages } = useLanguage();
 
   // Game State
@@ -119,10 +119,10 @@ const FlashCardMatchGame: React.FC = () => {
         // You could add Katas here too if structure supports
       }
     } else {
-      // Custom Deck - Using FlashCardContext
+      // Custom Deck - Using CardContext
       const deck = decks.find((d) => d.id === selectedDeckId);
       if (deck) {
-        const deckCards = flashCards.filter((c) => deck.flashCardIds.includes(c.id));
+        const deckCards = userCards.filter((c) => deck.cardIds.includes(c.id));
         deckCards.forEach((c) => {
           gameItems.push({
             id: c.id,
@@ -514,4 +514,4 @@ const FlashCardMatchGame: React.FC = () => {
   );
 };
 
-export default FlashCardMatchGame;
+export default CardMatchGame;

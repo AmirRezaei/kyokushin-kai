@@ -40,7 +40,7 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
     let availableDecks = decks;
 
     if (filterEmpty) {
-      availableDecks = availableDecks.filter((d) => d.flashCardIds.length > 0);
+      availableDecks = availableDecks.filter((d) => d.cardIds.length > 0);
     }
 
     const sys = availableDecks.filter((d) => d.id.startsWith('deck-'));
@@ -92,7 +92,7 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
                   {deck.name}
                 </Stack>
               </Tooltip>
-              {showCounts && `(${deck.flashCardIds.length} Items)`}
+              {showCounts && `(${deck.cardIds.length} Items)`}
             </Stack>
           </MenuItem>
         ))}
@@ -102,7 +102,7 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
         {userDecks.map((deck) => (
           <MenuItem key={deck.id} value={deck.id}>
             {deck.name}
-            {showCounts && ` (${deck.flashCardIds.length} Items)`}
+            {showCounts && ` (${deck.cardIds.length} Items)`}
           </MenuItem>
         ))}
       </Select>

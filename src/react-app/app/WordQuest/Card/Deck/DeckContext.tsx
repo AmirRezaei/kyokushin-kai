@@ -1,4 +1,4 @@
-// File: ./src/app/WordQuest/FlashCard/Deck/DeckContext.tsx
+// File: ./src/app/WordQuest/Card/Deck/DeckContext.tsx
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -7,11 +7,11 @@ import { useAuth } from '@/components/context/AuthContext';
 import { getLocalStorageItem, setLocalStorageItem } from '@/components/utils/localStorageUtils';
 
 import { getInitialData } from '../seedData';
-import { Deck, FlashCard } from '../types';
+import { Deck, Card } from '../types';
 
 export interface DeckContextType {
   decks: Deck[];
-  addDeck: (deck: Omit<Deck, 'id' | 'flashCardIds'>) => void;
+  addDeck: (deck: Omit<Deck, 'id' | 'cardIds'>) => void;
   updateDeck: (deck: Deck) => void;
   deleteDeck: (id: string) => void;
   deleteAllDecks: () => void;
@@ -59,12 +59,12 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [decks, token]);
 
-  const addDeck = async (deck: Omit<Deck, 'id' | 'flashCardIds'>) => {
+  const addDeck = async (deck: Omit<Deck, 'id' | 'cardIds'>) => {
     const newDeck: Deck = {
       id: uuidv4(),
       name: deck.name,
       description: deck.description,
-      flashCardIds: [],
+      cardIds: [],
       version: 0,
     };
 
@@ -108,7 +108,7 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
             patch: {
               name: updatedDeck.name,
               description: updatedDeck.description,
-              flashCardIds: updatedDeck.flashCardIds,
+              cardIds: updatedDeck.cardIds,
             },
           }),
         });
@@ -144,13 +144,13 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteDeck = async (id: string) => {
     setDecks((prev) => prev.filter((deck) => deck.id !== id));
 
-    // Also update flashcards locally if in fallback mode
+    // Also update cards locally if in fallback mode
     if (!token) {
-      const flashCards = getLocalStorageItem<FlashCard[]>('flashCards', []);
-      const updatedFlashCards = flashCards.map((card) =>
+      const cards = getLocalStorageItem<Card[]>('cards', []);
+      const updatedCards = cards.map((card) =>
         card.deckId === id ? { ...card, deckId: undefined } : card,
       );
-      setLocalStorageItem<FlashCard[]>('flashCards', updatedFlashCards);
+      setLocalStorageItem<Card[]>('cards', updatedCards);
     } else {
       try {
         await fetch(`/api/v1/decks/${id}`, {
@@ -172,11 +172,11 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDecks([]);
 
     if (!token) {
-      const flashCards = getLocalStorageItem<FlashCard[]>('flashCards', []);
-      const updatedFlashCards = flashCards.map((card) =>
+      const cards = getLocalStorageItem<Card[]>('cards', []);
+      const updatedCards = cards.map((card) =>
         decksToDelete.some((d) => d.id === card.deckId) ? { ...card, deckId: undefined } : card,
       );
-      setLocalStorageItem<FlashCard[]>('flashCards', updatedFlashCards);
+      setLocalStorageItem<Card[]>('cards', updatedCards);
     } else {
       try {
         await Promise.all(

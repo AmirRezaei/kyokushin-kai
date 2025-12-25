@@ -1,4 +1,4 @@
-// File: src/react-app/components/games/flashcards/FlashCardCrossword.tsx
+// File: src/react-app/components/games/cards/CardCrossword.tsx
 import { ArrowBack, Lightbulb, Refresh } from '@mui/icons-material';
 import {
   Box,
@@ -23,7 +23,7 @@ import { KyokushinRepository, GradeWithContent } from '../../../../data/repo/Kyo
 
 import DeckSelector from './Deck/DeckSelector';
 import { useDecks } from './Deck/DeckContext';
-import { useFlashCards } from './FlashCardContext';
+import { useCards } from './CardContext';
 
 // Crossword Cell Types
 type CellType = 'empty' | 'filled' | 'start' | 'space' | 'placeholder';
@@ -116,11 +116,11 @@ const expandGridWithTopRightPlaceholder = (
   return { grid, size: { rows, cols } };
 };
 
-const FlashCardCrossword: React.FC = () => {
+const CardCrossword: React.FC = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const { decks } = useDecks();
-  const { flashCards } = useFlashCards();
+  const { cards } = useCards();
 
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [gameStarted, setGameStarted] = useState(false);
@@ -232,8 +232,8 @@ const FlashCardCrossword: React.FC = () => {
         wordList = [...techWords, ...kataWords];
       }
     } else {
-      // User deck - use flashcards but extract Romaji from card IDs
-      const deckCards = flashCards.filter((card) => selectedDeck.flashCardIds.includes(card.id));
+      // User deck - use cards but extract Romaji from card IDs
+      const deckCards = cards.filter((card) => selectedDeck.cardIds.includes(card.id));
       const allTechniques = KyokushinRepository.getAllTechniques();
       const grades = KyokushinRepository.getCurriculumGrades();
       const allKatas = grades.flatMap((g) => g.katas);
@@ -556,7 +556,7 @@ const FlashCardCrossword: React.FC = () => {
       words: updatedWords,
       size: { rows: trimmedGrid.length, cols: trimmedGrid[0].length },
     };
-  }, [selectedDeckId, decks, flashCards, imagePlaceholder]);
+  }, [selectedDeckId, decks, cards, imagePlaceholder]);
 
   const startGame = () => {
     const newPuzzle = generatePuzzle();
@@ -1545,4 +1545,4 @@ const FlashCardCrossword: React.FC = () => {
   );
 };
 
-export default FlashCardCrossword;
+export default CardCrossword;

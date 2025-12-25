@@ -1,4 +1,4 @@
-// File: ./src/app/WordQuest/FlashCard/FlashCardPlayer.tsx
+// File: ./src/app/WordQuest/Card/CardPlayer.tsx
 
 import { ArrowBack, ArrowForward, FilterList, Flip, Shuffle, SwapHoriz } from '@mui/icons-material';
 import {
@@ -19,26 +19,26 @@ import { useTheme } from '@mui/material/styles';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import DeckSelector from './Deck/DeckSelector';
-import { useFlashCards } from './FlashCardContext';
-import { FlashCard } from './types';
+import { useCards } from './CardContext';
+import { Card } from './types';
 import CategorySelect from './UI/CategorySelect';
 
-const FlashCardPlayer: React.FC = () => {
+const CardPlayer: React.FC = () => {
   const theme = useTheme();
-  const { flashCards } = useFlashCards();
+  const { cards } = useCards();
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [flipped, setFlipped] = useState<boolean>(false);
   const [selectedDeckId, setSelectedDeckId] = useState<string>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [shuffledCards, setShuffledCards] = useState<FlashCard[] | null>(null);
+  const [shuffledCards, setShuffledCards] = useState<Card[] | null>(null);
   const [isReversed, setIsReversed] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
   /**
-   * Filter flashCards based on selected deck and category.
+   * Filter cards based on selected deck and category.
    */
-  const filteredFlashCards = useMemo(() => {
-    let filtered = flashCards;
+  const filteredCards = useMemo(() => {
+    let filtered = cards;
     if (selectedDeckId !== 'All') {
       filtered = filtered.filter((card) => card.deckId === selectedDeckId);
     }
@@ -46,37 +46,37 @@ const FlashCardPlayer: React.FC = () => {
       filtered = filtered.filter((card) => card.category === selectedCategory);
     }
     return filtered;
-  }, [flashCards, selectedDeckId, selectedCategory]);
+  }, [cards, selectedDeckId, selectedCategory]);
 
-  const orderedFlashCards = shuffledCards ?? filteredFlashCards;
+  const orderedCards = shuffledCards ?? filteredCards;
 
   // Track previous filtered cards to reset state on change
-  const [prevFilteredCards, setPrevFilteredCards] = useState(filteredFlashCards);
+  const [prevFilteredCards, setPrevFilteredCards] = useState(filteredCards);
 
-  if (filteredFlashCards !== prevFilteredCards) {
-    setPrevFilteredCards(filteredFlashCards);
+  if (filteredCards !== prevFilteredCards) {
+    setPrevFilteredCards(filteredCards);
     setShuffledCards(null);
     setCurrentIndex(0);
     setFlipped(false);
   }
 
   // Safety check: If currentIndex is out of bounds, reset it.
-  if (currentIndex >= orderedFlashCards.length && orderedFlashCards.length > 0) {
+  if (currentIndex >= orderedCards.length && orderedCards.length > 0) {
     setCurrentIndex(0);
   }
 
   /**
-   * Shuffle the ordered flashcards.
+   * Shuffle the ordered cards.
    */
-  const shuffleFlashCards = () => {
-    const shuffled = [...orderedFlashCards].sort(() => Math.random() - 0.5);
+  const shuffleCards = () => {
+    const shuffled = [...orderedCards].sort(() => Math.random() - 0.5);
     setShuffledCards(shuffled);
     setCurrentIndex(0);
     setFlipped(false);
   };
 
   /**
-   * Handle flipping the current flashcard.
+   * Handle flipping the current card.
    */
   const handleFlip = useCallback(() => {
     setFlipped((prev) => !prev);
@@ -88,20 +88,20 @@ const FlashCardPlayer: React.FC = () => {
   };
 
   /**
-   * Navigate to the next flashcard.
+   * Navigate to the next card.
    */
   const handleNext = useCallback(() => {
     setFlipped(false);
-    setCurrentIndex((prev) => (prev + 1) % orderedFlashCards.length);
-  }, [orderedFlashCards.length]);
+    setCurrentIndex((prev) => (prev + 1) % orderedCards.length);
+  }, [orderedCards.length]);
 
   /**
-   * Navigate to the previous flashcard.
+   * Navigate to the previous card.
    */
   const handlePrev = useCallback(() => {
     setFlipped(false);
-    setCurrentIndex((prev) => (prev === 0 ? orderedFlashCards.length - 1 : prev - 1));
-  }, [orderedFlashCards.length]);
+    setCurrentIndex((prev) => (prev === 0 ? orderedCards.length - 1 : prev - 1));
+  }, [orderedCards.length]);
 
   /**
    * Keyboard shortcuts
@@ -135,7 +135,7 @@ const FlashCardPlayer: React.FC = () => {
     setSelectedCategory(event.target.value as string);
   };
 
-  if (orderedFlashCards.length === 0) {
+  if (orderedCards.length === 0) {
     return (
       <Paper
         elevation={2}
@@ -153,10 +153,10 @@ const FlashCardPlayer: React.FC = () => {
           gutterBottom
           sx={{ fontWeight: 600, color: theme.palette.text.primary }}
         >
-          No Flashcards Available
+          No Cards Available
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: theme.spacing(4) }}>
-          Please add some flashcards and assign them to decks and categories in the Manager.
+          Please add some cards and assign them to decks and categories in the Manager.
         </Typography>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
@@ -180,14 +180,14 @@ const FlashCardPlayer: React.FC = () => {
     );
   }
 
-  const safeIndex = currentIndex >= 0 && currentIndex < orderedFlashCards.length ? currentIndex : 0;
-  const currentCard = orderedFlashCards[safeIndex];
+  const safeIndex = currentIndex >= 0 && currentIndex < orderedCards.length ? currentIndex : 0;
+  const currentCard = orderedCards[safeIndex];
 
   if (!currentCard) {
     return null; // Should be handled by empty check above, but safe guard.
   }
 
-  const progress = ((safeIndex + 1) / orderedFlashCards.length) * 100;
+  const progress = ((safeIndex + 1) / orderedCards.length) * 100;
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 } }}>
@@ -367,7 +367,7 @@ const FlashCardPlayer: React.FC = () => {
             Progress
           </Typography>
           <Typography variant="body2" color="text.secondary" fontWeight={600}>
-            {currentIndex + 1} / {orderedFlashCards.length}
+            {currentIndex + 1} / {orderedCards.length}
           </Typography>
         </Box>
         <LinearProgress
@@ -388,7 +388,7 @@ const FlashCardPlayer: React.FC = () => {
           color="text.secondary"
           sx={{ display: 'block', mt: 1, textAlign: 'center' }}
         >
-          {orderedFlashCards.length - currentIndex - 1} cards remaining
+          {orderedCards.length - currentIndex - 1} cards remaining
         </Typography>
       </Box>
 
@@ -424,7 +424,7 @@ const FlashCardPlayer: React.FC = () => {
               <Fab
                 size="small"
                 color="primary"
-                onClick={shuffleFlashCards}
+                onClick={shuffleCards}
                 sx={{
                   transition: 'all 0.3s ease',
                   '&:hover': {
@@ -499,4 +499,4 @@ const FlashCardPlayer: React.FC = () => {
   );
 };
 
-export default FlashCardPlayer;
+export default CardPlayer;

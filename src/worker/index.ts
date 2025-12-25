@@ -665,7 +665,7 @@ app.post('/api/v1/wordquest/state/:gameId', async (c) => {
   return c.json({ ok: true });
 });
 
-// --- FlashCard & Deck Endpoints ---
+// --- Card & Deck Endpoints ---
 
 interface DeckRow {
   id: string;
@@ -675,7 +675,7 @@ interface DeckRow {
   version: number;
 }
 
-interface FlashCardRow {
+interface CardRow {
   id: string;
   question: string;
   answer: string;
@@ -691,7 +691,7 @@ app.get('/api/v1/decks', async (c) => {
   if (!user) return unauthorized(c);
 
   const { results } = await c.env.DB.prepare(
-    `SELECT id, name, description, updated_at as updatedAt, version FROM user_flashcard_decks WHERE user_id = ?`,
+    `SELECT id, name, description, updated_at as updatedAt, version FROM user_card_decks WHERE user_id = ?`,
   )
     .bind(user.id)
     .all<DeckRow>();
@@ -702,7 +702,7 @@ app.get('/api/v1/decks', async (c) => {
     description: row.description || undefined,
     version: row.version,
     updatedAt: row.updatedAt,
-    flashCardIds: [],
+    cardIds: [],
   }));
   return c.json({ decks });
 });
@@ -723,7 +723,7 @@ app.post('/api/v1/decks', async (c) => {
 
   try {
     await c.env.DB.prepare(
-      `INSERT INTO user_flashcard_decks (user_id, id, name, description, updated_at, version)
+      `INSERT INTO user_card_decks (user_id, id, name, description, updated_at, version)
          VALUES (?, ?, ?, ?, ?, 0)`,
     )
       .bind(user.id, payload.id, payload.name, payload.description || null, now)
@@ -755,7 +755,7 @@ app.patch('/api/v1/decks/:id', async (c) => {
 
   const result = await performOptimisticUpdate(
     c.env.DB,
-    'user_flashcard_decks',
+    'user_card_decks',
     user.id,
     id,
     payload.expectedVersion,
@@ -797,33 +797,31 @@ app.delete('/api/v1/decks/:id', async (c) => {
   const id = c.req.param('id');
 
   await c.env.DB.batch([
-    c.env.DB.prepare(`DELETE FROM user_flashcard_decks WHERE user_id = ? AND id = ?`).bind(
-      user.id,
-      id,
-    ),
+    c.env.DB.prepare(`DELETE FROM user_card_decks WHERE user_id = ? AND id = ?`).bind(user.id, id),
     // Also remove deckId from cards, or delete cards?
     // Logic in frontend was: set deckId=undefined.
     // In DB, if we delete deck, we should update cards to have deck_id = NULL
-    c.env.DB.prepare(
-      `UPDATE user_flashcards SET deck_id = NULL WHERE user_id = ? AND deck_id = ?`,
-    ).bind(user.id, id),
+    c.env.DB.prepare(`UPDATE user_cards SET deck_id = NULL WHERE user_id = ? AND deck_id = ?`).bind(
+      user.id,
+      id,
+    ),
   ]);
 
   return c.json({ ok: true });
 });
 
-// FlashCards
-app.get('/api/v1/flashcards', async (c) => {
+// Cards
+app.get('/api/v1/cards', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
 
   const { results } = await c.env.DB.prepare(
-    `SELECT id, question, answer, category, deck_id as deckId, updated_at as updatedAt, version FROM user_flashcards WHERE user_id = ?`,
+    `SELECT id, question, answer, category, deck_id as deckId, updated_at as updatedAt, version FROM user_cards WHERE user_id = ?`,
   )
     .bind(user.id)
-    .all<FlashCardRow>();
+    .all<CardRow>();
 
-  const flashCards = (results || []).map((row) => ({
+  const cards = (results || []).map((row) => ({
     id: row.id,
     question: row.question,
     answer: row.answer,
@@ -832,10 +830,10 @@ app.get('/api/v1/flashcards', async (c) => {
     version: row.version,
     updatedAt: row.updatedAt,
   }));
-  return c.json({ flashCards });
+  return c.json({ cards });
 });
 
-app.post('/api/v1/flashcards', async (c) => {
+app.post('/api/v1/cards', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
 
@@ -851,7 +849,7 @@ app.post('/api/v1/flashcards', async (c) => {
 
   try {
     await c.env.DB.prepare(
-      `INSERT INTO user_flashcards (user_id, id, question, answer, category, deck_id, updated_at, version)
+      `INSERT INTO user_cards (user_id, id, question, answer, category, deck_id, updated_at, version)
          VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
     )
       .bind(
@@ -874,7 +872,7 @@ app.post('/api/v1/flashcards', async (c) => {
   }
 });
 
-app.patch('/api/v1/flashcards/:id', async (c) => {
+app.patch('/api/v1/cards/:id', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
   const id = c.req.param('id');
@@ -897,7 +895,7 @@ app.patch('/api/v1/flashcards/:id', async (c) => {
 
   const result = await performOptimisticUpdate(
     c.env.DB,
-    'user_flashcards',
+    'user_cards',
     user.id,
     id,
     payload.expectedVersion,
@@ -937,12 +935,12 @@ app.patch('/api/v1/flashcards/:id', async (c) => {
   }
 });
 
-app.delete('/api/v1/flashcards/:id', async (c) => {
+app.delete('/api/v1/cards/:id', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
   const id = c.req.param('id');
 
-  await c.env.DB.prepare(`DELETE FROM user_flashcards WHERE user_id = ? AND id = ?`)
+  await c.env.DB.prepare(`DELETE FROM user_cards WHERE user_id = ? AND id = ?`)
     .bind(user.id, id)
     .run();
 

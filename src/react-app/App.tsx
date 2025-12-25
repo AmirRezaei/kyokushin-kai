@@ -30,7 +30,11 @@ import TerminologyPage from './app/terminology/terminologyPage';
 import TimerPage from './app/timer/timerPage';
 import TrainingSessionPage from './app/trainingSession/trainingSessionPage';
 import WordPlayPage from './app/WordQuest/WordPlay/WordPlayPage';
-import FlashCardPage from './app/WordQuest/FlashCard/FlashCardPage';
+import CardPage from './app/WordQuest/Card/CardPage';
+import CardMatchPage from './app/WordQuest/Card/CardMatchPage';
+import CardCrosswordPage from './app/WordQuest/Card/CardCrosswordPage';
+import CardManagerPage from './app/WordQuest/Card/CardManagerPage';
+import DeckManagerPage from './app/WordQuest/Card/DeckManagerPage';
 import AppNotFoundPage from './AppNotFoundPage';
 import BreathingTechniquesPage from './BreathingTechniquesPage';
 import DojoKunPage from './app/dojo-kun/DojoKunPage';
@@ -64,8 +68,8 @@ function AppContent() {
     const handleSessionConflict = () => {
       showSnackbar('Training session updated from another device.', 'warning');
     };
-    const handleFlashCardConflict = () => {
-      showSnackbar('Flashcard updated from another device. Reloading.', 'warning');
+    const handleCardConflict = () => {
+      showSnackbar('Card updated from another device. Reloading.', 'warning');
     };
     const handleDeckConflict = () => {
       showSnackbar('Deck updated from another device. Reloading.', 'warning');
@@ -73,13 +77,13 @@ function AppContent() {
 
     window.addEventListener('settings-conflict', handleSettingsConflict);
     window.addEventListener('training-session-conflict', handleSessionConflict);
-    window.addEventListener('flashcard-conflict', handleFlashCardConflict);
+    window.addEventListener('card-conflict', handleCardConflict);
     window.addEventListener('deck-conflict', handleDeckConflict);
 
     return () => {
       window.removeEventListener('settings-conflict', handleSettingsConflict);
       window.removeEventListener('training-session-conflict', handleSessionConflict);
-      window.removeEventListener('flashcard-conflict', handleFlashCardConflict);
+      window.removeEventListener('card-conflict', handleCardConflict);
       window.removeEventListener('deck-conflict', handleDeckConflict);
     };
   }, [showSnackbar]);
@@ -316,10 +320,42 @@ function AppContent() {
             }
           />
           <Route
-            path="/flashcards"
+            path="/cards"
             element={
               <ProtectedRoute>
-                <FlashCardPage />
+                <CardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cards/match"
+            element={
+              <ProtectedRoute>
+                <CardMatchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cards/crossword"
+            element={
+              <ProtectedRoute>
+                <CardCrosswordPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/card-manager"
+            element={
+              <ProtectedRoute>
+                <CardManagerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deck-manager"
+            element={
+              <ProtectedRoute>
+                <DeckManagerPage />
               </ProtectedRoute>
             }
           />

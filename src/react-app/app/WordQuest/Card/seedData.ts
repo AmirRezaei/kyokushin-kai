@@ -1,6 +1,6 @@
 import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
 import { getFormattedGradeName } from '../../../../data/repo/gradeHelpers';
-import { Deck, FlashCard } from './types';
+import { Deck, Card } from './types';
 
 // Deterministic ID generation based on prefixes to ensure consistency across contexts
 // We use the IDs from gradeData which are sequential counter strings ("1", "2", ...)
@@ -8,9 +8,9 @@ import { Deck, FlashCard } from './types';
 // Better to make them look like UUIDs or just unique strings.
 // Since we are seeding, we can just use "deck-grade-ID" and "card-tech-ID".
 
-export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: FlashCard[] }> => {
+export const getInitialData = async (): Promise<{ decks: Deck[]; cards: Card[] }> => {
   const decks: Deck[] = [];
-  const flashCards: FlashCard[] = [];
+  const cards: Card[] = [];
 
   const grades = await KyokushinRepository.getCurriculumGrades();
 
@@ -33,7 +33,7 @@ export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: Fla
       id: deckId,
       name: deckName,
       description: `Techniques for ${formattedRank}`,
-      flashCardIds: [],
+      cardIds: [],
     };
 
     // Process Techniques
@@ -43,7 +43,7 @@ export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: Fla
       const question = tech.name.ja || tech.name.romaji || 'Unknown';
       const answer = tech.name.en || tech.name.romaji || 'Unknown';
 
-      const card: FlashCard = {
+      const card: Card = {
         id: cardId,
         question: question,
         answer: answer,
@@ -51,8 +51,8 @@ export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: Fla
         deckId: deckId,
       };
 
-      flashCards.push(card);
-      deck.flashCardIds.push(cardId);
+      cards.push(card);
+      deck.cardIds.push(cardId);
     });
 
     // Process Katas
@@ -62,7 +62,7 @@ export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: Fla
       const question = kata.name.ja || kata.name.romaji || 'Unknown';
       const answer = kata.name.en || kata.name.romaji || 'Unknown';
 
-      const card: FlashCard = {
+      const card: Card = {
         id: cardId,
         question: question,
         answer: answer,
@@ -70,14 +70,14 @@ export const getInitialData = async (): Promise<{ decks: Deck[]; flashCards: Fla
         deckId: deckId,
       };
 
-      flashCards.push(card);
-      deck.flashCardIds.push(cardId);
+      cards.push(card);
+      deck.cardIds.push(cardId);
     });
 
-    if (deck.flashCardIds.length > 0) {
+    if (deck.cardIds.length > 0) {
       decks.push(deck);
     }
   });
 
-  return { decks, flashCards };
+  return { decks, cards };
 };

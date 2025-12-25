@@ -1,4 +1,4 @@
-// File: ./src/app/WordQuest/FlashCard/Deck/DeckManager.tsx
+// File: ./src/app/WordQuest/Card/Deck/DeckManager.tsx
 
 import {
   Alert,
@@ -11,7 +11,6 @@ import {
   DialogTitle,
   Paper,
   Snackbar,
-  Typography,
   useTheme,
 } from '@mui/material';
 import React, { useState } from 'react';
@@ -47,7 +46,7 @@ const DeckManager: React.FC = () => {
     setEditingDeck(null);
   };
 
-  const handleAddDeck = (deck: Omit<Deck, 'id' | 'flashCardIds'>) => {
+  const handleAddDeck = (deck: Omit<Deck, 'id' | 'cardIds'>) => {
     addDeck(deck);
     showNotification('Deck added successfully!', 'success');
   };
@@ -71,34 +70,6 @@ const DeckManager: React.FC = () => {
 
   return (
     <Box>
-      {/* Header */}
-      <Paper
-        elevation={2}
-        sx={{
-          mb: theme.spacing(3),
-          p: theme.spacing(3),
-          textAlign: 'center',
-          borderRadius: theme.spacing(2),
-          background: theme.palette.primary.main,
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 700,
-            color: theme.palette.primary.contrastText,
-          }}
-        >
-          Deck Manager
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{ color: theme.palette.primary.contrastText, opacity: 0.9, mt: theme.spacing(0.5) }}
-        >
-          Organize your flashcards into decks
-        </Typography>
-      </Paper>
-
       {/* Form Section */}
       <Paper
         elevation={2}
