@@ -70,6 +70,19 @@ interface CrosswordPuzzle {
   size: number | { rows: number; cols: number };
 }
 
+interface ViewMetrics {
+  viewWidth: number;
+  viewHeight: number;
+  gridRows: number;
+  gridCols: number;
+  baseCell: number;
+  scaledCell: number;
+  gridWidth: number;
+  gridHeight: number;
+  baseOffsetX: number;
+  baseOffsetY: number;
+}
+
 const CROSSWORD_IMAGE_PATH = '/media/crossword/ditherlab-1766485677538.png';
 
 const PLACEHOLDER_CONFIG = {
@@ -217,9 +230,30 @@ const CardCrossword: React.FC = () => {
   // Panning state
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(null);
-  const [scrollStart, setScrollStart] = useState<{ left: number; top: number } | null>(null);
+  const [panOffsetStart, setPanOffsetStart] = useState<{ x: number; y: number } | null>(null);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const gridContainerRef = React.useRef<HTMLDivElement>(null);
   const hiddenInputRef = React.useRef<HTMLInputElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const placeholderImageRef = React.useRef<HTMLImageElement | null>(null);
+  const touchCellRef = React.useRef<{ row: number; col: number } | null>(null);
+  const cellSizeRef = React.useRef(0);
+  const scaledCellSizeRef = React.useRef(0);
+  const panOffsetRef = React.useRef({ x: 0, y: 0 });
+  const viewMetricsRef = React.useRef({
+    viewWidth: 0,
+    viewHeight: 0,
+    baseOffsetX: 0,
+    baseOffsetY: 0,
+    gridWidth: 0,
+    gridHeight: 0,
+    scaledCellSize: 0,
+    originX: 0,
+    originY: 0,
+  });
+  const spacePatternRef = React.useRef<CanvasPattern | null>(null);
+  const spacePatternModeRef = React.useRef<'light' | 'dark' | null>(null);
+  const [canvasRevision, setCanvasRevision] = useState(0);
   const [imagePlaceholder, setImagePlaceholder] = useState<{ rows: number; cols: number }>({
     rows: 12,
     cols: 12,
@@ -228,7 +262,136 @@ const CardCrossword: React.FC = () => {
     null,
   );
   const viewportHeight = isMobile ? '100dvh' : '100vh';
-  const viewportWidth = isMobile ? '100dvw' : '100vw';
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = React.useRef(1);
+  const pinchRef = React.useRef<{ distance: number; zoom: number } | null>(null);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
+
+
+  const clampZoom = (value: number) => Math.min(2.5, Math.max(0.6, value));
+  const getTouchDistance = (touches: TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const getViewMetrics = useCallback(
+    (zoomValue: number): ViewMetrics | null => {
+      if (!puzzle || !gridContainerRef.current) return null;
+      const gridRows = puzzle.grid.length;
+      const gridCols = puzzle.grid[0]?.length || 0;
+      if (gridRows === 0 || gridCols === 0) return null;
+
+      const viewWidth = gridContainerRef.current.clientWidth || 1;
+      const viewHeight = gridContainerRef.current.clientHeight || 1;
+
+      const minCell = isDesktop ? 32 : 32;
+      const baseCell = Math.max(
+        minCell,
+        Math.min(viewHeight / gridRows, viewWidth / gridCols),
+      );
+
+      const scaledCell = baseCell * zoomValue;
+      const gridWidth = gridCols * scaledCell;
+      const gridHeight = gridRows * scaledCell;
+      const baseOffsetX = (viewWidth - gridWidth) / 2;
+      const baseOffsetY = (viewHeight - gridHeight) / 2;
+
+      return {
+        viewWidth,
+        viewHeight,
+        gridRows,
+        gridCols,
+        baseCell,
+        scaledCell,
+        gridWidth,
+        gridHeight,
+        baseOffsetX,
+        baseOffsetY,
+      };
+    },
+    [puzzle, isDesktop],
+  );
+
+  const clampPanOffset = useCallback(
+    (next: { x: number; y: number }, metrics: ViewMetrics | null) => {
+      if (!metrics) return next;
+      const { gridWidth, gridHeight, viewWidth, viewHeight, baseOffsetX, baseOffsetY } = metrics;
+      let x = next.x;
+      let y = next.y;
+
+      if (gridWidth <= viewWidth) {
+        x = 0;
+      } else {
+        const minOriginX = viewWidth - gridWidth;
+        const maxOriginX = 0;
+        const minPanX = minOriginX - baseOffsetX;
+        const maxPanX = maxOriginX - baseOffsetX;
+        x = Math.min(maxPanX, Math.max(minPanX, x));
+      }
+
+      if (gridHeight <= viewHeight) {
+        y = 0;
+      } else {
+        const minOriginY = viewHeight - gridHeight;
+        const maxOriginY = 0;
+        const minPanY = minOriginY - baseOffsetY;
+        const maxPanY = maxOriginY - baseOffsetY;
+        y = Math.min(maxPanY, Math.max(minPanY, y));
+      }
+
+      return { x, y };
+    },
+    [],
+  );
+
+  const applyZoom = useCallback(
+    (nextZoom: number, focalPoint?: { x: number; y: number }) => {
+      if (!gridContainerRef.current || !puzzle) {
+        setZoom(nextZoom);
+        return;
+      }
+
+      const currentMetrics = getViewMetrics(zoomRef.current);
+      const nextMetrics = getViewMetrics(nextZoom);
+      if (!currentMetrics || !nextMetrics || currentMetrics.scaledCell <= 0) {
+        setZoom(nextZoom);
+        return;
+      }
+
+      const rect = gridContainerRef.current.getBoundingClientRect();
+      const viewX = focalPoint ? focalPoint.x - rect.left : rect.width / 2;
+      const viewY = focalPoint ? focalPoint.y - rect.top : rect.height / 2;
+
+      const currentOriginX = currentMetrics.baseOffsetX + panOffsetRef.current.x;
+      const currentOriginY = currentMetrics.baseOffsetY + panOffsetRef.current.y;
+      const worldX = (viewX - currentOriginX) / currentMetrics.scaledCell;
+      const worldY = (viewY - currentOriginY) / currentMetrics.scaledCell;
+
+      const nextOriginX = viewX - worldX * nextMetrics.scaledCell;
+      const nextOriginY = viewY - worldY * nextMetrics.scaledCell;
+
+      const nextPan = {
+        x: nextOriginX - nextMetrics.baseOffsetX,
+        y: nextOriginY - nextMetrics.baseOffsetY,
+      };
+
+      zoomRef.current = nextZoom;
+      setZoom(nextZoom);
+      const clamped = clampPanOffset(nextPan, nextMetrics);
+      panOffsetRef.current = clamped;
+      setPanOffset(clamped);
+    },
+    [getViewMetrics, clampPanOffset, puzzle],
+  );
 
   // Difficulty levels with reveal percentages
   const difficultyLevels = [
@@ -245,6 +408,7 @@ const CardCrossword: React.FC = () => {
     img.onload = () => {
       const { width, height } = img;
       setImageDimensions({ width, height });
+      placeholderImageRef.current = img;
 
       // Calculate aspect ratios
       const imageAspect = width / height;
@@ -271,6 +435,15 @@ const CardCrossword: React.FC = () => {
     };
     img.src = CROSSWORD_IMAGE_PATH;
   }, [isDesktop]);
+
+  useEffect(() => {
+    if (!gridContainerRef.current) return;
+    const observer = new ResizeObserver(() => {
+      setCanvasRevision((prev) => prev + 1);
+    });
+    observer.observe(gridContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Get deck color for styling - using useMemo to avoid cascading renders
   const deckColor = useMemo(() => {
@@ -1157,6 +1330,9 @@ const CardCrossword: React.FC = () => {
         });
       }
 
+      const resetPan = { x: 0, y: 0 };
+      panOffsetRef.current = resetPan;
+      setPanOffset(resetPan);
       setPuzzle(newPuzzle);
       setGameStarted(true);
       setCompletedWords(new Set());
@@ -1165,6 +1341,9 @@ const CardCrossword: React.FC = () => {
   };
 
   const quitGame = () => {
+    const resetPan = { x: 0, y: 0 };
+    panOffsetRef.current = resetPan;
+    setPanOffset(resetPan);
     setGameStarted(false);
     setPuzzle(null);
     setSelectedCell(null);
@@ -1202,16 +1381,11 @@ const CardCrossword: React.FC = () => {
     if (e.button !== 0) return;
 
     setPanStart({ x: e.clientX, y: e.clientY });
-    if (gridContainerRef.current) {
-      setScrollStart({
-        left: gridContainerRef.current.scrollLeft,
-        top: gridContainerRef.current.scrollTop,
-      });
-    }
+    setPanOffsetStart({ x: panOffsetRef.current.x, y: panOffsetRef.current.y });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!panStart || !scrollStart || !gridContainerRef.current) return;
+    if (!panStart || !panOffsetStart) return;
 
     const deltaX = e.clientX - panStart.x;
     const deltaY = e.clientY - panStart.y;
@@ -1222,49 +1396,64 @@ const CardCrossword: React.FC = () => {
       setIsPanning(true);
     }
 
-    gridContainerRef.current.scrollLeft = scrollStart.left - deltaX;
-    gridContainerRef.current.scrollTop = scrollStart.top - deltaY;
+    const nextPan = {
+      x: panOffsetStart.x + deltaX,
+      y: panOffsetStart.y + deltaY,
+    };
+    const metrics = getViewMetrics(zoomRef.current);
+    const clamped = clampPanOffset(nextPan, metrics);
+    panOffsetRef.current = clamped;
+    setPanOffset(clamped);
   };
 
   const handleMouseUp = () => {
     setPanStart(null);
-    setScrollStart(null);
+    setPanOffsetStart(null);
     // Reset panning flag after a short delay to prevent cell selection
     setTimeout(() => setIsPanning(false), 100);
   };
 
   // Panning handlers for mobile (touch)
   const handleTouchStartPan = (e: React.TouchEvent) => {
-    if (isMobile) {
-      setIsPanning(false);
+    if (e.touches.length === 2) {
+      pinchRef.current = { distance: getTouchDistance(e.touches), zoom: zoomRef.current };
       setPanStart(null);
-      setScrollStart(null);
+      setPanOffsetStart(null);
+      setIsPanning(true);
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
       return;
     }
+
+    pinchRef.current = null;
 
     if (e.touches.length !== 1) return; // Only single finger
 
     const touch = e.touches[0];
     setPanStart({ x: touch.clientX, y: touch.clientY });
-    if (gridContainerRef.current) {
-      setScrollStart({
-        left: gridContainerRef.current.scrollLeft,
-        top: gridContainerRef.current.scrollTop,
-      });
-    }
+    setPanOffsetStart({ x: panOffsetRef.current.x, y: panOffsetRef.current.y });
   };
 
   const handleTouchMovePan = (e: React.TouchEvent) => {
-    if (isMobile) {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
+    if (pinchRef.current && e.touches.length === 2) {
+      e.preventDefault();
+      const newDistance = getTouchDistance(e.touches);
+      if (newDistance <= 0) return;
+      const nextZoom = clampZoom((newDistance / pinchRef.current.distance) * pinchRef.current.zoom);
+      if (nextZoom !== zoomRef.current) {
+        const touchA = e.touches[0];
+        const touchB = e.touches[1];
+        const centerX = (touchA.clientX + touchB.clientX) / 2;
+        const centerY = (touchA.clientY + touchB.clientY) / 2;
+        applyZoom(nextZoom, { x: centerX, y: centerY });
       }
-      setIsPanning(true);
+      pinchRef.current = { distance: newDistance, zoom: nextZoom };
       return;
     }
 
-    if (!panStart || !scrollStart || !gridContainerRef.current) return;
+    if (!panStart || !panOffsetStart) return;
     if (e.touches.length !== 1) return;
 
     const touch = e.touches[0];
@@ -1282,22 +1471,95 @@ const CardCrossword: React.FC = () => {
       }
     }
 
-    gridContainerRef.current.scrollLeft = scrollStart.left - deltaX;
-    gridContainerRef.current.scrollTop = scrollStart.top - deltaY;
+    const nextPan = {
+      x: panOffsetStart.x + deltaX,
+      y: panOffsetStart.y + deltaY,
+    };
+    const metrics = getViewMetrics(zoomRef.current);
+    const clamped = clampPanOffset(nextPan, metrics);
+    panOffsetRef.current = clamped;
+    setPanOffset(clamped);
   };
 
   const handleTouchEndPan = () => {
-    if (isMobile) {
-      setTimeout(() => setIsPanning(false), 100);
-      return;
-    }
-
     setPanStart(null);
-    setScrollStart(null);
+    setPanOffsetStart(null);
+    pinchRef.current = null;
     // Reset panning flag after a short delay
     setTimeout(() => setIsPanning(false), 100);
   };
-  const handleContextMenu = (e: React.MouseEvent, row: number, col: number) => {
+
+  const handleGridWheel = useCallback(
+    (e: React.WheelEvent) => {
+      if (!isDesktop) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.deltaY === 0) return;
+      const nextZoom = clampZoom(zoomRef.current - e.deltaY * 0.0015);
+      if (nextZoom !== zoomRef.current) {
+        applyZoom(nextZoom, { x: e.clientX, y: e.clientY });
+      }
+    },
+    [isDesktop, applyZoom],
+  );
+
+  const getCellFromClient = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!canvasRef.current || !puzzle) return null;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const metrics = viewMetricsRef.current;
+      const size = metrics.scaledCellSize || scaledCellSizeRef.current;
+      if (size <= 0) return null;
+      const x = clientX - rect.left - metrics.originX;
+      const y = clientY - rect.top - metrics.originY;
+      if (x < 0 || y < 0) return null;
+      const col = Math.floor(x / size);
+      const row = Math.floor(y / size);
+      if (row < 0 || col < 0) return null;
+      if (row >= puzzle.grid.length || col >= puzzle.grid[0]?.length) return null;
+      return { row, col };
+    },
+    [puzzle],
+  );
+
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const cell = getCellFromClient(e.clientX, e.clientY);
+      if (!cell) return;
+      handleCellClick(cell.row, cell.col);
+    },
+    [getCellFromClient, handleCellClick],
+  );
+
+  const handleCanvasContextMenu = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const cell = getCellFromClient(e.clientX, e.clientY);
+      if (!cell) return;
+      handleContextMenu(e, cell.row, cell.col);
+    },
+    [getCellFromClient, handleContextMenu],
+  );
+
+  const handleCanvasTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const cell = getCellFromClient(touch.clientX, touch.clientY);
+      touchCellRef.current = cell;
+      if (!cell) return;
+      handleTouchStart(cell.row, cell.col);
+    },
+    [getCellFromClient, handleTouchStart],
+  );
+
+  const handleCanvasTouchEnd = useCallback(() => {
+    if (touchCellRef.current && !isPanning) {
+      handleCellClick(touchCellRef.current.row, touchCellRef.current.col);
+    }
+    touchCellRef.current = null;
+    handleTouchEnd();
+  }, [handleCellClick, handleTouchEnd, isPanning]);
+  function handleContextMenu(e: React.MouseEvent, row: number, col: number) {
     e.preventDefault();
     if (!puzzle) return;
     const cell = puzzle.grid[row][col];
@@ -1308,10 +1570,10 @@ const CardCrossword: React.FC = () => {
     newGrid[row][col] = { ...cell, value: cell.letter };
     setPuzzle({ ...puzzle, grid: newGrid });
     checkWordCompletion(row, col);
-  };
+  }
 
   // Long-press handlers for mobile
-  const handleTouchStart = (row: number, col: number) => {
+  function handleTouchStart(row: number, col: number) {
     const timer = setTimeout(() => {
       if (!puzzle) return;
       const cell = puzzle.grid[row][col];
@@ -1324,14 +1586,14 @@ const CardCrossword: React.FC = () => {
       checkWordCompletion(row, col);
     }, 500); // 500ms long press
     setLongPressTimer(timer);
-  };
+  }
 
-  const handleTouchEnd = () => {
+  function handleTouchEnd() {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (!puzzle || !selectedCell) return;
@@ -1621,6 +1883,382 @@ const CardCrossword: React.FC = () => {
     };
   }, [puzzle, imageDimensions]);
 
+  const drawCanvas = useCallback(() => {
+    if (!puzzle || !canvasRef.current || !gridContainerRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const gridRows = puzzle.grid.length;
+    const gridCols = puzzle.grid[0]?.length || 0;
+    if (gridRows === 0 || gridCols === 0) return;
+
+    const metrics = getViewMetrics(zoom);
+    if (!metrics) return;
+
+    const {
+      viewWidth,
+      viewHeight,
+      baseCell,
+      scaledCell,
+      gridWidth,
+      gridHeight,
+      baseOffsetX,
+      baseOffsetY,
+    } = metrics;
+    const scaledCellSize = scaledCell;
+
+    cellSizeRef.current = baseCell;
+    scaledCellSizeRef.current = scaledCell;
+
+    const effectivePan = clampPanOffset(panOffset, metrics);
+    const originX = baseOffsetX + effectivePan.x;
+    const originY = baseOffsetY + effectivePan.y;
+
+    viewMetricsRef.current = {
+      viewWidth,
+      viewHeight,
+      baseOffsetX,
+      baseOffsetY,
+      gridWidth,
+      gridHeight,
+      scaledCellSize: scaledCell,
+      originX,
+      originY,
+    };
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = `${viewWidth}px`;
+    canvas.style.height = `${viewHeight}px`;
+    canvas.width = Math.max(1, Math.round(viewWidth * dpr));
+    canvas.height = Math.max(1, Math.round(viewHeight * dpr));
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = theme.palette.background.default;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, originX * dpr, originY * dpr);
+
+    const mode = theme.palette.mode;
+    const wrapperBg =
+      mode === 'dark' ? 'rgba(66, 165, 245, 0.35)' : 'rgba(66, 165, 245, 0.25)';
+    const wrapperBorder = theme.palette.primary.main;
+    const emptyBg = theme.palette.background.default;
+    const defaultBg = theme.palette.background.paper;
+    const activeBg = theme.palette.action.hover;
+    const selectedBg = theme.palette.action.selected;
+    const correctBg = theme.palette.success.light;
+    const incorrectBg = theme.palette.error.light;
+
+    if (!spacePatternRef.current || spacePatternModeRef.current !== mode) {
+      const patternCanvas = document.createElement('canvas');
+      patternCanvas.width = 8;
+      patternCanvas.height = 8;
+      const pctx = patternCanvas.getContext('2d');
+      if (pctx) {
+        pctx.fillStyle = mode === 'dark' ? 'rgba(100,100,120,0.3)' : 'rgba(0,0,0,0.05)';
+        pctx.fillRect(0, 0, 8, 8);
+        pctx.strokeStyle = mode === 'dark' ? 'rgba(180,180,200,0.4)' : 'rgba(0,0,0,0.3)';
+        pctx.lineWidth = 1;
+        pctx.beginPath();
+        pctx.moveTo(0, 8);
+        pctx.lineTo(8, 0);
+        pctx.moveTo(-4, 8);
+        pctx.lineTo(4, 0);
+        pctx.moveTo(4, 8);
+        pctx.lineTo(12, 0);
+        pctx.stroke();
+      }
+      spacePatternRef.current = ctx.createPattern(patternCanvas, 'repeat');
+      spacePatternModeRef.current = mode;
+    }
+
+    if (placeholderBounds && placeholderImageRef.current?.complete) {
+      const img = placeholderImageRef.current;
+      const destX = placeholderBounds.minCol * scaledCellSize;
+      const destY = placeholderBounds.minRow * scaledCellSize;
+      const destW = placeholderBounds.cols * scaledCellSize;
+      const destH = placeholderBounds.rows * scaledCellSize;
+
+      const imageAspect = img.width / img.height;
+      const destAspect = destW / destH;
+      let drawW = destW;
+      let drawH = destH;
+      let drawX = destX;
+      let drawY = destY;
+
+      if (imageAspect > destAspect) {
+        drawH = destH;
+        drawW = destH * imageAspect;
+        drawX = destX - (drawW - destW) / 2;
+      } else {
+        drawW = destW;
+        drawH = destW / imageAspect;
+        drawY = destY - (drawH - destH) / 2;
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(destX, destY, destW, destH);
+      ctx.clip();
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(destX, destY, destW, destH);
+    }
+
+    const drawWrappedText = (
+      text: string,
+      x: number,
+      y: number,
+      maxWidth: number,
+      maxHeight: number,
+      fontSize: number,
+    ) => {
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+
+      words.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+
+      const lineHeight = fontSize * 1.1;
+      const totalHeight = lines.length * lineHeight;
+      let startY = y + maxHeight / 2 - totalHeight / 2 + lineHeight / 2;
+
+      lines.forEach((line) => {
+        ctx.fillText(line, x + maxWidth / 2, startY);
+        startY += lineHeight;
+      });
+    };
+
+    const wrapperCoverage = new Set<string>();
+    for (let rowIndex = 0; rowIndex < gridRows; rowIndex++) {
+      for (let colIndex = 0; colIndex < gridCols; colIndex++) {
+        const cell = puzzle.grid[rowIndex][colIndex];
+        if (cell.type !== 'wrapper' || !cell.cellSpan || !cell.direction) continue;
+        for (let i = 0; i < cell.cellSpan; i++) {
+          const coverRow = cell.direction === 'across' ? rowIndex : rowIndex + i;
+          const coverCol = cell.direction === 'across' ? colIndex + i : colIndex;
+          if (coverRow >= gridRows || coverCol >= gridCols) break;
+          wrapperCoverage.add(`${coverRow},${coverCol}`);
+        }
+      }
+    }
+
+    const incorrectCells: Array<{ row: number; col: number }> = [];
+    for (let rowIndex = 0; rowIndex < gridRows; rowIndex++) {
+      const row = puzzle.grid[rowIndex];
+      for (let colIndex = 0; colIndex < gridCols; colIndex++) {
+        const cell = row[colIndex];
+        const x = colIndex * scaledCellSize;
+        const y = rowIndex * scaledCellSize;
+
+        if (wrapperCoverage.has(`${rowIndex},${colIndex}`) && cell.type !== 'wrapper') {
+          continue;
+        }
+
+        if (cell.type === 'placeholder') {
+          continue;
+        }
+
+        if (cell.type === 'empty') {
+          ctx.fillStyle = emptyBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+          continue;
+        }
+
+        if (cell.type === 'space') {
+          ctx.fillStyle = spacePatternRef.current || emptyBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+          continue;
+        }
+
+        if (cell.type === 'wrapper') {
+          if (cell.wrapperText && cell.cellSpan) {
+            const spanW =
+              cell.direction === 'across'
+                ? scaledCellSize * cell.cellSpan
+                : scaledCellSize;
+            const spanH =
+              cell.direction === 'down' ? scaledCellSize * cell.cellSpan : scaledCellSize;
+
+            ctx.fillStyle = wrapperBg;
+            ctx.fillRect(x, y, spanW, spanH);
+            ctx.strokeStyle = wrapperBorder;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, spanW, spanH);
+
+            const fontSize = Math.max(12, scaledCellSize * 0.35);
+            ctx.fillStyle = theme.palette.text.primary;
+            ctx.font = `${fontSize}px 'Caveat', cursive`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            drawWrappedText(cell.wrapperText, x, y, spanW, spanH, fontSize);
+          }
+          continue;
+        }
+
+        const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+        const isInActiveWord = getActiveWord
+          ? getActiveWord.direction === 'across'
+            ? rowIndex === getActiveWord.startRow &&
+              colIndex >= getActiveWord.startCol &&
+              colIndex < getActiveWord.startCol + getActiveWord.word.length
+            : colIndex === getActiveWord.startCol &&
+              rowIndex >= getActiveWord.startRow &&
+              rowIndex < getActiveWord.startRow + getActiveWord.word.length
+          : false;
+
+        const isCorrect = cell.value && cell.value === cell.letter;
+        const isIncorrect = cell.value && cell.value !== cell.letter;
+
+        ctx.fillStyle = defaultBg;
+        ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+
+        if (isCorrect) {
+          ctx.fillStyle = correctBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+        } else if (isIncorrect) {
+          ctx.fillStyle = incorrectBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+        } else if (isSelected) {
+          ctx.fillStyle = selectedBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+        } else if (isInActiveWord) {
+          ctx.fillStyle = activeBg;
+          ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
+        }
+
+        if (isIncorrect) {
+          incorrectCells.push({ row: rowIndex, col: colIndex });
+        }
+
+        if (cell.number) {
+          const numberSize = Math.max(10, scaledCellSize * 0.3);
+          ctx.fillStyle = theme.palette.text.primary;
+          ctx.font = `${numberSize}px 'Caveat', cursive`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(cell.number.toString(), x + scaledCellSize * 0.12, y + 1);
+        }
+
+        if (cell.value) {
+          const letterSize = Math.max(14, scaledCellSize * 0.6);
+          ctx.fillStyle = theme.palette.text.primary;
+          ctx.font = `${letterSize}px 'Caveat', cursive`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(cell.value, x + scaledCellSize / 2, y + scaledCellSize / 2);
+        }
+      }
+    }
+
+    const isHiddenForGrid = (rowIndex: number, colIndex: number) => {
+      if (rowIndex < 0 || rowIndex >= gridRows || colIndex < 0 || colIndex >= gridCols) {
+        return true;
+      }
+      const cell = puzzle.grid[rowIndex][colIndex];
+      if (cell.type === 'placeholder') return true;
+      return wrapperCoverage.has(`${rowIndex},${colIndex}`);
+    };
+
+    ctx.strokeStyle = theme.palette.divider;
+    ctx.lineWidth = 1;
+    const lineOffset = 0.5;
+    ctx.beginPath();
+    for (let rowIndex = 0; rowIndex < gridRows; rowIndex++) {
+      for (let colIndex = 0; colIndex < gridCols; colIndex++) {
+        if (isHiddenForGrid(rowIndex, colIndex)) continue;
+        const x = colIndex * scaledCellSize;
+        const y = rowIndex * scaledCellSize;
+        const x1 = x + scaledCellSize;
+        const y1 = y + scaledCellSize;
+
+        if (rowIndex === 0) {
+          ctx.moveTo(x, y + lineOffset);
+          ctx.lineTo(x1, y + lineOffset);
+        }
+        if (colIndex === 0) {
+          ctx.moveTo(x + lineOffset, y);
+          ctx.lineTo(x + lineOffset, y1);
+        }
+
+        if (colIndex === gridCols - 1) {
+          ctx.moveTo(x1 + lineOffset, y);
+          ctx.lineTo(x1 + lineOffset, y1);
+        } else if (!isHiddenForGrid(rowIndex, colIndex + 1)) {
+          ctx.moveTo(x1 + lineOffset, y);
+          ctx.lineTo(x1 + lineOffset, y1);
+        }
+
+        if (rowIndex === gridRows - 1) {
+          ctx.moveTo(x, y1 + lineOffset);
+          ctx.lineTo(x1, y1 + lineOffset);
+        } else if (!isHiddenForGrid(rowIndex + 1, colIndex)) {
+          ctx.moveTo(x, y1 + lineOffset);
+          ctx.lineTo(x1, y1 + lineOffset);
+        }
+      }
+    }
+    ctx.stroke();
+
+    if (incorrectCells.length > 0) {
+      ctx.strokeStyle = theme.palette.error.main;
+      ctx.lineWidth = 2;
+      incorrectCells.forEach(({ row, col }) => {
+        const x = col * scaledCellSize + 1;
+        const y = row * scaledCellSize + 1;
+        ctx.strokeRect(x, y, scaledCellSize - 2, scaledCellSize - 2);
+      });
+    }
+
+    if (selectedCell && !isBlockedCellType(puzzle.grid[selectedCell.row][selectedCell.col].type)) {
+      ctx.strokeStyle = theme.palette.primary.main;
+      ctx.lineWidth = 3;
+      const x = selectedCell.col * scaledCellSize + 1.5;
+      const y = selectedCell.row * scaledCellSize + 1.5;
+      ctx.strokeRect(x, y, scaledCellSize - 3, scaledCellSize - 3);
+    }
+  }, [
+    puzzle,
+    zoom,
+    theme,
+    isDesktop,
+    placeholderBounds,
+    selectedCell,
+    getActiveWord,
+    getViewMetrics,
+    clampPanOffset,
+    panOffset,
+  ]);
+
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas, canvasRevision]);
+
+  useEffect(() => {
+    const metrics = getViewMetrics(zoom);
+    if (!metrics) return;
+    const clamped = clampPanOffset(panOffsetRef.current, metrics);
+    if (clamped.x !== panOffsetRef.current.x || clamped.y !== panOffsetRef.current.y) {
+      setPanOffset(clamped);
+    }
+  }, [zoom, puzzle, canvasRevision, getViewMetrics, clampPanOffset]);
+
   // Deck selection screen
   if (!gameStarted) {
     return (
@@ -1870,336 +2508,29 @@ const CardCrossword: React.FC = () => {
               onTouchStart={handleTouchStartPan}
               onTouchMove={handleTouchMovePan}
               onTouchEnd={handleTouchEndPan}
+              onTouchCancel={handleTouchEndPan}
+              onWheel={handleGridWheel}
               sx={{
                 width: '100%',
                 flex: 1,
-                display: 'flex',
-                justifyContent: 'flex-start',
-                alignItems: 'flex-start',
-                overflow: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                touchAction: isMobile ? 'pan-x pan-y' : 'none',
+                position: 'relative',
+                overflow: 'hidden',
+                touchAction: 'none',
                 overscrollBehavior: 'contain',
                 cursor: isMobile ? 'auto' : panStart ? 'grabbing' : 'grab',
                 userSelect: 'none',
-                p: 1, // Add padding to prevent edge clipping
+                border: `1px solid ${theme.palette.divider}`,
               }}
             >
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 0,
-                  width: 'fit-content',
-                  minWidth: 'min-content',
-                }}
-              >
-                {puzzle?.grid.map((row, rowIndex) => (
-                  <Box key={rowIndex} sx={{ display: 'flex', width: 'fit-content' }}>
-                    {row.map((cell, colIndex) => {
-                      // Calculate grid dimensions
-                      const gridRows = puzzle.grid.length;
-                      const gridCols = puzzle.grid[0]?.length || 0;
-
-                      // Calculate cell size to fit viewport
-                      // Available height = viewport - (header ~80px + clue banner ~60px + buttons ~60px + padding ~40px)
-                      // Available width = viewport width - padding
-                      const availableHeight = isDesktop
-                        ? `calc(${viewportHeight} - 300px)`
-                        : `calc(${viewportHeight} - 210px)`;
-                      const availableWidth = isDesktop
-                        ? `calc(${viewportWidth} - 100px)`
-                        : `calc(${viewportWidth} - 16px)`;
-
-                      // Cell size fits the smaller dimension to ensure grid fits
-                      // But enforce minimum readable sizes: 2.5rem (40px) mobile, 2rem (32px) desktop
-                      const cellSize = isDesktop
-                        ? `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 3.5rem), 2rem)`
-                        : `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 2.8rem), 2rem)`;
-
-                      // Placeholder block (displays image)
-                      if (cell.type === 'placeholder' && placeholderBounds) {
-                        const isTop = rowIndex === placeholderBounds.minRow;
-                        const isBottom = rowIndex === placeholderBounds.maxRow;
-                        const isLeft = colIndex === placeholderBounds.minCol;
-                        const isRight = colIndex === placeholderBounds.maxCol;
-
-                        // Calculate position within the grid for background positioning
-                        const relativeRow = rowIndex - placeholderBounds.minRow;
-                        const relativeCol = colIndex - placeholderBounds.minCol;
-
-                        return (
-                          <Box
-                            key={colIndex}
-                            sx={{
-                              width: cellSize,
-                              aspectRatio: '1',
-                              boxSizing: 'border-box',
-                              backgroundImage: `url(${CROSSWORD_IMAGE_PATH})`,
-                              // Size is calculated to cover the entire grid area relative to this single cell
-                              backgroundSize: `${placeholderBounds.bgScaleW * 100}% ${placeholderBounds.bgScaleH * 100}%`,
-                              // Position shifts the massive background image to:
-                              // 1. Account for the crop offset (centering)
-                              // 2. Account for the cell's position within the grid
-                              // Use cellSize directly because percentages depend on (container - image) size difference which distorts positioning
-                              backgroundPosition: `calc(${-placeholderBounds.bgOffsetX - relativeCol} * ${cellSize}) calc(${-placeholderBounds.bgOffsetY - relativeRow} * ${cellSize})`,
-                              backgroundRepeat: 'no-repeat',
-                              backgroundOrigin: 'border-box',
-                              overflow: 'hidden',
-                              borderStyle: 'solid',
-                              borderColor: 'rgba(0, 0, 0, 0.4)',
-                              borderTopWidth: isTop ? 2 : 1,
-                              borderBottomWidth: isBottom ? 2 : 1,
-                              borderLeftWidth: isLeft ? 2 : 1,
-                              borderRightWidth: isRight ? 2 : 1,
-                              cursor: 'default',
-                              pointerEvents: 'none',
-                              flexShrink: 0,
-                            }}
-                          />
-                        );
-                      }
-
-                      // Unused grid cells - normal disabled background
-                      if (cell.type === 'empty') {
-                        return (
-                          <Box
-                            key={colIndex}
-                            sx={{
-                              width: cellSize,
-                              aspectRatio: '1',
-                              background: theme.palette.action.disabledBackground,
-                              flexShrink: 0,
-                            }}
-                          />
-                        );
-                      }
-
-                      // Word separator spaces - diagonal striped pattern
-                      if (cell.type === 'space') {
-                        return (
-                          <Box
-                            key={colIndex}
-                            sx={{
-                              width: cellSize,
-                              aspectRatio: '1',
-                              backgroundColor:
-                                theme.palette.mode === 'dark'
-                                  ? 'rgba(100,100,120,0.3)'
-                                  : 'rgba(0,0,0,0.05)',
-                              background:
-                                theme.palette.mode === 'dark'
-                                  ? 'repeating-linear-gradient(-45deg, rgba(180,180,200,0.4), rgba(180,180,200,0.4) 1px, rgba(100,100,120,0.3) 1px, rgba(100,100,120,0.3) 4px)'
-                                  : 'repeating-linear-gradient(-45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 1px, rgba(0,0,0,0.05) 1px, rgba(0,0,0,0.05) 4px)',
-                              flexShrink: 0,
-                            }}
-                          />
-                        );
-                      }
-
-                      // Wrapper cells - display full word text spanning multiple cells
-                      if (cell.type === 'wrapper') {
-                        // Only render if this cell has wrapper text (first cell of wrapper)
-                        if (cell.wrapperText && cell.cellSpan) {
-                          // Calculate the width/height based on cell span and direction
-                          const spanSize =
-                            cell.direction === 'across'
-                              ? `calc(${cellSize} * ${cell.cellSpan})`
-                              : cellSize;
-                          const spanHeight =
-                            cell.direction === 'down'
-                              ? `calc(${cellSize} * ${cell.cellSpan})`
-                              : cellSize;
-
-                          return (
-                            <Box
-                              key={colIndex}
-                              sx={{
-                                width: cellSize,
-                                height: cellSize,
-                                position: 'relative',
-                                flexShrink: 0,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  width: spanSize,
-                                  height: spanHeight,
-                                  boxSizing: 'border-box',
-                                  border: `2px solid ${theme.palette.primary.main}`,
-                                  borderRadius: '4px',
-                                  background:
-                                    theme.palette.mode === 'dark'
-                                      ? 'linear-gradient(135deg, rgba(66, 165, 245, 0.2), rgba(66, 165, 245, 0.1))'
-                                      : 'linear-gradient(135deg, rgba(66, 165, 245, 0.15), rgba(66, 165, 245, 0.05))',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  padding: theme.spacing(0.5),
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                <Typography
-                                  lang="en"
-                                  sx={{
-                                    fontFamily: "'Caveat', cursive",
-                                    fontWeight: 600,
-                                    fontSize: '0.8rem',
-                                    textAlign: 'center',
-                                    lineHeight: 1.1,
-                                    color: theme.palette.text.primary,
-                                    hyphens: 'auto',
-                                    wordBreak: 'break-word',
-                                    overflowWrap: 'break-word',
-                                    WebkitHyphens: 'auto',
-                                    MozHyphens: 'auto',
-                                  }}
-                                >
-                                  {cell.wrapperText}
-                                </Typography>
-                              </Box>
-                            </Box>
-                          );
-                        } else {
-                          // Empty wrapper cell (part of multi-cell wrapper) - invisible but maintains space
-                          return (
-                            <Box
-                              key={colIndex}
-                              sx={{
-                                width: cellSize,
-                                height: cellSize,
-                                visibility: 'hidden',
-                                flexShrink: 0,
-                              }}
-                            />
-                          );
-                        }
-                      }
-
-                      // Playable cells (filled/start)
-                      const isSelected =
-                        selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-                      const isInActiveWord = getActiveWord
-                        ? getActiveWord.direction === 'across'
-                          ? rowIndex === getActiveWord.startRow &&
-                            colIndex >= getActiveWord.startCol &&
-                            colIndex < getActiveWord.startCol + getActiveWord.word.length
-                          : colIndex === getActiveWord.startCol &&
-                            rowIndex >= getActiveWord.startRow &&
-                            rowIndex < getActiveWord.startRow + getActiveWord.word.length
-                        : false;
-
-                      const isCorrect = cell.value && cell.value === cell.letter;
-                      const isIncorrect = cell.value && cell.value !== cell.letter;
-
-                      return (
-                        <Box
-                          key={colIndex}
-                          onClick={() => handleCellClick(rowIndex, colIndex)}
-                          onContextMenu={(e) => handleContextMenu(e, rowIndex, colIndex)}
-                          onTouchStart={() => handleTouchStart(rowIndex, colIndex)}
-                          onTouchEnd={handleTouchEnd}
-                          onTouchCancel={handleTouchEnd}
-                          sx={{
-                            width: cellSize,
-                            aspectRatio: '1',
-                            boxSizing: 'border-box',
-                            border: isSelected
-                              ? `3px solid ${theme.palette.primary.main}`
-                              : isIncorrect
-                                ? `2px solid ${theme.palette.error.main}`
-                                : `1px solid ${theme.palette.primary.dark}`,
-                            position: 'relative',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            background: isCorrect
-                              ? theme.palette.mode === 'dark'
-                                ? 'rgba(76, 175, 80, 0.3)'
-                                : theme.palette.success.light
-                              : isIncorrect
-                                ? theme.palette.mode === 'dark'
-                                  ? 'rgba(244, 67, 54, 0.15)'
-                                  : 'rgba(244, 67, 54, 0.1)'
-                                : isSelected
-                                  ? theme.palette.mode === 'dark'
-                                    ? 'rgba(66, 165, 245, 0.25)'
-                                    : theme.palette.action.hover
-                                  : isInActiveWord
-                                    ? theme.palette.mode === 'dark'
-                                      ? 'rgba(255, 255, 255, 0.08)'
-                                      : theme.palette.action.hover
-                                    : theme.palette.mode === 'dark'
-                                      ? 'rgba(48, 48, 54, 0.9)'
-                                      : theme.palette.background.paper,
-                            transition: 'all 0.2s',
-                            flexShrink: 0,
-                            ...(isIncorrect && {
-                              animation: 'shake 0.5s',
-                              '@keyframes shake': {
-                                '0%, 100%': { transform: 'translateX(0)' },
-                                '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
-                                '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
-                              },
-                            }),
-                            ...(isSelected && {
-                              animation: 'pulse-border 1.5s ease-in-out infinite',
-                              '@keyframes pulse-border': {
-                                '0%, 100%': {
-                                  borderColor: theme.palette.primary.main,
-                                  boxShadow: `0 0 0 0 ${theme.palette.primary.main}40`,
-                                },
-                                '50%': {
-                                  borderColor: theme.palette.primary.light,
-                                  boxShadow: `0 0 8px 2px ${theme.palette.primary.main}60`,
-                                },
-                              },
-                            }),
-                            '&:hover': {
-                              background: isCorrect
-                                ? theme.palette.success.light
-                                : isIncorrect
-                                  ? theme.palette.error.light
-                                  : theme.palette.action.hover,
-                            },
-                          }}
-                        >
-                          {cell.number && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                position: 'absolute',
-                                top: 1,
-                                left: 2,
-                                fontSize: 'clamp(0.5rem, 1.5vw, 0.6rem)',
-                                fontWeight: 600,
-                              }}
-                            >
-                              {cell.number}
-                            </Typography>
-                          )}
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              position: 'absolute',
-                              top: '50%',
-                              left: '50%',
-                              transform: 'translate(-50%, -50%)',
-                              fontFamily: "'Caveat', cursive",
-                              fontWeight: 700,
-                              fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
-                            }}
-                          >
-                            {cell.value}
-                          </Typography>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-                ))}
-              </Box>
+              <canvas
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                onContextMenu={handleCanvasContextMenu}
+                onTouchStart={handleCanvasTouchStart}
+                onTouchEnd={handleCanvasTouchEnd}
+                onTouchCancel={handleCanvasTouchEnd}
+                style={{ display: 'block', width: '100%', height: '100%' }}
+              />
             </Box>
 
             {/* Hint: Right-click or long-press to reveal - Hidden in fullscreen */}
