@@ -277,6 +277,7 @@ const CardCrossword: React.FC = () => {
   const [zoom, setZoom] = useState(1);
   const zoomRef = React.useRef(1);
   const pinchRef = React.useRef<{ distance: number; zoom: number } | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const selectedBorderDashSpeed = 0.5;
 
   useEffect(() => {
@@ -340,11 +341,16 @@ const CardCrossword: React.FC = () => {
     const viewportHeight = viewport ? viewport.height : window.innerHeight;
     const viewportRight = viewportLeft + viewportWidth;
     const viewportBottom = viewportTop + viewportHeight;
+    const viewportShrink = viewport ? window.innerHeight - viewportHeight - viewportTop : 0;
+    const keyboardInset =
+      isMobile && isKeyboardVisible && viewportShrink <= 0
+        ? Math.round(window.innerHeight * 0.35)
+        : 0;
 
     const left = Math.max(rect.left, viewportLeft);
     const top = Math.max(rect.top, viewportTop);
     const right = Math.min(rect.right, viewportRight);
-    const bottom = Math.min(rect.bottom, viewportBottom);
+    const bottom = Math.min(rect.bottom, viewportBottom - keyboardInset);
     const width = Math.max(0, right - left);
     const height = Math.max(0, bottom - top);
 
@@ -358,7 +364,7 @@ const CardCrossword: React.FC = () => {
       width,
       height,
     };
-  }, []);
+  }, [isMobile, isKeyboardVisible]);
 
   const clampPanOffset = useCallback(
     (next: { x: number; y: number }, metrics: ViewMetrics | null, visibleRect?: VisibleRect | null) => {
@@ -371,27 +377,21 @@ const CardCrossword: React.FC = () => {
       let x = next.x;
       let y = next.y;
 
-      if (gridWidth <= effectiveViewWidth) {
-        const originX = viewLeft + (effectiveViewWidth - gridWidth) / 2;
-        x = originX - baseOffsetX;
-      } else {
-        const minOriginX = viewLeft + effectiveViewWidth - gridWidth;
-        const maxOriginX = viewLeft;
-        const minPanX = minOriginX - baseOffsetX;
-        const maxPanX = maxOriginX - baseOffsetX;
-        x = Math.min(maxPanX, Math.max(minPanX, x));
-      }
+      const minOriginX = viewLeft + effectiveViewWidth - gridWidth;
+      const maxOriginX = viewLeft;
+      const rawMinPanX = minOriginX - baseOffsetX;
+      const rawMaxPanX = maxOriginX - baseOffsetX;
+      const minPanX = Math.min(rawMinPanX, rawMaxPanX);
+      const maxPanX = Math.max(rawMinPanX, rawMaxPanX);
+      x = Math.min(maxPanX, Math.max(minPanX, x));
 
-      if (gridHeight <= effectiveViewHeight) {
-        const originY = viewTop + (effectiveViewHeight - gridHeight) / 2;
-        y = originY - baseOffsetY;
-      } else {
-        const minOriginY = viewTop + effectiveViewHeight - gridHeight;
-        const maxOriginY = viewTop;
-        const minPanY = minOriginY - baseOffsetY;
-        const maxPanY = maxOriginY - baseOffsetY;
-        y = Math.min(maxPanY, Math.max(minPanY, y));
-      }
+      const minOriginY = viewTop + effectiveViewHeight - gridHeight;
+      const maxOriginY = viewTop;
+      const rawMinPanY = minOriginY - baseOffsetY;
+      const rawMaxPanY = maxOriginY - baseOffsetY;
+      const minPanY = Math.min(rawMinPanY, rawMaxPanY);
+      const maxPanY = Math.max(rawMinPanY, rawMaxPanY);
+      y = Math.min(maxPanY, Math.max(minPanY, y));
 
       return { x, y };
     },
@@ -1581,14 +1581,18 @@ const CardCrossword: React.FC = () => {
 
       // Focus hidden input to trigger mobile keyboard
       if (hiddenInputRef.current) {
-        hiddenInputRef.current.focus();
+        try {
+          hiddenInputRef.current.focus({ preventScroll: true });
+        } catch {
+          hiddenInputRef.current.focus();
+        }
       }
 
-      if (isMobile) {
+      if (isMobile && isKeyboardVisible) {
         ensureCellVisible(row, col);
       }
     },
-    [isPanning, puzzle, selectedCell, isMobile, ensureCellVisible],
+    [isPanning, puzzle, selectedCell, isMobile, isKeyboardVisible, ensureCellVisible],
   );
 
   // Panning handlers for desktop (mouse)
@@ -1709,9 +1713,9 @@ const CardCrossword: React.FC = () => {
 
   const handleGridWheel = useCallback(
     (e: React.WheelEvent) => {
-      if (!isDesktop) return;
       e.preventDefault();
       e.stopPropagation();
+      if (!isDesktop) return;
       if (e.deltaY === 0) return;
       const nextZoom = clampZoom(zoomRef.current - e.deltaY * 0.0015);
       if (nextZoom !== zoomRef.current) {
@@ -1779,15 +1783,15 @@ const CardCrossword: React.FC = () => {
   }, [handleCellClick, handleTouchEnd, isPanning]);
 
   useEffect(() => {
-    if (!isMobile || !selectedCell) return;
+    if (!isMobile || !selectedCell || !isKeyboardVisible) return;
     const raf = requestAnimationFrame(() => {
       ensureCellVisible(selectedCell.row, selectedCell.col);
     });
     return () => cancelAnimationFrame(raf);
-  }, [isMobile, selectedCell, zoom, ensureCellVisible]);
+  }, [isMobile, isKeyboardVisible, selectedCell, zoom, ensureCellVisible]);
 
   useEffect(() => {
-    if (!isMobile || !selectedCell || !window.visualViewport) return;
+    if (!isMobile || !selectedCell || !isKeyboardVisible || !window.visualViewport) return;
     const viewport = window.visualViewport;
     const handleViewportChange = () => {
       ensureCellVisible(selectedCell.row, selectedCell.col);
@@ -1798,7 +1802,41 @@ const CardCrossword: React.FC = () => {
       viewport.removeEventListener('resize', handleViewportChange);
       viewport.removeEventListener('scroll', handleViewportChange);
     };
-  }, [isMobile, selectedCell, ensureCellVisible]);
+  }, [isMobile, isKeyboardVisible, selectedCell, ensureCellVisible]);
+
+  useEffect(() => {
+    const container = gridContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+    };
+
+    const handleGesture = (event: Event) => {
+      event.preventDefault();
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('gesturestart', handleGesture as EventListener, { passive: false });
+    container.addEventListener('gesturechange', handleGesture as EventListener, { passive: false });
+    container.addEventListener('gestureend', handleGesture as EventListener, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('gesturestart', handleGesture as EventListener);
+      container.removeEventListener('gesturechange', handleGesture as EventListener);
+      container.removeEventListener('gestureend', handleGesture as EventListener);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [gameStarted]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (!puzzle || !selectedCell) return;
@@ -3156,8 +3194,10 @@ const CardCrossword: React.FC = () => {
         autoCorrect="off"
         autoCapitalize="characters"
         spellCheck="false"
+        onFocus={() => setIsKeyboardVisible(true)}
+        onBlur={() => setIsKeyboardVisible(false)}
         style={{
-          position: 'absolute',
+          position: 'fixed',
           top: 0,
           left: 0,
           width: '1px',

@@ -29,7 +29,7 @@ const GamePageLayout: React.FC<GamePageLayoutProps> = ({
     <Box
       sx={{
         width: '100%',
-        minHeight: '100vh',
+        minHeight: '100%',
         background: `linear-gradient(135deg, ${theme.palette.primary.dark}22 0%, ${theme.palette.secondary.dark}22 100%)`,
       }}
     >

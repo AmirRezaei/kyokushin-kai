@@ -13,7 +13,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { AccountCircle, Fullscreen, FullscreenExit } from '@mui/icons-material';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { SnackbarProvider, useSnackbar } from './components/context/SnackbarContext';
 import { FullscreenProvider, useFullscreen } from './components/context/FullscreenContext';
@@ -52,6 +52,32 @@ import Footer from './components/Footer';
 function AppContent() {
   const theme = useTheme();
   const appBarHeight = theme.mixins.toolbar.minHeight || 48; // Default to 48 if not defined in theme
+  const appBarRef = useRef<HTMLDivElement>(null);
+  const [appBarOffset, setAppBarOffset] = useState(appBarHeight);
+
+  useEffect(() => {
+    const node = appBarRef.current;
+    if (!node) return;
+
+    const updateOffset = () => {
+      const height = node.getBoundingClientRect().height || appBarHeight;
+      setAppBarOffset(height);
+    };
+
+    updateOffset();
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => updateOffset());
+      observer.observe(node);
+    }
+
+    window.addEventListener('orientationchange', updateOffset);
+    return () => {
+      if (observer) observer.disconnect();
+      window.removeEventListener('orientationchange', updateOffset);
+    };
+  }, [appBarHeight]);
   const { user, isAuthenticated, login, error: authError } = useAuth();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const navigate = useNavigate();
@@ -125,6 +151,7 @@ function AppContent() {
     <>
       {/* Fixed AppBar - Always visible */}
       <AppBar
+        ref={appBarRef}
         position="fixed"
         sx={{
           backgroundColor: theme.palette.background.paper,
@@ -311,15 +338,15 @@ function AppContent() {
         component="main"
         sx={{
           position: 'relative',
-          marginTop: `${appBarHeight}px`, // Always account for AppBar since it's always visible
           marginLeft: 0,
           marginRight: 0,
           marginBottom: 0,
-          padding: 0,
           width: '100%',
           overflowX: 'hidden',
           overflowY: 'auto',
-          height: `calc(100vh - ${appBarHeight}px)`, // Always subtract AppBar height
+          height: '100vh',
+          padding: 0,
+          paddingTop: `${appBarOffset}px`, // Always account for AppBar since it's always visible
           boxSizing: 'border-box',
         }}
       >
