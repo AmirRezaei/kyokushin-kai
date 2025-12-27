@@ -83,6 +83,13 @@ interface ViewMetrics {
   baseOffsetY: number;
 }
 
+interface VisibleRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 const CROSSWORD_IMAGE_PATH = '/media/crossword/ditherlab-1766485677538.png';
 
 const PLACEHOLDER_CONFIG = {
@@ -323,28 +330,64 @@ const CardCrossword: React.FC = () => {
     [puzzle, isDesktop],
   );
 
+  const getVisibleViewRect = useCallback((): VisibleRect | null => {
+    if (!gridContainerRef.current) return null;
+    const rect = gridContainerRef.current.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const viewportLeft = viewport ? viewport.offsetLeft : 0;
+    const viewportTop = viewport ? viewport.offsetTop : 0;
+    const viewportWidth = viewport ? viewport.width : window.innerWidth;
+    const viewportHeight = viewport ? viewport.height : window.innerHeight;
+    const viewportRight = viewportLeft + viewportWidth;
+    const viewportBottom = viewportTop + viewportHeight;
+
+    const left = Math.max(rect.left, viewportLeft);
+    const top = Math.max(rect.top, viewportTop);
+    const right = Math.min(rect.right, viewportRight);
+    const bottom = Math.min(rect.bottom, viewportBottom);
+    const width = Math.max(0, right - left);
+    const height = Math.max(0, bottom - top);
+
+    if (width <= 0 || height <= 0) {
+      return { left: 0, top: 0, width: rect.width, height: rect.height };
+    }
+
+    return {
+      left: left - rect.left,
+      top: top - rect.top,
+      width,
+      height,
+    };
+  }, []);
+
   const clampPanOffset = useCallback(
-    (next: { x: number; y: number }, metrics: ViewMetrics | null) => {
+    (next: { x: number; y: number }, metrics: ViewMetrics | null, visibleRect?: VisibleRect | null) => {
       if (!metrics) return next;
       const { gridWidth, gridHeight, viewWidth, viewHeight, baseOffsetX, baseOffsetY } = metrics;
+      const viewLeft = visibleRect ? visibleRect.left : 0;
+      const viewTop = visibleRect ? visibleRect.top : 0;
+      const effectiveViewWidth = visibleRect ? visibleRect.width : viewWidth;
+      const effectiveViewHeight = visibleRect ? visibleRect.height : viewHeight;
       let x = next.x;
       let y = next.y;
 
-      if (gridWidth <= viewWidth) {
-        x = 0;
+      if (gridWidth <= effectiveViewWidth) {
+        const originX = viewLeft + (effectiveViewWidth - gridWidth) / 2;
+        x = originX - baseOffsetX;
       } else {
-        const minOriginX = viewWidth - gridWidth;
-        const maxOriginX = 0;
+        const minOriginX = viewLeft + effectiveViewWidth - gridWidth;
+        const maxOriginX = viewLeft;
         const minPanX = minOriginX - baseOffsetX;
         const maxPanX = maxOriginX - baseOffsetX;
         x = Math.min(maxPanX, Math.max(minPanX, x));
       }
 
-      if (gridHeight <= viewHeight) {
-        y = 0;
+      if (gridHeight <= effectiveViewHeight) {
+        const originY = viewTop + (effectiveViewHeight - gridHeight) / 2;
+        y = originY - baseOffsetY;
       } else {
-        const minOriginY = viewHeight - gridHeight;
-        const maxOriginY = 0;
+        const minOriginY = viewTop + effectiveViewHeight - gridHeight;
+        const maxOriginY = viewTop;
         const minPanY = minOriginY - baseOffsetY;
         const maxPanY = maxOriginY - baseOffsetY;
         y = Math.min(maxPanY, Math.max(minPanY, y));
@@ -388,11 +431,12 @@ const CardCrossword: React.FC = () => {
 
       zoomRef.current = nextZoom;
       setZoom(nextZoom);
-      const clamped = clampPanOffset(nextPan, nextMetrics);
+      const visibleRect = getVisibleViewRect();
+      const clamped = clampPanOffset(nextPan, nextMetrics, visibleRect);
       panOffsetRef.current = clamped;
       setPanOffset(clamped);
     },
-    [getViewMetrics, clampPanOffset, puzzle],
+    [getViewMetrics, clampPanOffset, getVisibleViewRect, puzzle],
   );
 
   // Difficulty levels with reveal percentages
@@ -1460,6 +1504,61 @@ const CardCrossword: React.FC = () => {
     }
   }, [longPressTimer]);
 
+  const ensureCellVisible = useCallback(
+    (row: number, col: number) => {
+      if (!gridContainerRef.current) return;
+      const metrics = getViewMetrics(zoomRef.current);
+      if (!metrics) return;
+      const visibleRect = getVisibleViewRect();
+      if (!visibleRect) return;
+
+      const rect = gridContainerRef.current.getBoundingClientRect();
+      const originX = metrics.baseOffsetX + panOffsetRef.current.x;
+      const originY = metrics.baseOffsetY + panOffsetRef.current.y;
+      const cellLeft = originX + col * metrics.scaledCell;
+      const cellTop = originY + row * metrics.scaledCell;
+      const cellRight = cellLeft + metrics.scaledCell;
+      const cellBottom = cellTop + metrics.scaledCell;
+
+      const visibleLeft = rect.left + visibleRect.left;
+      const visibleTop = rect.top + visibleRect.top;
+      const visibleRight = visibleLeft + visibleRect.width;
+      const visibleBottom = visibleTop + visibleRect.height;
+
+      const padding = Math.max(12, metrics.scaledCell * 0.45);
+      let deltaX = 0;
+      let deltaY = 0;
+
+      const cellLeftScreen = rect.left + cellLeft;
+      const cellRightScreen = rect.left + cellRight;
+      const cellTopScreen = rect.top + cellTop;
+      const cellBottomScreen = rect.top + cellBottom;
+
+      if (cellLeftScreen < visibleLeft + padding) {
+        deltaX = visibleLeft + padding - cellLeftScreen;
+      } else if (cellRightScreen > visibleRight - padding) {
+        deltaX = visibleRight - padding - cellRightScreen;
+      }
+
+      if (cellTopScreen < visibleTop + padding) {
+        deltaY = visibleTop + padding - cellTopScreen;
+      } else if (cellBottomScreen > visibleBottom - padding) {
+        deltaY = visibleBottom - padding - cellBottomScreen;
+      }
+
+      if (deltaX === 0 && deltaY === 0) return;
+
+      const nextPan = {
+        x: panOffsetRef.current.x + deltaX,
+        y: panOffsetRef.current.y + deltaY,
+      };
+      const clamped = clampPanOffset(nextPan, metrics, visibleRect);
+      panOffsetRef.current = clamped;
+      setPanOffset(clamped);
+    },
+    [getViewMetrics, getVisibleViewRect, clampPanOffset],
+  );
+
   const handleCellClick = useCallback(
     (row: number, col: number) => {
       // Don't select cell if we were panning
@@ -1484,8 +1583,12 @@ const CardCrossword: React.FC = () => {
       if (hiddenInputRef.current) {
         hiddenInputRef.current.focus();
       }
+
+      if (isMobile) {
+        ensureCellVisible(row, col);
+      }
     },
-    [isPanning, puzzle, selectedCell],
+    [isPanning, puzzle, selectedCell, isMobile, ensureCellVisible],
   );
 
   // Panning handlers for desktop (mouse)
@@ -1514,7 +1617,8 @@ const CardCrossword: React.FC = () => {
       y: panOffsetStart.y + deltaY,
     };
     const metrics = getViewMetrics(zoomRef.current);
-    const clamped = clampPanOffset(nextPan, metrics);
+    const visibleRect = getVisibleViewRect();
+    const clamped = clampPanOffset(nextPan, metrics, visibleRect);
     panOffsetRef.current = clamped;
     setPanOffset(clamped);
   };
@@ -1589,7 +1693,8 @@ const CardCrossword: React.FC = () => {
       y: panOffsetStart.y + deltaY,
     };
     const metrics = getViewMetrics(zoomRef.current);
-    const clamped = clampPanOffset(nextPan, metrics);
+    const visibleRect = getVisibleViewRect();
+    const clamped = clampPanOffset(nextPan, metrics, visibleRect);
     panOffsetRef.current = clamped;
     setPanOffset(clamped);
   };
@@ -1672,6 +1777,28 @@ const CardCrossword: React.FC = () => {
     touchCellRef.current = null;
     handleTouchEnd();
   }, [handleCellClick, handleTouchEnd, isPanning]);
+
+  useEffect(() => {
+    if (!isMobile || !selectedCell) return;
+    const raf = requestAnimationFrame(() => {
+      ensureCellVisible(selectedCell.row, selectedCell.col);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isMobile, selectedCell, zoom, ensureCellVisible]);
+
+  useEffect(() => {
+    if (!isMobile || !selectedCell || !window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const handleViewportChange = () => {
+      ensureCellVisible(selectedCell.row, selectedCell.col);
+    };
+    viewport.addEventListener('resize', handleViewportChange);
+    viewport.addEventListener('scroll', handleViewportChange);
+    return () => {
+      viewport.removeEventListener('resize', handleViewportChange);
+      viewport.removeEventListener('scroll', handleViewportChange);
+    };
+  }, [isMobile, selectedCell, ensureCellVisible]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (!puzzle || !selectedCell) return;
@@ -1960,7 +2087,8 @@ const CardCrossword: React.FC = () => {
     cellSizeRef.current = baseCell;
     scaledCellSizeRef.current = scaledCell;
 
-    const effectivePan = clampPanOffset(panOffset, metrics);
+    const visibleRect = getVisibleViewRect();
+    const effectivePan = clampPanOffset(panOffset, metrics, visibleRect);
     const originX = baseOffsetX + effectivePan.x;
     const originY = baseOffsetY + effectivePan.y;
 
@@ -2889,6 +3017,7 @@ const CardCrossword: React.FC = () => {
     selectedCell,
     getActiveWord,
     getViewMetrics,
+    getVisibleViewRect,
     clampPanOffset,
     panOffset,
   ]);
@@ -2927,11 +3056,12 @@ const CardCrossword: React.FC = () => {
   useEffect(() => {
     const metrics = getViewMetrics(zoom);
     if (!metrics) return;
-    const clamped = clampPanOffset(panOffsetRef.current, metrics);
+    const visibleRect = getVisibleViewRect();
+    const clamped = clampPanOffset(panOffsetRef.current, metrics, visibleRect);
     if (clamped.x !== panOffsetRef.current.x || clamped.y !== panOffsetRef.current.y) {
       setPanOffset(clamped);
     }
-  }, [zoom, puzzle, canvasRevision, getViewMetrics, clampPanOffset]);
+  }, [zoom, puzzle, canvasRevision, getViewMetrics, getVisibleViewRect, clampPanOffset]);
 
   // Deck selection screen
   if (!gameStarted) {
