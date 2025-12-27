@@ -26,8 +26,16 @@ import DeckSelector from './Deck/DeckSelector';
 import { useDecks } from './Deck/DeckContext';
 import { useCards } from './CardContext';
 
+// Import Google Font for handwriting style
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap';
+fontLink.rel = 'stylesheet';
+if (!document.querySelector(`link[href="${fontLink.href}"]`)) {
+  document.head.appendChild(fontLink);
+}
+
 // Crossword Cell Types
-type CellType = 'empty' | 'filled' | 'start' | 'space' | 'placeholder';
+type CellType = 'empty' | 'filled' | 'start' | 'space' | 'placeholder' | 'wrapper';
 
 interface CrosswordCell {
   row: number;
@@ -38,6 +46,8 @@ interface CrosswordCell {
   wordId?: string; // ID of the word
   direction?: 'across' | 'down';
   number?: number; // Clue number
+  wrapperText?: string; // For wrapper cells - the full text to display
+  cellSpan?: number; // For wrapper cells - how many cells it spans
 }
 
 interface CrosswordWord {
@@ -48,6 +58,10 @@ interface CrosswordWord {
   startRow: number;
   startCol: number;
   number: number;
+  isWrapper?: boolean; // True if this word is displayed as wrapper cells
+  techniqueId?: string;
+  partIndex?: number;
+  segmentId?: string;
 }
 
 interface CrosswordPuzzle {
@@ -67,6 +81,8 @@ const PLACEHOLDER_LIMITS = {
   mobile: { rows: 8, cols: 8 },
 };
 
+const WRAPPER_PLACEHOLDER = '#';
+
 const createEmptyCell = (row: number, col: number): CrosswordCell => ({
   row,
   col,
@@ -76,7 +92,71 @@ const createEmptyCell = (row: number, col: number): CrosswordCell => ({
 });
 
 const isBlockedCellType = (type: CellType) =>
-  type === 'empty' || type === 'space' || type === 'placeholder';
+  type === 'empty' || type === 'space' || type === 'placeholder' || type === 'wrapper';
+
+/**
+ * Classifies words in a technique/kata name into grid words (letter cells) and wrapper words (text cells)
+ * Examples:
+ * - "Seiken Oi Tsuki (Jodan, Chudan, Gedan)" -> grid: ["Seiken", "Oi", "Tsuki"], wrapper: ["(Jodan, Chudan, Gedan)"]
+ * - "Shuto Jodan Uchi Uchi" -> grid: ["Shuto", "Uchi Uchi"], wrapper: ["Jodan"]
+ */
+interface WordPart {
+  text: string;
+  isWrapper: boolean;
+}
+
+const classifyWords = (fullText: string): WordPart[] => {
+  const parts: WordPart[] = [];
+
+  // Match parentheses content as wrapper
+  const parenthesesRegex = /\([^)]+\)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = parenthesesRegex.exec(fullText)) !== null) {
+    // Add text before parentheses as grid words (keep as single unit)
+    if (match.index > lastIndex) {
+      const beforeText = fullText.substring(lastIndex, match.index).trim();
+      if (beforeText) {
+        // Keep entire phrase as grid words - don't split into individual words
+        parts.push({
+          text: beforeText,
+          isWrapper: false,
+        });
+      }
+    }
+
+    // Add parentheses content as wrapper
+    parts.push({
+      text: match[0],
+      isWrapper: true,
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text after last parentheses
+  if (lastIndex < fullText.length) {
+    const remainingText = fullText.substring(lastIndex).trim();
+    if (remainingText) {
+      // Keep entire phrase as grid words
+      parts.push({
+        text: remainingText,
+        isWrapper: false,
+      });
+    }
+  }
+
+  // If no parts were created (no parentheses, single word), return as grid word
+  if (parts.length === 0 && fullText.trim()) {
+    parts.push({
+      text: fullText.trim(),
+      isWrapper: false,
+    });
+  }
+
+  return parts;
+};
 
 const expandGridWithTopRightPlaceholder = (
   baseGrid: CrosswordCell[][],
@@ -120,6 +200,7 @@ const expandGridWithTopRightPlaceholder = (
 const CardCrossword: React.FC = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { decks } = useDecks();
   const { cards } = useCards();
@@ -146,6 +227,8 @@ const CardCrossword: React.FC = () => {
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(
     null,
   );
+  const viewportHeight = isMobile ? '100dvh' : '100vh';
+  const viewportWidth = isMobile ? '100dvw' : '100vw';
 
   // Difficulty levels with reveal percentages
   const difficultyLevels = [
@@ -208,7 +291,18 @@ const CardCrossword: React.FC = () => {
     if (!selectedDeck) return null;
 
     // Get techniques and katas directly from repository to ensure we use Romaji names
-    let wordList: { word: string; clue: string; originalName: string }[] = [];
+    let wordList: {
+      word: string;
+      clue: string;
+      originalName: string;
+      isWrapper: boolean;
+      techniqueId: string; // Track which technique this word belongs to
+      partIndex: number; // Order within the technique
+      segmentId?: string;
+      anchorOffset?: number;
+      anchorAfter?: boolean;
+      wrapperSegments?: { start: number; span: number; text: string }[];
+    }[] = [];
 
     if (selectedDeck.id.startsWith('deck-')) {
       // System deck - fetch from curriculum
@@ -220,20 +314,36 @@ const CardCrossword: React.FC = () => {
         // Add techniques
         const techWords = grade.techniques
           .filter((tech) => tech.name.romaji) // Only include if romaji exists
-          .map((tech) => ({
-            word: tech.name.romaji!.toUpperCase().replace(/[^A-Z ]/g, ''), // Keep spaces
-            clue: tech.name.en || tech.name.romaji || 'Unknown',
-            originalName: tech.name.romaji!,
-          }));
+          .flatMap((tech) => {
+            const fullText = tech.name.romaji!.toUpperCase().replace(/[^A-Z ()]/g, ''); // Keep spaces and parentheses
+            const parts = classifyWords(fullText);
+            return parts.map((part, index) => ({
+              word: part.text.replace(/[()]/g, ''), // Remove parentheses for processing
+              clue: tech.name.en || tech.name.romaji || 'Unknown',
+              originalName: part.text, // Keep original with parentheses for display
+              isWrapper: part.isWrapper,
+              techniqueId: `tech-${tech.id}`,
+              partIndex: index,
+              segmentId: `tech-${tech.id}-${index}`,
+            }));
+          });
 
         // Add katas
         const kataWords = grade.katas
           .filter((kata) => kata.name.romaji) // Only include if romaji exists
-          .map((kata) => ({
-            word: kata.name.romaji!.toUpperCase().replace(/[^A-Z ]/g, ''), // Keep spaces
-            clue: kata.name.en || kata.name.romaji || 'Unknown',
-            originalName: kata.name.romaji!,
-          }));
+          .flatMap((kata) => {
+            const fullText = kata.name.romaji!.toUpperCase().replace(/[^A-Z ()]/g, ''); // Keep spaces and parentheses
+            const parts = classifyWords(fullText);
+            return parts.map((part, index) => ({
+              word: part.text.replace(/[()]/g, ''), // Remove parentheses for processing
+              clue: kata.name.en || kata.name.romaji || 'Unknown',
+              originalName: part.text, // Keep original with parentheses for display
+              isWrapper: part.isWrapper,
+              techniqueId: `kata-${kata.id}`,
+              partIndex: index,
+              segmentId: `kata-${kata.id}-${index}`,
+            }));
+          });
 
         wordList = [...techWords, ...kataWords];
       }
@@ -245,55 +355,179 @@ const CardCrossword: React.FC = () => {
       const allKatas = grades.flatMap((g) => g.katas);
 
       wordList = deckCards
-        .map((card) => {
+        .flatMap((card) => {
           // Try to find the technique or kata by ID
           const techId = card.id.replace('card-tech-', '');
           const kataId = card.id.replace('card-kata-', '');
 
           const tech = allTechniques.find((t) => t.id === techId);
           if (tech && tech.name.romaji) {
-            return {
-              word: tech.name.romaji.toUpperCase().replace(/[^A-Z ]/g, ''), // Keep spaces
+            const fullText = tech.name.romaji.toUpperCase().replace(/[^A-Z ()]/g, '');
+            const parts = classifyWords(fullText);
+            return parts.map((part, index) => ({
+              word: part.text.replace(/[()]/g, ''),
               clue: tech.name.en || tech.name.romaji || 'Unknown',
-              originalName: tech.name.romaji,
-            };
+              originalName: part.text,
+              isWrapper: part.isWrapper,
+              techniqueId: `tech-${tech.id}`,
+              partIndex: index,
+              segmentId: `tech-${tech.id}-${index}`,
+            }));
           }
 
           const kata = allKatas.find((k) => k.id === kataId);
           if (kata && kata.name.romaji) {
-            return {
-              word: kata.name.romaji.toUpperCase().replace(/[^A-Z ]/g, ''), // Keep spaces
+            const fullText = kata.name.romaji.toUpperCase().replace(/[^A-Z ()]/g, '');
+            const parts = classifyWords(fullText);
+            return parts.map((part, index) => ({
+              word: part.text.replace(/[()]/g, ''),
               clue: kata.name.en || kata.name.romaji || 'Unknown',
-              originalName: kata.name.romaji,
-            };
+              originalName: part.text,
+              isWrapper: part.isWrapper,
+              techniqueId: `kata-${kata.id}`,
+              partIndex: index,
+              segmentId: `kata-${kata.id}-${index}`,
+            }));
           }
 
           // Fallback to card data if valid
-          const word = card.question.toUpperCase().replace(/[^A-Z ]/g, ''); // Keep spaces
+          const word = card.question.toUpperCase().replace(/[^A-Z ()]/g, '');
           if (word.length > 0) {
-            return {
-              word,
+            const parts = classifyWords(word);
+            return parts.map((part, index) => ({
+              word: part.text.replace(/[()]/g, ''),
               clue: card.answer,
-              originalName: card.question,
-            };
+              originalName: part.text,
+              isWrapper: part.isWrapper,
+              techniqueId: `card-${card.id}`,
+              partIndex: index,
+              segmentId: `card-${card.id}-${index}`,
+            }));
           }
 
-          return null;
+          return [];
         })
-        .filter(
-          (item): item is { word: string; clue: string; originalName: string } => item !== null,
-        );
+        .filter((item) => item.word.length > 0);
     }
 
-    // Filter for reasonable word lengths (no limit - try to fit all)
-    wordList = wordList
-      .filter((item) => item.word.length >= 3 && item.word.length <= 20)
+    const getWrapperSpan = (text: string) => Math.min(6, Math.max(1, Math.ceil(text.length / 7)));
+    const tokenize = (text: string) =>
+      text
+        .split(' ')
+        .map((token) => token.trim())
+        .filter((token) => token.length > 0);
+    const commonWordMinCount = 3;
+    const tokenCounts = new Map<string, number>();
+
+    wordList
+      .filter((item) => !item.isWrapper)
+      .forEach((item) => {
+        tokenize(item.word).forEach((token) => {
+          tokenCounts.set(token, (tokenCounts.get(token) ?? 0) + 1);
+        });
+      });
+
+    const commonTokens = new Set(
+      Array.from(tokenCounts.entries())
+        .filter(([, count]) => count >= commonWordMinCount)
+        .map(([token]) => token),
+    );
+
+    if (commonTokens.size > 0) {
+      const expandedWordList: typeof wordList = [];
+
+      wordList.forEach((item) => {
+        const segmentId = item.segmentId ?? `${item.techniqueId}-${item.partIndex}`;
+
+        if (item.isWrapper) {
+          expandedWordList.push({ ...item, segmentId });
+          return;
+        }
+
+        const tokens = tokenize(item.word);
+        if (tokens.length <= 1) {
+          expandedWordList.push({ ...item, segmentId });
+          return;
+        }
+
+        const gridIndices = new Set<number>();
+        tokens.forEach((token, index) => {
+          if (!commonTokens.has(token)) {
+            gridIndices.add(index);
+          }
+        });
+
+        let gridText = tokens.filter((_, index) => gridIndices.has(index)).join(' ').trim();
+        if (gridText.length < 3) {
+          for (let index = 0; index < tokens.length && gridText.length < 3; index++) {
+            if (!gridIndices.has(index)) {
+              gridIndices.add(index);
+              gridText = tokens.filter((_, i) => gridIndices.has(i)).join(' ').trim();
+            }
+          }
+        }
+
+        const wrapperSegments: { start: number; span: number; text: string }[] = [];
+        let wordWithWrappers = '';
+
+        tokens.forEach((token, index) => {
+          if (index > 0) {
+            wordWithWrappers += ' ';
+          }
+
+          if (gridIndices.has(index)) {
+            wordWithWrappers += token;
+            return;
+          }
+
+          const span = getWrapperSpan(token);
+          wrapperSegments.push({
+            start: wordWithWrappers.length,
+            span,
+            text: token,
+          });
+          wordWithWrappers += WRAPPER_PLACEHOLDER.repeat(span);
+        });
+
+        expandedWordList.push({
+          ...item,
+          word: wordWithWrappers.length > 0 ? wordWithWrappers : item.word,
+          originalName: item.originalName,
+          isWrapper: false,
+          segmentId,
+          wrapperSegments,
+        });
+      });
+
+      wordList = expandedWordList;
+    }
+
+    // Separate grid words from wrapper words
+    const gridWords = wordList.filter((item) => !item.isWrapper);
+    const wrapperWords = wordList.filter((item) => item.isWrapper);
+
+    // Filter for reasonable word lengths
+    // Grid words: 3+ chars, length cap determined by grid size
+    // Wrapper words: 1-30 chars (more lenient)
+    const gridWordsMinLength = gridWords.filter((item) => item.word.length >= 3);
+    const maxGridWordLength = gridWordsMinLength.reduce(
+      (max, item) => Math.max(max, item.word.length),
+      0,
+    );
+
+    // Larger grid to fit more words and longer phrases
+    const gridSize = Math.max(40, maxGridWordLength + 6);
+    const maxAllowedGridWordLength = Math.max(20, gridSize - 2);
+
+    const filteredGridWords = gridWordsMinLength
+      .filter((item) => item.word.length <= maxAllowedGridWordLength)
       .sort((a, b) => b.word.length - a.word.length); // Longer words first
 
-    if (wordList.length < 3) return null;
+    const filteredWrapperWords = wrapperWords.filter(
+      (item) => item.word.length >= 1 && item.word.length <= 30,
+    );
 
-    // Larger grid to fit more words
-    const gridSize = 40;
+    if (filteredGridWords.length < 3) return null;
     const grid: CrosswordCell[][] = Array(gridSize)
       .fill(null)
       .map((_, row) =>
@@ -332,7 +566,7 @@ const CardCrossword: React.FC = () => {
     let wordNumber = 1;
 
     // Place first word horizontally in the middle
-    const firstWord = wordList[0];
+    const firstWord = filteredGridWords[0];
     let startRow = Math.floor(gridSize / 2);
     const startCol = Math.floor((gridSize - firstWord.word.length) / 2);
 
@@ -342,6 +576,12 @@ const CardCrossword: React.FC = () => {
       // Try to place above the placeholder
       startRow = Math.max(0, phStartRow - 2);
     }
+
+    const firstWordId = firstWord.segmentId ?? `${firstWord.techniqueId}-${firstWord.partIndex}`;
+    const firstWrapperStartMap = new Map<number, { span: number; text: string }>();
+    firstWord.wrapperSegments?.forEach((segment) => {
+      firstWrapperStartMap.set(segment.start, { span: segment.span, text: segment.text });
+    });
 
     let isFirstLetter = true;
     for (let i = 0; i < firstWord.word.length; i++) {
@@ -355,6 +595,19 @@ const CardCrossword: React.FC = () => {
           value: '',
           type: 'space',
         };
+      } else if (char === WRAPPER_PLACEHOLDER) {
+        const segment = firstWrapperStartMap.get(i);
+        grid[startRow][startCol + i] = {
+          row: startRow,
+          col: startCol + i,
+          letter: '',
+          value: '',
+          type: 'wrapper',
+          wrapperText: segment ? segment.text : '',
+          wordId: firstWordId,
+          cellSpan: segment ? segment.span : undefined,
+          direction: 'across',
+        };
       } else {
         // Letter
         grid[startRow][startCol + i] = {
@@ -363,7 +616,7 @@ const CardCrossword: React.FC = () => {
           letter: char,
           value: '',
           type: isFirstLetter ? 'start' : 'filled',
-          wordId: firstWord.word,
+          wordId: firstWordId,
           direction: 'across',
           number: isFirstLetter ? wordNumber : undefined,
         };
@@ -372,135 +625,422 @@ const CardCrossword: React.FC = () => {
     }
 
     words.push({
-      id: firstWord.word,
+      id: firstWordId,
       word: firstWord.word,
       clue: firstWord.clue,
       direction: 'across',
       startRow,
       startCol,
       number: wordNumber++,
+      isWrapper: false,
+      techniqueId: firstWord.techniqueId,
+      partIndex: firstWord.partIndex,
+      segmentId: firstWord.segmentId,
     });
 
-    // Try to place remaining words with more attempts
-    for (let i = 1; i < wordList.length; i++) {
-      const currentWord = wordList[i];
-      let placed = false;
+    const findBestPlacement = (
+      word: string,
+      requireIntersection: boolean,
+    ): { row: number; col: number; direction: 'across' | 'down' } | null => {
+      const center = Math.floor(gridSize / 2);
+      let best:
+        | { row: number; col: number; direction: 'across' | 'down'; intersections: number; dist: number }
+        | null = null;
 
-      // Try to find intersection with existing words (more attempts)
-      for (let attempt = 0; attempt < 200 && !placed; attempt++) {
-        const existingWord = words[Math.floor(Math.random() * words.length)];
-        const direction: 'across' | 'down' =
-          existingWord.direction === 'across' ? 'down' : 'across';
+      const directions: Array<'across' | 'down'> = ['across', 'down'];
+      for (const direction of directions) {
+        const maxStartRow = direction === 'across' ? gridSize : gridSize - word.length + 1;
+        const maxStartCol = direction === 'across' ? gridSize - word.length + 1 : gridSize;
 
-        // Try ALL possible intersections between the two words
-        for (let j = 0; j < existingWord.word.length && !placed; j++) {
-          if (existingWord.word[j] === ' ') continue; // Skip spaces
+        for (let startRow = 0; startRow < maxStartRow; startRow++) {
+          for (let startCol = 0; startCol < maxStartCol; startCol++) {
+            let intersections = 0;
+            let canPlace = true;
 
-          for (let k = 0; k < currentWord.word.length && !placed; k++) {
-            if (currentWord.word[k] === ' ') continue; // Skip spaces
-            if (existingWord.word[j] !== currentWord.word[k]) continue; // Must match
+            for (let i = 0; i < word.length; i++) {
+              const checkRow = direction === 'across' ? startRow : startRow + i;
+              const checkCol = direction === 'across' ? startCol + i : startCol;
+              const char = word[i];
+              const cell = grid[checkRow][checkCol];
 
-            let newStartRow: number, newStartCol: number;
+              if (char === ' ') {
+                if (cell.type === 'placeholder') {
+                  continue;
+                }
+                if (cell.type !== 'empty' && cell.type !== 'space') {
+                  canPlace = false;
+                  break;
+                }
+                continue;
+              }
 
-            if (direction === 'across') {
-              newStartRow = existingWord.startRow + (existingWord.direction === 'down' ? j : 0);
-              newStartCol =
-                existingWord.startCol + (existingWord.direction === 'across' ? j : 0) - k;
-            } else {
-              newStartRow = existingWord.startRow + (existingWord.direction === 'down' ? j : 0) - k;
-              newStartCol = existingWord.startCol + (existingWord.direction === 'across' ? j : 0);
+              if (char === WRAPPER_PLACEHOLDER) {
+                if (cell.type !== 'empty') {
+                  canPlace = false;
+                  break;
+                }
+                continue;
+              }
+
+              if (cell.type === 'placeholder') {
+                canPlace = false;
+                break;
+              }
+
+              if (cell.type !== 'empty') {
+                if (cell.letter !== char) {
+                  canPlace = false;
+                  break;
+                }
+                intersections++;
+              }
             }
 
-            // Check if placement is valid
+            if (!canPlace) continue;
+            if (requireIntersection && intersections === 0) continue;
+
+            const dist = Math.abs(startRow - center) + Math.abs(startCol - center);
             if (
-              newStartRow >= 0 &&
-              newStartCol >= 0 &&
-              (direction === 'across'
-                ? newStartCol + currentWord.word.length <= gridSize
-                : newStartRow + currentWord.word.length <= gridSize)
+              !best ||
+              intersections > best.intersections ||
+              (intersections === best.intersections && dist < best.dist)
             ) {
-              let canPlace = true;
-
-              // Check for conflicts
-              for (let m = 0; m < currentWord.word.length && canPlace; m++) {
-                const checkRow = direction === 'across' ? newStartRow : newStartRow + m;
-                const checkCol = direction === 'across' ? newStartCol + m : newStartCol;
-
-                const cell = grid[checkRow][checkCol];
-
-                // Check placeholder conflict: Allow spaces, block letters
-                if (cell.type === 'placeholder') {
-                  if (currentWord.word[m] !== ' ') {
-                    canPlace = false;
-                  }
-                } else if (cell.type !== 'empty' && cell.letter !== currentWord.word[m]) {
-                  canPlace = false;
-                }
-              }
-
-              if (canPlace) {
-                // Place the word
-                let isFirstLetterInWord = true;
-                for (let m = 0; m < currentWord.word.length; m++) {
-                  const placeRow = direction === 'across' ? newStartRow : newStartRow + m;
-                  const placeCol = direction === 'across' ? newStartCol + m : newStartCol;
-                  const char = currentWord.word[m];
-
-                  // Do not overwrite placeholder with spaces or empty cells
-                  const existingCell = grid[placeRow][placeCol];
-                  if (existingCell.type === 'placeholder') {
-                    // Do nothing, just skip
-                  } else {
-                    if (char === ' ') {
-                      // Keep space as black box separator only if it was actually empty
-                      if (existingCell.type === 'empty') {
-                        grid[placeRow][placeCol] = {
-                          row: placeRow,
-                          col: placeCol,
-                          letter: '',
-                          value: '',
-                          type: 'space',
-                        };
-                      }
-                    } else if (existingCell.type === 'empty') {
-                      // Place letter
-                      grid[placeRow][placeCol] = {
-                        row: placeRow,
-                        col: placeCol,
-                        letter: char,
-                        value: '',
-                        type: isFirstLetterInWord ? 'start' : 'filled',
-                        wordId: currentWord.word,
-                        direction,
-                        number: isFirstLetterInWord ? wordNumber : undefined,
-                      };
-                      isFirstLetterInWord = false;
-                    } else if (existingCell.type === 'start' || existingCell.type === 'filled') {
-                      if (isFirstLetterInWord && !existingCell.number) {
-                        existingCell.number = wordNumber;
-                        existingCell.type = 'start';
-                      }
-                      isFirstLetterInWord = false;
-                    }
-                  }
-                }
-
-                words.push({
-                  id: currentWord.word,
-                  word: currentWord.word,
-                  clue: currentWord.clue,
-                  direction,
-                  startRow: newStartRow,
-                  startCol: newStartCol,
-                  number: wordNumber++,
-                });
-
-                placed = true;
-              }
+              best = { row: startRow, col: startCol, direction, intersections, dist };
             }
           }
         }
       }
+
+      if (!best) return null;
+      return { row: best.row, col: best.col, direction: best.direction };
+    };
+
+    const placeWordAt = (
+      currentWord: typeof filteredGridWords[number],
+      startRow: number,
+      startCol: number,
+      direction: 'across' | 'down',
+    ) => {
+      const wordId = currentWord.segmentId ?? `${currentWord.techniqueId}-${currentWord.partIndex}`;
+      const wrapperStartMap = new Map<number, { span: number; text: string }>();
+      currentWord.wrapperSegments?.forEach((segment) => {
+        wrapperStartMap.set(segment.start, { span: segment.span, text: segment.text });
+      });
+
+      let isFirstLetterInWord = true;
+      for (let i = 0; i < currentWord.word.length; i++) {
+        const placeRow = direction === 'across' ? startRow : startRow + i;
+        const placeCol = direction === 'across' ? startCol + i : startCol;
+        const char = currentWord.word[i];
+        const existingCell = grid[placeRow][placeCol];
+
+        if (existingCell.type === 'placeholder') {
+          continue;
+        }
+
+        if (char === WRAPPER_PLACEHOLDER) {
+          const segment = wrapperStartMap.get(i);
+          grid[placeRow][placeCol] = {
+            row: placeRow,
+            col: placeCol,
+            letter: '',
+            value: '',
+            type: 'wrapper',
+            wrapperText: segment ? segment.text : '',
+            wordId,
+            cellSpan: segment ? segment.span : undefined,
+            direction,
+          };
+          continue;
+        }
+
+        if (char === ' ') {
+          if (existingCell.type === 'empty') {
+            grid[placeRow][placeCol] = {
+              row: placeRow,
+              col: placeCol,
+              letter: '',
+              value: '',
+              type: 'space',
+            };
+          }
+          continue;
+        }
+
+        if (existingCell.type === 'empty') {
+          grid[placeRow][placeCol] = {
+            row: placeRow,
+            col: placeCol,
+            letter: char,
+            value: '',
+            type: isFirstLetterInWord ? 'start' : 'filled',
+            wordId,
+            direction,
+            number: isFirstLetterInWord ? wordNumber : undefined,
+          };
+          isFirstLetterInWord = false;
+          continue;
+        }
+
+        if (existingCell.type === 'start' || existingCell.type === 'filled') {
+          if (isFirstLetterInWord && !existingCell.number) {
+            existingCell.number = wordNumber;
+            existingCell.type = 'start';
+          }
+          isFirstLetterInWord = false;
+        }
+      }
+
+      words.push({
+        id: wordId,
+        word: currentWord.word,
+        clue: currentWord.clue,
+        direction,
+        startRow,
+        startCol,
+        number: wordNumber++,
+        isWrapper: false,
+        techniqueId: currentWord.techniqueId,
+        partIndex: currentWord.partIndex,
+        segmentId: currentWord.segmentId,
+      });
+    };
+
+    // Try to place remaining GRID words with best-fit search
+    for (let i = 1; i < filteredGridWords.length; i++) {
+      const currentWord = filteredGridWords[i];
+      const placement =
+        findBestPlacement(currentWord.word, true) ||
+        findBestPlacement(currentWord.word, false);
+
+      if (placement) {
+        placeWordAt(currentWord, placement.row, placement.col, placement.direction);
+      }
+    }
+
+    // Place wrapper words as text cells (not in crossword grid)
+    // Position them in a compact area, e.g., bottom-right corner
+    if (filteredWrapperWords.length > 0) {
+      const findWrapperPlacementNearAnchor = (
+        anchorRow: number,
+        anchorCol: number,
+        direction: 'across' | 'down',
+        cellSpan: number,
+        anchorAfter: boolean,
+      ) => {
+        const perpendicularOffsets = [1, -1, 2, -2, 3, -3];
+        const alongOffsets = anchorAfter ? [1, 0] : [0, 1];
+
+        for (const alongOffset of alongOffsets) {
+          for (const perpendicularOffset of perpendicularOffsets) {
+            const wrapperRow =
+              direction === 'across' ? anchorRow + perpendicularOffset : anchorRow + alongOffset;
+            const wrapperCol =
+              direction === 'across' ? anchorCol + alongOffset : anchorCol + perpendicularOffset;
+
+            if (wrapperRow < 0 || wrapperCol < 0) continue;
+            if (wrapperRow >= gridSize || wrapperCol >= gridSize) continue;
+
+            const endRow = direction === 'across' ? wrapperRow : wrapperRow + cellSpan - 1;
+            const endCol = direction === 'across' ? wrapperCol + cellSpan - 1 : wrapperCol;
+            if (endRow >= gridSize || endCol >= gridSize) continue;
+
+            let canPlace = true;
+            for (let i = 0; i < cellSpan; i++) {
+              const placeRow = direction === 'across' ? wrapperRow : wrapperRow + i;
+              const placeCol = direction === 'across' ? wrapperCol + i : wrapperCol;
+              if (grid[placeRow][placeCol].type !== 'empty') {
+                canPlace = false;
+                break;
+              }
+            }
+
+            if (canPlace) {
+              return { wrapperRow, wrapperCol };
+            }
+          }
+        }
+
+        return null;
+      };
+
+      const findWrapperPlacementInline = (
+        baseRow: number,
+        baseCol: number,
+        direction: 'across' | 'down',
+        cellSpan: number,
+      ) => {
+        for (let offset = 0; offset < gridSize; offset++) {
+          const spaceRow = direction === 'across' ? baseRow : baseRow + offset;
+          const spaceCol = direction === 'across' ? baseCol + offset : baseCol;
+          const wrapperRow = direction === 'across' ? baseRow : baseRow + offset + 1;
+          const wrapperCol = direction === 'across' ? baseCol + offset + 1 : baseCol;
+
+          if (wrapperRow < 0 || wrapperCol < 0) continue;
+          if (wrapperRow >= gridSize || wrapperCol >= gridSize) break;
+
+          const endRow = direction === 'across' ? wrapperRow : wrapperRow + cellSpan - 1;
+          const endCol = direction === 'across' ? wrapperCol + cellSpan - 1 : wrapperCol;
+          if (endRow >= gridSize || endCol >= gridSize) break;
+
+          const spaceCell = grid[spaceRow]?.[spaceCol];
+          if (!spaceCell || (spaceCell.type !== 'empty' && spaceCell.type !== 'space')) {
+            continue;
+          }
+
+          let canPlace = true;
+          for (let i = 0; i < cellSpan; i++) {
+            const placeRow = direction === 'across' ? wrapperRow : wrapperRow + i;
+            const placeCol = direction === 'across' ? wrapperCol + i : wrapperCol;
+            if (grid[placeRow][placeCol].type !== 'empty') {
+              canPlace = false;
+              break;
+            }
+          }
+
+          if (canPlace) {
+            return { spaceRow, spaceCol, wrapperRow, wrapperCol };
+          }
+        }
+
+        return null;
+      };
+
+      // Create a map of placed grid words by techniqueId
+      const placedGridWordsByTechnique = new Map<string, CrosswordWord[]>();
+
+      words.forEach((word) => {
+        if (!word.isWrapper && word.techniqueId) {
+          const existing = placedGridWordsByTechnique.get(word.techniqueId) || [];
+          existing.push(word);
+          placedGridWordsByTechnique.set(word.techniqueId, existing);
+        }
+      });
+
+      // Place each wrapper adjacent to its last grid word
+      filteredWrapperWords.forEach((wrapperWord) => {
+        const gridWordsFromSameTechnique = placedGridWordsByTechnique.get(wrapperWord.techniqueId);
+
+        if (gridWordsFromSameTechnique && gridWordsFromSameTechnique.length > 0) {
+          const orderedGridWords = [...gridWordsFromSameTechnique].sort(
+            (a, b) => (a.partIndex ?? 0) - (b.partIndex ?? 0),
+          );
+          let lastGridWord =
+            wrapperWord.segmentId !== undefined
+              ? orderedGridWords.find((word) => word.segmentId === wrapperWord.segmentId)
+              : undefined;
+          if (!lastGridWord) {
+            const fallback = orderedGridWords.filter(
+              (word) => (word.partIndex ?? 0) <= wrapperWord.partIndex,
+            );
+            lastGridWord = fallback.length > 0 ? fallback[fallback.length - 1] : orderedGridWords[0];
+          }
+
+          let spaceRow: number;
+          let spaceCol: number;
+
+          if (lastGridWord.direction === 'across') {
+            // Place space cell right after last letter
+            spaceRow = lastGridWord.startRow;
+            spaceCol = lastGridWord.startCol + lastGridWord.word.length;
+          } else {
+            // Place space cell right after last letter
+            spaceRow = lastGridWord.startRow + lastGridWord.word.length;
+            spaceCol = lastGridWord.startCol;
+          }
+
+          // Calculate cell span based on text length - more cells for longer text
+          // Aim for ~6-8 characters per cell to keep cells square
+          const cellSpan = getWrapperSpan(wrapperWord.originalName);
+
+          const wordLength = Math.max(1, lastGridWord.word.length);
+          const anchorOffset =
+            typeof wrapperWord.anchorOffset === 'number'
+              ? Math.min(Math.max(0, wrapperWord.anchorOffset), wordLength - 1)
+              : wordLength - 1;
+          const anchorAfter =
+            typeof wrapperWord.anchorAfter === 'boolean' ? wrapperWord.anchorAfter : true;
+
+          const anchorRow =
+            lastGridWord.direction === 'across'
+              ? lastGridWord.startRow
+              : lastGridWord.startRow + anchorOffset;
+          const anchorCol =
+            lastGridWord.direction === 'across'
+              ? lastGridWord.startCol + anchorOffset
+              : lastGridWord.startCol;
+
+          const placement =
+            findWrapperPlacementInline(
+              spaceRow,
+              spaceCol,
+              lastGridWord.direction,
+              cellSpan,
+            ) ??
+            findWrapperPlacementNearAnchor(
+              anchorRow,
+              anchorCol,
+              lastGridWord.direction,
+              cellSpan,
+              anchorAfter,
+            );
+
+          if (placement) {
+            const wrapperId = `${
+              wrapperWord.segmentId ?? `${wrapperWord.techniqueId}-${wrapperWord.partIndex}`
+            }-wrapper`;
+
+            if ('spaceRow' in placement) {
+              if (grid[placement.spaceRow][placement.spaceCol].type === 'empty') {
+                grid[placement.spaceRow][placement.spaceCol] = {
+                  row: placement.spaceRow,
+                  col: placement.spaceCol,
+                  letter: '',
+                  value: '',
+                  type: 'space',
+                };
+              }
+            }
+
+            for (let i = 0; i < cellSpan; i++) {
+              const placeRow =
+                lastGridWord.direction === 'across'
+                  ? placement.wrapperRow
+                  : placement.wrapperRow + i;
+              const placeCol =
+                lastGridWord.direction === 'across'
+                  ? placement.wrapperCol + i
+                  : placement.wrapperCol;
+
+              grid[placeRow][placeCol] = {
+                row: placeRow,
+                col: placeCol,
+                letter: '',
+                value: '',
+                type: 'wrapper',
+                wrapperText: i === 0 ? wrapperWord.originalName : '',
+                wordId: wrapperId,
+                cellSpan: i === 0 ? cellSpan : undefined, // Only first cell stores span info
+                direction: lastGridWord.direction, // Store direction for rendering
+              };
+            }
+
+            words.push({
+              id: wrapperId,
+              word: wrapperWord.word,
+              clue: wrapperWord.clue,
+              direction: lastGridWord.direction,
+              startRow: placement.wrapperRow,
+              startCol: placement.wrapperCol,
+              number: wordNumber++,
+              isWrapper: true,
+              techniqueId: wrapperWord.techniqueId,
+              partIndex: wrapperWord.partIndex,
+              segmentId: wrapperWord.segmentId,
+            });
+          }
+        }
+      });
     }
 
     // Trim empty rows and columns from the edges
@@ -574,8 +1114,13 @@ const CardCrossword: React.FC = () => {
 
         // For each word, calculate how many letters to reveal
         newPuzzle.words.forEach((word) => {
+          // Skip wrapper words - they don't have letter cells
+          if (word.isWrapper) return;
+
           // Count non-space characters in the word
-          const letterCount = word.word.split('').filter((c) => c !== ' ').length;
+          const letterCount = word.word
+            .split('')
+            .filter((c) => c !== ' ' && c !== WRAPPER_PLACEHOLDER).length;
 
           // Calculate how many letters to reveal for this word
           const lettersToReveal = Math.floor(
@@ -589,7 +1134,7 @@ const CardCrossword: React.FC = () => {
             // Get all letter positions in this word
             const letterPositions: { row: number; col: number; index: number }[] = [];
             for (let i = 0; i < word.word.length; i++) {
-              if (word.word[i] !== ' ') {
+              if (word.word[i] !== ' ' && word.word[i] !== WRAPPER_PLACEHOLDER) {
                 const row = word.direction === 'across' ? word.startRow : word.startRow + i;
                 const col = word.direction === 'across' ? word.startCol + i : word.startCol;
                 letterPositions.push({ row, col, index: i });
@@ -690,6 +1235,13 @@ const CardCrossword: React.FC = () => {
 
   // Panning handlers for mobile (touch)
   const handleTouchStartPan = (e: React.TouchEvent) => {
+    if (isMobile) {
+      setIsPanning(false);
+      setPanStart(null);
+      setScrollStart(null);
+      return;
+    }
+
     if (e.touches.length !== 1) return; // Only single finger
 
     const touch = e.touches[0];
@@ -703,6 +1255,15 @@ const CardCrossword: React.FC = () => {
   };
 
   const handleTouchMovePan = (e: React.TouchEvent) => {
+    if (isMobile) {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+      setIsPanning(true);
+      return;
+    }
+
     if (!panStart || !scrollStart || !gridContainerRef.current) return;
     if (e.touches.length !== 1) return;
 
@@ -726,6 +1287,11 @@ const CardCrossword: React.FC = () => {
   };
 
   const handleTouchEndPan = () => {
+    if (isMobile) {
+      setTimeout(() => setIsPanning(false), 100);
+      return;
+    }
+
     setPanStart(null);
     setScrollStart(null);
     // Reset panning flag after a short delay
@@ -778,9 +1344,9 @@ const CardCrossword: React.FC = () => {
       // Don't clear correct letters
       if (cell.value && cell.value === cell.letter) return;
 
-      // Clear current cell
-      const newGrid = [...puzzle.grid];
-      newGrid[row][col] = { ...cell, value: '' };
+      // Clear current cell - create a proper deep copy of the grid
+      const newGrid = puzzle.grid.map((row) => [...row]);
+      newGrid[row][col] = { ...newGrid[row][col], value: '' };
       setPuzzle({ ...puzzle, grid: newGrid });
 
       // Move to previous cell
@@ -796,10 +1362,10 @@ const CardCrossword: React.FC = () => {
       // Don't override correct letters
       if (cell.value && cell.value === cell.letter) return;
 
-      // Input letter
-      const newGrid = [...puzzle.grid];
+      // Input letter - create a proper deep copy of the grid
+      const newGrid = puzzle.grid.map((row) => [...row]);
       const inputLetter = e.key.toUpperCase();
-      newGrid[row][col] = { ...cell, value: inputLetter };
+      newGrid[row][col] = { ...newGrid[row][col], value: inputLetter };
       setPuzzle({ ...puzzle, grid: newGrid });
 
       // Check if word is complete
@@ -822,40 +1388,39 @@ const CardCrossword: React.FC = () => {
     const maxRow = typeof puzzle.size === 'number' ? puzzle.size : puzzle.size.rows;
     const maxCol = typeof puzzle.size === 'number' ? puzzle.size : puzzle.size.cols;
 
-    // Keep moving until we find an empty or incorrect cell
-    let attempts = 0;
-    const maxAttempts = maxRow * maxCol; // Prevent infinite loop
+    // Move to next position
+    if (currentDirection === 'across') {
+      newCol++;
+    } else {
+      newRow++;
+    }
 
-    while (attempts < maxAttempts) {
-      // Move to next position
+    // Find the next empty cell (skip blocked cells and cells with values)
+    while (newRow < maxRow && newCol < maxCol) {
+      const nextCell = puzzle.grid[newRow][newCol];
+
+      // Skip blocked cells
+      if (isBlockedCellType(nextCell.type)) {
+        if (currentDirection === 'across') {
+          newCol++;
+        } else {
+          newRow++;
+        }
+        continue;
+      }
+
+      // If it's a playable cell with no value, select it
+      if (!nextCell.value || nextCell.value === '') {
+        setSelectedCell({ row: newRow, col: newCol });
+        break;
+      }
+
+      // Cell has a value, continue searching
       if (currentDirection === 'across') {
         newCol++;
       } else {
         newRow++;
       }
-
-      // Check bounds
-      if (newRow >= maxRow || newCol >= maxCol) break;
-
-      const nextCell = puzzle.grid[newRow][newCol];
-
-      // Skip blocked cells
-      if (isBlockedCellType(nextCell.type)) {
-        attempts++;
-        continue;
-      }
-
-      // Found a playable cell - check if it's already correct
-      const isCorrect = nextCell.value && nextCell.value === nextCell.letter;
-
-      if (!isCorrect) {
-        // Found an empty or incorrect cell - select it
-        setSelectedCell({ row: newRow, col: newCol });
-        break;
-      }
-
-      // Cell is correct, continue searching
-      attempts++;
     }
   };
 
@@ -1161,13 +1726,14 @@ const CardCrossword: React.FC = () => {
         onInput={(e) => {
           const input = e.target as HTMLInputElement;
           const letter = input.value.toUpperCase().slice(-1);
+          input.value = ''; // Clear BEFORE processing to prevent duplicate input
           if (letter && /^[A-Z]$/.test(letter)) {
             handleKeyPress({ key: letter, preventDefault: () => {} } as React.KeyboardEvent);
           }
-          input.value = ''; // Clear after each letter
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Backspace') {
+          e.stopPropagation();
+          if (e.key === 'Backspace' || e.key.startsWith('Arrow')) {
             handleKeyPress(e as React.KeyboardEvent);
           }
         }}
@@ -1245,7 +1811,9 @@ const CardCrossword: React.FC = () => {
         container
         spacing={1}
         sx={{
-          height: isFullscreen ? 'calc(100vh - 80px)' : 'calc(100vh - 180px)',
+          height: isFullscreen
+            ? `calc(${viewportHeight} - ${isMobile ? 64 : 80}px)`
+            : `calc(${viewportHeight} - ${isMobile ? 150 : 180}px)`,
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -1310,9 +1878,9 @@ const CardCrossword: React.FC = () => {
                 alignItems: 'flex-start',
                 overflow: 'auto',
                 WebkitOverflowScrolling: 'touch',
-                // Disable default touch actions to handle panning manually
-                touchAction: 'none',
-                cursor: panStart ? 'grabbing' : 'grab',
+                touchAction: isMobile ? 'pan-x pan-y' : 'none',
+                overscrollBehavior: 'contain',
+                cursor: isMobile ? 'auto' : panStart ? 'grabbing' : 'grab',
                 userSelect: 'none',
                 p: 1, // Add padding to prevent edge clipping
               }}
@@ -1337,17 +1905,17 @@ const CardCrossword: React.FC = () => {
                       // Available height = viewport - (header ~80px + clue banner ~60px + buttons ~60px + padding ~40px)
                       // Available width = viewport width - padding
                       const availableHeight = isDesktop
-                        ? 'calc(100vh - 300px)'
-                        : 'calc(100vh - 240px)'; // No alphabet picker anymore
+                        ? `calc(${viewportHeight} - 300px)`
+                        : `calc(${viewportHeight} - 210px)`;
                       const availableWidth = isDesktop
-                        ? 'calc(100vw - 100px)'
-                        : 'calc(100vw - 20px)';
+                        ? `calc(${viewportWidth} - 100px)`
+                        : `calc(${viewportWidth} - 16px)`;
 
                       // Cell size fits the smaller dimension to ensure grid fits
                       // But enforce minimum readable sizes: 2.5rem (40px) mobile, 2rem (32px) desktop
                       const cellSize = isDesktop
                         ? `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 3.5rem), 2rem)`
-                        : `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 3rem), 2.5rem)`;
+                        : `max(min(calc(${availableHeight} / ${gridRows}), calc(${availableWidth} / ${gridCols}), 2.8rem), 2rem)`;
 
                       // Placeholder block (displays image)
                       if (cell.type === 'placeholder' && placeholderBounds) {
@@ -1427,6 +1995,88 @@ const CardCrossword: React.FC = () => {
                             }}
                           />
                         );
+                      }
+
+                      // Wrapper cells - display full word text spanning multiple cells
+                      if (cell.type === 'wrapper') {
+                        // Only render if this cell has wrapper text (first cell of wrapper)
+                        if (cell.wrapperText && cell.cellSpan) {
+                          // Calculate the width/height based on cell span and direction
+                          const spanSize =
+                            cell.direction === 'across'
+                              ? `calc(${cellSize} * ${cell.cellSpan})`
+                              : cellSize;
+                          const spanHeight =
+                            cell.direction === 'down'
+                              ? `calc(${cellSize} * ${cell.cellSpan})`
+                              : cellSize;
+
+                          return (
+                            <Box
+                              key={colIndex}
+                              sx={{
+                                width: cellSize,
+                                height: cellSize,
+                                position: 'relative',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  width: spanSize,
+                                  height: spanHeight,
+                                  boxSizing: 'border-box',
+                                  border: `2px solid ${theme.palette.primary.main}`,
+                                  borderRadius: '4px',
+                                  background:
+                                    theme.palette.mode === 'dark'
+                                      ? 'linear-gradient(135deg, rgba(66, 165, 245, 0.2), rgba(66, 165, 245, 0.1))'
+                                      : 'linear-gradient(135deg, rgba(66, 165, 245, 0.15), rgba(66, 165, 245, 0.05))',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: theme.spacing(0.5),
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <Typography
+                                  lang="en"
+                                  sx={{
+                                    fontFamily: "'Caveat', cursive",
+                                    fontWeight: 600,
+                                    fontSize: '0.8rem',
+                                    textAlign: 'center',
+                                    lineHeight: 1.1,
+                                    color: theme.palette.text.primary,
+                                    hyphens: 'auto',
+                                    wordBreak: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    WebkitHyphens: 'auto',
+                                    MozHyphens: 'auto',
+                                  }}
+                                >
+                                  {cell.wrapperText}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          );
+                        } else {
+                          // Empty wrapper cell (part of multi-cell wrapper) - invisible but maintains space
+                          return (
+                            <Box
+                              key={colIndex}
+                              sx={{
+                                width: cellSize,
+                                height: cellSize,
+                                visibility: 'hidden',
+                                flexShrink: 0,
+                              }}
+                            />
+                          );
+                        }
                       }
 
                       // Playable cells (filled/start)
@@ -1537,8 +2187,9 @@ const CardCrossword: React.FC = () => {
                               top: '50%',
                               left: '50%',
                               transform: 'translate(-50%, -50%)',
-                              fontWeight: 600,
-                              fontSize: 'clamp(0.875rem, 2vw, 1.25rem)',
+                              fontFamily: "'Caveat', cursive",
+                              fontWeight: 700,
+                              fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
                             }}
                           >
                             {cell.value}
