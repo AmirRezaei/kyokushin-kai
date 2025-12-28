@@ -337,137 +337,134 @@ function AppContent() {
       <Box
         component="main"
         sx={{
-          position: 'relative',
-          marginLeft: 0,
-          marginRight: 0,
-          marginBottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
           width: '100%',
-          overflowX: 'hidden',
-          overflowY: 'auto',
-          height: '100vh',
-          padding: 0,
           paddingTop: `${appBarOffset}px`, // Always account for AppBar since it's always visible
           boxSizing: 'border-box',
         }}
       >
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/motto-explorer" element={<MottoPage />} />
-          <Route
-            path="/technique"
-            element={
-              <ProtectedRoute>
-                <TechniquePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/breathing" element={<BreathingTechniquesPage />} />
-          {/* Kihon - Development Only */}
-          {import.meta.env.DEV && <Route path="/kihon" element={<KihonPage />} />}
-          <Route
-            path="/terminology"
-            element={
-              <ProtectedRoute>
-                <TerminologyPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/WordQuest"
-            element={
-              <ProtectedRoute>
-                <WordPlayPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cards"
-            element={
-              <ProtectedRoute>
-                <CardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cards/match"
-            element={
-              <ProtectedRoute>
-                <CardMatchPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cards/crossword"
-            element={
-              <ProtectedRoute>
-                <CardCrosswordPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/card-manager"
-            element={
-              <ProtectedRoute>
-                <CardManagerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/deck-manager"
-            element={
-              <ProtectedRoute>
-                <DeckManagerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/timer" element={<TimerPage />} />
-          <Route
-            path="/trainingSession"
-            element={
-              <ProtectedRoute>
-                <TrainingSessionPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/training-manager"
-            element={
-              <ProtectedRoute>
-                <TrainingManagerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <SettingsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/logout" element={<LogoutPage />} />
-          <Route
-            path="/ten-thousand-days"
-            element={
-              <ProtectedRoute>
-                <TenThousandDaysTrackerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/training-tracker"
-            element={
-              <ProtectedRoute>
-                <TrainingTrackerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/dojo-kun" element={<DojoKunPage />} />
-          <Route path="/spirit-of-osu" element={<OsuSpiritPage />} />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<AppNotFoundPage />} />
-        </Routes>
+        <Box sx={{ flex: '1 0 auto' }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/motto-explorer" element={<MottoPage />} />
+            <Route
+              path="/technique"
+              element={
+                <ProtectedRoute>
+                  <TechniquePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/breathing" element={<BreathingTechniquesPage />} />
+            {/* Kihon - Development Only */}
+            {import.meta.env.DEV && <Route path="/kihon" element={<KihonPage />} />}
+            <Route
+              path="/terminology"
+              element={
+                <ProtectedRoute>
+                  <TerminologyPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/WordQuest"
+              element={
+                <ProtectedRoute>
+                  <WordPlayPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cards"
+              element={
+                <ProtectedRoute>
+                  <CardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cards/match"
+              element={
+                <ProtectedRoute>
+                  <CardMatchPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cards/crossword"
+              element={
+                <ProtectedRoute>
+                  <CardCrosswordPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/card-manager"
+              element={
+                <ProtectedRoute>
+                  <CardManagerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/deck-manager"
+              element={
+                <ProtectedRoute>
+                  <DeckManagerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/timer" element={<TimerPage />} />
+            <Route
+              path="/trainingSession"
+              element={
+                <ProtectedRoute>
+                  <TrainingSessionPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/training-manager"
+              element={
+                <ProtectedRoute>
+                  <TrainingManagerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/logout" element={<LogoutPage />} />
+            <Route
+              path="/ten-thousand-days"
+              element={
+                <ProtectedRoute>
+                  <TenThousandDaysTrackerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/training-tracker"
+              element={
+                <ProtectedRoute>
+                  <TrainingTrackerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/dojo-kun" element={<DojoKunPage />} />
+            <Route path="/spirit-of-osu" element={<OsuSpiritPage />} />
+            <Route path="/about" element={<About />} />
+            <Route path="*" element={<AppNotFoundPage />} />
+          </Routes>
+        </Box>
         {!isFullscreen && <Footer />}
       </Box>
     </>
