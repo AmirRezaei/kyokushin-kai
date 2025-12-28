@@ -46,6 +46,7 @@ interface CrosswordCell {
   wordId?: string; // ID of the word
   direction?: 'across' | 'down';
   number?: number; // Clue number
+  numberDirection?: 'across' | 'down';
   wrapperText?: string; // For wrapper cells - the full text to display
   cellSpan?: number; // For wrapper cells - how many cells it spans
 }
@@ -367,7 +368,11 @@ const CardCrossword: React.FC = () => {
   }, [isMobile, isKeyboardVisible]);
 
   const clampPanOffset = useCallback(
-    (next: { x: number; y: number }, metrics: ViewMetrics | null, visibleRect?: VisibleRect | null) => {
+    (
+      next: { x: number; y: number },
+      metrics: ViewMetrics | null,
+      visibleRect?: VisibleRect | null,
+    ) => {
       if (!metrics) return next;
       const { gridWidth, gridHeight, viewWidth, viewHeight, baseOffsetX, baseOffsetY } = metrics;
       const viewLeft = visibleRect ? visibleRect.left : 0;
@@ -700,7 +705,7 @@ const CardCrossword: React.FC = () => {
           const isGridToken = gridIndices.has(index);
           const isWrapperToken = !isGridToken;
 
-          if (wordWithWrappers.length > 0 && !(prevWasWrapper && isWrapperToken)) {
+          if (wordWithWrappers.length > 0 && !prevWasWrapper && !isWrapperToken) {
             wordWithWrappers += ' ';
           }
 
@@ -839,6 +844,7 @@ const CardCrossword: React.FC = () => {
           cellSpan: segment ? segment.span : undefined,
           direction: 'across',
           number: shouldNumber ? wordNumber : undefined,
+          numberDirection: shouldNumber ? 'across' : undefined,
         };
         if (shouldNumber) {
           numberAssigned = true;
@@ -855,6 +861,7 @@ const CardCrossword: React.FC = () => {
           wordId: firstWordId,
           direction: 'across',
           number: shouldNumber ? wordNumber : undefined,
+          numberDirection: shouldNumber ? 'across' : undefined,
         };
         if (shouldNumber) {
           numberAssigned = true;
@@ -994,6 +1001,7 @@ const CardCrossword: React.FC = () => {
             cellSpan: segment ? segment.span : undefined,
             direction,
             number: shouldNumber ? wordNumber : undefined,
+            numberDirection: shouldNumber ? direction : undefined,
           };
           if (shouldNumber) {
             numberAssigned = true;
@@ -1025,6 +1033,7 @@ const CardCrossword: React.FC = () => {
             wordId,
             direction,
             number: shouldNumber ? wordNumber : undefined,
+            numberDirection: shouldNumber ? direction : undefined,
           };
           if (shouldNumber) {
             numberAssigned = true;
@@ -1036,6 +1045,7 @@ const CardCrossword: React.FC = () => {
           if (!numberAssigned && !existingCell.number) {
             existingCell.number = wordNumber;
             existingCell.type = 'start';
+            existingCell.numberDirection = direction;
           }
           numberAssigned = true;
         }
@@ -1120,10 +1130,8 @@ const CardCrossword: React.FC = () => {
         cellSpan: number,
       ) => {
         for (let offset = 0; offset < gridSize; offset++) {
-          const spaceRow = direction === 'across' ? baseRow : baseRow + offset;
-          const spaceCol = direction === 'across' ? baseCol + offset : baseCol;
-          const wrapperRow = direction === 'across' ? baseRow : baseRow + offset + 1;
-          const wrapperCol = direction === 'across' ? baseCol + offset + 1 : baseCol;
+          const wrapperRow = direction === 'across' ? baseRow : baseRow + offset;
+          const wrapperCol = direction === 'across' ? baseCol + offset : baseCol;
 
           if (wrapperRow < 0 || wrapperCol < 0) continue;
           if (wrapperRow >= gridSize || wrapperCol >= gridSize) break;
@@ -1131,11 +1139,6 @@ const CardCrossword: React.FC = () => {
           const endRow = direction === 'across' ? wrapperRow : wrapperRow + cellSpan - 1;
           const endCol = direction === 'across' ? wrapperCol + cellSpan - 1 : wrapperCol;
           if (endRow >= gridSize || endCol >= gridSize) break;
-
-          const spaceCell = grid[spaceRow]?.[spaceCol];
-          if (!spaceCell || (spaceCell.type !== 'empty' && spaceCell.type !== 'space')) {
-            continue;
-          }
 
           let canPlace = true;
           for (let i = 0; i < cellSpan; i++) {
@@ -1148,7 +1151,7 @@ const CardCrossword: React.FC = () => {
           }
 
           if (canPlace) {
-            return { spaceRow, spaceCol, wrapperRow, wrapperCol };
+            return { wrapperRow, wrapperCol };
           }
         }
 
@@ -1190,11 +1193,10 @@ const CardCrossword: React.FC = () => {
           let spaceCol: number;
 
           if (lastGridWord.direction === 'across') {
-            // Place space cell right after last letter
+            // Anchor directly after the last letter (no gap cell).
             spaceRow = lastGridWord.startRow;
             spaceCol = lastGridWord.startCol + lastGridWord.word.length;
           } else {
-            // Place space cell right after last letter
             spaceRow = lastGridWord.startRow + lastGridWord.word.length;
             spaceCol = lastGridWord.startCol;
           }
@@ -1234,20 +1236,6 @@ const CardCrossword: React.FC = () => {
             const wrapperId = `${
               wrapperWord.segmentId ?? `${wrapperWord.techniqueId}-${wrapperWord.partIndex}`
             }-wrapper`;
-
-            if ('spaceRow' in placement && 'spaceCol' in placement) {
-              const spaceRow = placement.spaceRow as number;
-              const spaceCol = placement.spaceCol as number;
-              if (grid[spaceRow][spaceCol].type === 'empty') {
-                grid[spaceRow][spaceCol] = {
-                  row: spaceRow,
-                  col: spaceCol,
-                  letter: '',
-                  value: '',
-                  type: 'space',
-                };
-              }
-            }
 
             for (let i = 0; i < cellSpan; i++) {
               const placeRow =
@@ -2155,7 +2143,7 @@ const CardCrossword: React.FC = () => {
     ctx.setTransform(dpr, 0, 0, dpr, originX * dpr, originY * dpr);
 
     const mode = theme.palette.mode;
-    const wrapperBg = mode === 'dark' ? 'rgba(66, 165, 245, 0.35)' : 'rgba(66, 165, 245, 0.25)';
+    const wrapperBg = mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light;
     const wrapperBorder = theme.palette.primary.dark;
     const wrapperTextPadding = 4;
     const wrapperBorderWidth = 1;
@@ -2172,12 +2160,23 @@ const CardCrossword: React.FC = () => {
     const activeSentenceBorder = theme.palette.primary.main;
     const activeSentenceBorderWidth = 2.5;
 
-    const correctBorder = theme.palette.success.main;
+    // const correctBorder = theme.palette.success.main;
+    const correctBorder = mode === 'dark' ? 'black' : 'white';
     const selectedBorder = theme.palette.primary.main;
     const emptyBorder = theme.palette.divider;
     const defaultBorder = theme.palette.divider;
     const activeBorder = theme.palette.primary.light;
     const incorrectBorder = theme.palette.error.main;
+    const emptyBorderWidth = Math.max(1, scaledCellSize * 0.03);
+    const defaultBorderWidth = Math.max(1, scaledCellSize * 0.03);
+    const activeBorderWidth = Math.max(1, scaledCellSize * 0.04);
+    const correctBorderWidth = Math.max(1, scaledCellSize * 0.04);
+    const incorrectBorderWidth = Math.max(1, scaledCellSize * 0.05);
+    const selectedBorderWidth = Math.max(2, scaledCellSize * 0.08);
+    const selectedBorderRadius = Math.max(2, scaledCellSize * 0.18);
+    const incorrectOutlineWidth = Math.max(1.5, scaledCellSize * 0.06);
+    const incorrectOutlineRadius = Math.max(2, scaledCellSize * 0.12);
+    const wrapperBorderRadius = Math.max(3, scaledCellSize * 0.16);
     const tooltipBackground = theme.palette.background.paper;
     const tooltipBorder = theme.palette.primary.main;
     const tooltipText = theme.palette.text.primary;
@@ -2186,12 +2185,25 @@ const CardCrossword: React.FC = () => {
     const tooltipPaddingX = 10;
     const tooltipPaddingY = 6;
     const tooltipArrowSize = 8;
+    const tooltipArrowGap = 6;
+    const tooltipArrowScale = Math.max(0.8, scaledCellSize / 32);
+    const tooltipArrowSizeScaled = tooltipArrowSize * tooltipArrowScale;
     const tooltipMaxWidth = Math.max(160, scaledCellSize * 6);
     const tooltipFontSize = Math.max(12, scaledCellSize * 0.35);
     const tooltipShadowColor = mode === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.2)';
     const tooltipShadowBlur = 12;
     const tooltipShadowOffsetX = 0;
     const tooltipShadowOffsetY = 6;
+    const numberArrowAcrossEdgeOffset = Math.max(2, scaledCellSize * 0.008);
+    const numberArrowDownEdgeOffset = Math.max(2, scaledCellSize * 0.008);
+    const numberArrowAcrossLength = Math.max(6, scaledCellSize * 0.2);
+    const numberArrowDownLength = Math.max(6, scaledCellSize * 0.2);
+    const numberArrowAcrossHead = Math.max(3, scaledCellSize * 0.12);
+    const numberArrowDownHead = Math.max(3, scaledCellSize * 0.12);
+    const numberArrowAcrossOrthoOffset = 0;
+    const numberArrowDownOrthoOffset = 0;
+    const numberTextOffsetX = scaledCellSize * 0.012;
+    const numberTextOffsetY = 2;
 
     if (!spacePatternRef.current || spacePatternModeRef.current !== mode) {
       const patternCanvas = document.createElement('canvas');
@@ -2355,6 +2367,63 @@ const CardCrossword: React.FC = () => {
       ctx.lineTo(x, y + radius);
       ctx.quadraticCurveTo(x, y, x + radius, y);
       ctx.closePath();
+    };
+
+    const drawNumberWithArrow = (
+      numberValue: number,
+      direction: 'across' | 'down' | undefined,
+      x: number,
+      y: number,
+      numberSize: number,
+      cellSize: number,
+    ) => {
+      const numberText = numberValue.toString();
+      const numberX = x + numberTextOffsetX;
+      const numberY = y + numberTextOffsetY;
+      ctx.fillStyle = theme.palette.text.primary;
+      ctx.font = `${numberSize}px 'Caveat', cursive`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(numberText, numberX, numberY);
+
+      if (!direction) return;
+
+      const arrowStartX =
+        direction === 'across'
+          ? x + numberArrowAcrossEdgeOffset
+          : x + cellSize / 2 + numberArrowDownOrthoOffset;
+      const arrowStartY =
+        direction === 'across'
+          ? y + cellSize / 2 + numberArrowAcrossOrthoOffset
+          : y + numberArrowDownEdgeOffset;
+      const maxArrowLength =
+        direction === 'across'
+          ? Math.max(0, cellSize - (arrowStartX - x) - cellSize * 0.08)
+          : Math.max(0, cellSize - (arrowStartY - y) - cellSize * 0.08);
+      const desiredLength =
+        direction === 'across' ? numberArrowAcrossLength : numberArrowDownLength;
+      const arrowLength = Math.min(desiredLength, maxArrowLength);
+      if (arrowLength < 4) return;
+      const desiredHead = direction === 'across' ? numberArrowAcrossHead : numberArrowDownHead;
+      const headSize = Math.min(desiredHead, arrowLength * 0.6);
+
+      ctx.fillStyle = theme.palette.text.primary;
+      ctx.beginPath();
+
+      if (direction === 'across') {
+        const tipX = arrowStartX + arrowLength;
+        ctx.moveTo(tipX, arrowStartY);
+        ctx.lineTo(arrowStartX, arrowStartY - headSize);
+        ctx.lineTo(arrowStartX, arrowStartY + headSize);
+      } else {
+        const tipY = arrowStartY + arrowLength;
+        ctx.moveTo(arrowStartX, tipY);
+        ctx.lineTo(arrowStartX - headSize, arrowStartY);
+        ctx.lineTo(arrowStartX + headSize, arrowStartY);
+      }
+
+      ctx.closePath();
+      ctx.fill();
     };
 
     const activeSentenceCells = new Set<string>();
@@ -2685,11 +2754,14 @@ const CardCrossword: React.FC = () => {
 
         if (cell.number) {
           const numberSize = Math.max(10, scaledCellSize * 0.3);
-          ctx.fillStyle = theme.palette.text.primary;
-          ctx.font = `${numberSize}px 'Caveat', cursive`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillText(cell.number.toString(), x + scaledCellSize * 0.12, y + 1);
+          drawNumberWithArrow(
+            cell.number,
+            cell.numberDirection ?? cell.direction,
+            x,
+            y,
+            numberSize,
+            scaledCellSize,
+          );
         }
 
         if (cell.value) {
@@ -2733,11 +2805,14 @@ const CardCrossword: React.FC = () => {
         const y = run.startRow * scaledCellSize;
         const startCell = puzzle.grid[run.startRow]?.[run.startCol];
         if (startCell?.number) {
-          ctx.fillStyle = theme.palette.text.primary;
-          ctx.font = `${numberSize}px 'Caveat', cursive`;
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'top';
-          ctx.fillText(startCell.number.toString(), x + scaledCellSize * 0.12, y + 1);
+          drawNumberWithArrow(
+            startCell.number,
+            startCell.numberDirection ?? startCell.direction,
+            x,
+            y,
+            numberSize,
+            scaledCellSize,
+          );
         }
         ctx.fillStyle = theme.palette.text.primary;
         ctx.font = `${fontSize}px 'Caveat', cursive`;
@@ -2748,7 +2823,7 @@ const CardCrossword: React.FC = () => {
 
       ctx.strokeStyle = wrapperBorder;
       ctx.lineWidth = wrapperBorderWidth;
-      const inset = 1;
+      const inset = Math.max(1, wrapperBorderWidth * 0.5);
       wrapperRuns.forEach((run) => {
         const spanCells =
           run.direction === 'across'
@@ -2760,7 +2835,8 @@ const CardCrossword: React.FC = () => {
         const y = run.startRow * scaledCellSize + inset;
         const w = Math.max(0, spanW - inset * 2);
         const h = Math.max(0, spanH - inset * 2);
-        ctx.strokeRect(x, y, w, h);
+        drawRoundedRect(x, y, w, h, wrapperBorderRadius);
+        ctx.stroke();
       });
     }
 
@@ -2791,6 +2867,13 @@ const CardCrossword: React.FC = () => {
       correct: 4,
       incorrect: 5,
     };
+    const borderWidths: Record<BorderKind, number> = {
+      empty: emptyBorderWidth,
+      default: defaultBorderWidth,
+      active: activeBorderWidth,
+      correct: correctBorderWidth,
+      incorrect: incorrectBorderWidth,
+    };
     const pickBorder = (left: BorderKind | null, right: BorderKind | null) => {
       if (!left) return right;
       if (!right) return left;
@@ -2808,14 +2891,33 @@ const CardCrossword: React.FC = () => {
       return 'default';
     };
 
-    ctx.lineWidth = 1;
     ctx.setLineDash([]);
-    const lineOffset = 0.5;
     let currentStroke: string | null = null;
-    const drawEdge = (x1: number, y1: number, x2: number, y2: number, color: string) => {
+    let currentWidth: number | null = null;
+    const drawEdge = (
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      color: string,
+      width: number,
+      isVertical: boolean,
+    ) => {
       if (currentStroke !== color) {
         ctx.strokeStyle = color;
         currentStroke = color;
+      }
+      if (currentWidth !== width) {
+        ctx.lineWidth = width;
+        currentWidth = width;
+      }
+      const offset = Math.round(width) % 2 === 0 ? 0 : 0.5;
+      if (isVertical) {
+        x1 += offset;
+        x2 += offset;
+      } else {
+        y1 += offset;
+        y2 += offset;
       }
       ctx.beginPath();
       ctx.moveTo(x1, y1);
@@ -2834,29 +2936,29 @@ const CardCrossword: React.FC = () => {
         const y1 = y + scaledCellSize;
 
         if (rowIndex === 0) {
-          drawEdge(x, y + lineOffset, x1, y + lineOffset, borderColors[kind]);
+          drawEdge(x, y, x1, y, borderColors[kind], borderWidths[kind], false);
         }
         if (colIndex === 0) {
-          drawEdge(x + lineOffset, y, x + lineOffset, y1, borderColors[kind]);
+          drawEdge(x, y, x, y1, borderColors[kind], borderWidths[kind], true);
         }
 
         if (colIndex === gridCols - 1) {
-          drawEdge(x1 + lineOffset, y, x1 + lineOffset, y1, borderColors[kind]);
+          drawEdge(x1, y, x1, y1, borderColors[kind], borderWidths[kind], true);
         } else if (!isHiddenForGrid(rowIndex, colIndex + 1)) {
           const neighborKind = getBorderKind(rowIndex, colIndex + 1);
           const edgeKind = pickBorder(kind, neighborKind);
           if (edgeKind) {
-            drawEdge(x1 + lineOffset, y, x1 + lineOffset, y1, borderColors[edgeKind]);
+            drawEdge(x1, y, x1, y1, borderColors[edgeKind], borderWidths[edgeKind], true);
           }
         }
 
         if (rowIndex === gridRows - 1) {
-          drawEdge(x, y1 + lineOffset, x1, y1 + lineOffset, borderColors[kind]);
+          drawEdge(x, y1, x1, y1, borderColors[kind], borderWidths[kind], false);
         } else if (!isHiddenForGrid(rowIndex + 1, colIndex)) {
           const neighborKind = getBorderKind(rowIndex + 1, colIndex);
           const edgeKind = pickBorder(kind, neighborKind);
           if (edgeKind) {
-            drawEdge(x, y1 + lineOffset, x1, y1 + lineOffset, borderColors[edgeKind]);
+            drawEdge(x, y1, x1, y1, borderColors[edgeKind], borderWidths[edgeKind], false);
           }
         }
       }
@@ -2902,24 +3004,40 @@ const CardCrossword: React.FC = () => {
 
     if (incorrectCells.length > 0) {
       ctx.strokeStyle = incorrectBorder;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = incorrectOutlineWidth;
       ctx.setLineDash([]);
+      const inset = Math.max(1, incorrectOutlineWidth * 0.5);
       incorrectCells.forEach(({ row, col }) => {
-        const x = col * scaledCellSize + 1;
-        const y = row * scaledCellSize + 1;
-        ctx.strokeRect(x, y, scaledCellSize - 2, scaledCellSize - 2);
+        const x = col * scaledCellSize + inset;
+        const y = row * scaledCellSize + inset;
+        drawRoundedRect(
+          x,
+          y,
+          scaledCellSize - inset * 2,
+          scaledCellSize - inset * 2,
+          incorrectOutlineRadius,
+        );
+        ctx.stroke();
       });
     }
 
     if (selectedCell && !isBlockedCellType(puzzle.grid[selectedCell.row][selectedCell.col].type)) {
       const dashSize = Math.max(4, Math.round(scaledCellSize * 0.15));
       ctx.strokeStyle = selectedBorder;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = selectedBorderWidth;
       ctx.setLineDash([dashSize, dashSize]);
       ctx.lineDashOffset = dashOffsetRef.current;
-      const x = selectedCell.col * scaledCellSize + 1.5;
-      const y = selectedCell.row * scaledCellSize + 1.5;
-      ctx.strokeRect(x, y, scaledCellSize - 3, scaledCellSize - 3);
+      const inset = Math.max(1, selectedBorderWidth * 0.5);
+      const x = selectedCell.col * scaledCellSize + inset;
+      const y = selectedCell.row * scaledCellSize + inset;
+      drawRoundedRect(
+        x,
+        y,
+        scaledCellSize - inset * 2,
+        scaledCellSize - inset * 2,
+        selectedBorderRadius,
+      );
+      ctx.stroke();
       ctx.setLineDash([]);
     }
 
@@ -2955,15 +3073,15 @@ const CardCrossword: React.FC = () => {
       const viewMaxY = viewMinY + viewHeight;
 
       let tooltipX = cellCenterX - textWidth / 2;
-      let tooltipY = cellY - textHeight - tooltipArrowSize - 6;
+      let tooltipY = cellY - textHeight - tooltipArrowSizeScaled - tooltipArrowGap;
       let arrowMode: 'top' | 'bottom' | 'left' | 'right' = 'bottom';
 
       if (tooltipDirection === 'down') {
-        const desiredRight = cellX + scaledCellSize + tooltipArrowSize + 6;
+        const desiredRight = cellX + scaledCellSize + tooltipArrowSizeScaled + tooltipArrowGap;
         tooltipX = desiredRight;
         arrowMode = 'left';
         if (tooltipX + textWidth > viewMaxX - 4) {
-          tooltipX = cellX - textWidth - tooltipArrowSize - 6;
+          tooltipX = cellX - textWidth - tooltipArrowSizeScaled - tooltipArrowGap;
           arrowMode = 'right';
         }
         tooltipX = Math.min(viewMaxX - textWidth - 4, Math.max(viewMinX + 4, tooltipX));
@@ -2971,10 +3089,10 @@ const CardCrossword: React.FC = () => {
         tooltipY = Math.min(viewMaxY - textHeight - 4, Math.max(viewMinY + 4, tooltipY));
       } else {
         tooltipX = Math.min(viewMaxX - textWidth - 4, Math.max(viewMinX + 4, tooltipX));
-        tooltipY = cellY - textHeight - tooltipArrowSize - 6;
+        tooltipY = cellY - textHeight - tooltipArrowSizeScaled - tooltipArrowGap;
         arrowMode = 'bottom';
         if (tooltipY < viewMinY + 4) {
-          tooltipY = cellY + scaledCellSize + tooltipArrowSize + 6;
+          tooltipY = cellY + scaledCellSize + tooltipArrowSizeScaled + tooltipArrowGap;
           arrowMode = 'top';
         }
 
@@ -3015,19 +3133,19 @@ const CardCrossword: React.FC = () => {
         const arrowBaseY = arrowMode === 'top' ? tooltipY : tooltipY + textHeight;
         const arrowTipY =
           arrowMode === 'top'
-            ? tooltipY - tooltipArrowSize
-            : tooltipY + textHeight + tooltipArrowSize;
-        ctx.moveTo(arrowCenterX - tooltipArrowSize, arrowBaseY);
-        ctx.lineTo(arrowCenterX + tooltipArrowSize, arrowBaseY);
+            ? tooltipY - tooltipArrowSizeScaled
+            : tooltipY + textHeight + tooltipArrowSizeScaled;
+        ctx.moveTo(arrowCenterX - tooltipArrowSizeScaled, arrowBaseY);
+        ctx.lineTo(arrowCenterX + tooltipArrowSizeScaled, arrowBaseY);
         ctx.lineTo(arrowCenterX, arrowTipY);
       } else {
         const arrowBaseX = arrowMode === 'left' ? tooltipX : tooltipX + textWidth;
         const arrowTipX =
           arrowMode === 'left'
-            ? tooltipX - tooltipArrowSize
-            : tooltipX + textWidth + tooltipArrowSize;
-        ctx.moveTo(arrowBaseX, arrowCenterY - tooltipArrowSize);
-        ctx.lineTo(arrowBaseX, arrowCenterY + tooltipArrowSize);
+            ? tooltipX - tooltipArrowSizeScaled
+            : tooltipX + textWidth + tooltipArrowSizeScaled;
+        ctx.moveTo(arrowBaseX, arrowCenterY - tooltipArrowSizeScaled);
+        ctx.lineTo(arrowBaseX, arrowCenterY + tooltipArrowSizeScaled);
         ctx.lineTo(arrowTipX, arrowCenterY);
       }
       ctx.closePath();
