@@ -176,7 +176,7 @@ SectionHeader.displayName = 'SectionHeader';
 
 export default function TemporaryDrawer() {
   const theme = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [openSection, setOpenSection] = React.useState<string | null>(null);
   const navigate = useNavigate();
@@ -510,7 +510,7 @@ export default function TemporaryDrawer() {
           }}
         >
           <Typography variant="caption" color="text.secondary" align="center" display="block">
-            Logged in as User
+            Logged in as {user?.name || 'User'}
           </Typography>
         </Box>
       )}
