@@ -1346,6 +1346,210 @@ app.delete('/api/v1/gym/muscle-groups/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// --- Feedback Endpoints ---
+
+interface FeedbackRow {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  description: string;
+  appVersion: string;
+  browserInfo: string | null;
+  status: string;
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+app.get('/api/v1/feedback', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, user_id as userId, type, title, description, app_version as appVersion, 
+            browser_info as browserInfo, status, priority, created_at as createdAt, 
+            updated_at as updatedAt, version
+     FROM user_feedback 
+     WHERE user_id = ?
+     ORDER BY created_at DESC`,
+  )
+    .bind(user.id)
+    .all<FeedbackRow>();
+
+  const feedback = (results || []).map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    type: row.type,
+    title: row.title,
+    description: row.description,
+    appVersion: row.appVersion,
+    browserInfo: row.browserInfo || undefined,
+    status: row.status,
+    priority: row.priority,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    version: row.version,
+  }));
+
+  return c.json({ feedback });
+});
+
+app.post('/api/v1/feedback', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: {
+    id: string;
+    type: 'bug' | 'feature';
+    title: string;
+    description: string;
+    appVersion: string;
+    browserInfo?: string;
+    priority?: string;
+  };
+
+  try {
+    payload = await c.req.json();
+    if (
+      !payload.id ||
+      !payload.type ||
+      !payload.title ||
+      !payload.description ||
+      !payload.appVersion
+    ) {
+      throw new Error('Missing required fields');
+    }
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing required fields' }, 400);
+  }
+
+  const now = new Date().toISOString();
+
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO user_feedback 
+       (id, user_id, type, title, description, app_version, browser_info, status, priority, created_at, updated_at, version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, 0)`,
+    )
+      .bind(
+        payload.id,
+        user.id,
+        payload.type,
+        payload.title,
+        payload.description,
+        payload.appVersion,
+        payload.browserInfo || null,
+        payload.priority || 'medium',
+        now,
+        now,
+      )
+      .run();
+
+    return c.json({
+      id: payload.id,
+      userId: user.id,
+      type: payload.type,
+      title: payload.title,
+      description: payload.description,
+      appVersion: payload.appVersion,
+      browserInfo: payload.browserInfo,
+      status: 'open',
+      priority: payload.priority || 'medium',
+      createdAt: now,
+      updatedAt: now,
+      version: 0,
+    });
+  } catch (e: any) {
+    if (e.message && e.message.includes('UNIQUE')) {
+      return c.json({ error: 'conflict_exists' }, 409);
+    }
+    throw e;
+  }
+});
+
+app.patch('/api/v1/feedback/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  let payload: {
+    expectedVersion: number;
+    patch: {
+      title?: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+    };
+  };
+
+  try {
+    payload = await c.req.json();
+    if (typeof payload.expectedVersion !== 'number') throw new Error('Missing expectedVersion');
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing expectedVersion' }, 400);
+  }
+
+  const allowList = ['title', 'description', 'status', 'priority'];
+
+  const result = await performOptimisticUpdate(
+    c.env.DB,
+    'user_feedback',
+    user.id,
+    id,
+    payload.expectedVersion,
+    payload.patch,
+    allowList,
+  );
+
+  if (result.ok) {
+    const row = result.data as any;
+    return c.json({
+      id: row.id,
+      userId: row.user_id,
+      type: row.type,
+      title: row.title,
+      description: row.description,
+      appVersion: row.app_version,
+      browserInfo: row.browser_info || undefined,
+      status: row.status,
+      priority: row.priority,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      version: row.version,
+    });
+  } else {
+    const row = result.latest as any;
+    if (!row) return c.json({ error: 'not_found' }, 404);
+    return c.json(
+      {
+        error: 'conflict',
+        latest: {
+          id: row.id,
+          userId: row.user_id,
+          type: row.type,
+          title: row.title,
+          description: row.description,
+          appVersion: row.app_version,
+          browserInfo: row.browser_info,
+          status: row.status,
+          priority: row.priority,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          version: row.version,
+        },
+      },
+      409,
+    );
+  }
+});
+
+app.get('/api/v1/app-version', (c) => {
+  // Return app version - can be enhanced to read from package.json or environment
+  return c.json({ version: '1.0.0', name: 'kyokushin-kai' });
+});
+
 app.onError((err, c) => {
   console.error('Worker error', err);
   // Return actual error message for debugging

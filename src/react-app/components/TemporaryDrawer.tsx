@@ -19,6 +19,7 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import StyleIcon from '@mui/icons-material/Style';
 import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
 import CloseIcon from '@mui/icons-material/Close';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
@@ -482,6 +483,16 @@ export default function TemporaryDrawer() {
             label="Settings"
             protected
             isActive={isActive('/settings')}
+            isAuthenticated={isAuthenticated}
+            handleNavigation={handleNavigation}
+            theme={theme}
+          />
+          <NavItem
+            path="/feedback"
+            icon={<BugReportIcon />}
+            label="Bug Reports & Features"
+            protected
+            isActive={isActive('/feedback')}
             isAuthenticated={isAuthenticated}
             handleNavigation={handleNavigation}
             theme={theme}

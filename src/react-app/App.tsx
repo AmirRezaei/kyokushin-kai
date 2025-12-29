@@ -12,9 +12,9 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { AccountCircle, Fullscreen, FullscreenExit } from '@mui/icons-material';
+import { AccountCircle, BugReport, Fullscreen, FullscreenExit } from '@mui/icons-material';
 import React, { useEffect, useRef, useState } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { SnackbarProvider, useSnackbar } from './components/context/SnackbarContext';
 import { FullscreenProvider, useFullscreen } from './components/context/FullscreenContext';
 import { useAuth } from './components/context/AuthContext';
@@ -48,6 +48,7 @@ import LanguageSelector from './components/UI/LanguageSelector';
 import Home from './Home';
 import MottoPage from './app/motto/MottoPage';
 import Footer from './components/Footer';
+import FeedbackPage from './app/feedback/FeedbackPage';
 
 function AppContent() {
   const theme = useTheme();
@@ -81,7 +82,43 @@ function AppContent() {
   const { user, isAuthenticated, login, error: authError } = useAuth();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showSnackbar } = useSnackbar();
+
+  // Helper function to convert route path to human-readable page name
+  const getPageName = (pathname: string): string => {
+    const pathMap: Record<string, string> = {
+      '/': 'Home',
+      '/home': 'Home',
+      '/motto-explorer': 'Motto Explorer',
+      '/technique': 'Technique',
+      '/breathing': 'Breathing Techniques',
+      '/kihon': 'Kihon',
+      '/terminology': 'Terminology',
+      '/WordQuest': 'Word Quest',
+      '/cards': 'Cards',
+      '/cards/match': 'Card Match',
+      '/cards/crossword': 'Card Crossword',
+      '/card-manager': 'Card Manager',
+      '/deck-manager': 'Deck Manager',
+      '/timer': 'Timer',
+      '/trainingSession': 'Training Session',
+      '/training-manager': 'Training Manager',
+      '/settings': 'Settings',
+      '/ten-thousand-days': 'Ten Thousand Days',
+      '/training-tracker': 'Training Tracker',
+      '/dojo-kun': 'Dojo Kun',
+      '/spirit-of-osu': 'Spirit of Osu',
+      '/feedback': 'Feedback',
+      '/about': 'About',
+    };
+    return pathMap[pathname] || 'Unknown Page';
+  };
+
+  const handleReportIssue = () => {
+    const pageName = getPageName(location.pathname);
+    navigate(`/feedback?type=bug&page=${encodeURIComponent(pageName)}`);
+  };
 
   React.useEffect(() => {
     if (authError) {
@@ -268,6 +305,19 @@ function AppContent() {
             >
               {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
             </IconButton>
+
+            {/* Report Issue Button */}
+            <Tooltip title="Report Bug or Feature">
+              <IconButton
+                size="large"
+                aria-label="report bug or feature"
+                onClick={handleReportIssue}
+                color="inherit"
+                sx={{ mr: 1 }}
+              >
+                <BugReport />
+              </IconButton>
+            </Tooltip>
 
             {/* User Account Menu */}
             <IconButton
@@ -461,6 +511,14 @@ function AppContent() {
             />
             <Route path="/dojo-kun" element={<DojoKunPage />} />
             <Route path="/spirit-of-osu" element={<OsuSpiritPage />} />
+            <Route
+              path="/feedback"
+              element={
+                <ProtectedRoute>
+                  <FeedbackPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<AppNotFoundPage />} />
           </Routes>
