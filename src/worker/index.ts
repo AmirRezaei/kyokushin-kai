@@ -1270,7 +1270,17 @@ app.get('/api/v1/gym/equipment', async (c) => {
   const { results } = await c.env.DB.prepare(`SELECT * FROM user_gym_equipment WHERE user_id = ?`)
     .bind(user.id)
     .all();
-  return c.json({ equipment: results });
+
+  // Map category_id to categoryId for frontend compatibility
+  const equipment = results.map((item: any) => ({
+    id: item.id,
+    userId: item.user_id,
+    name: item.name,
+    description: item.description,
+    categoryId: item.category_id,
+  }));
+
+  return c.json({ equipment });
 });
 
 app.post('/api/v1/gym/equipment', async (c) => {
@@ -1284,14 +1294,15 @@ app.post('/api/v1/gym/equipment', async (c) => {
   }
 
   await c.env.DB.prepare(
-    `INSERT INTO user_gym_equipment (user_id, id, name, description, created_at, updated_at)
-     VALUES (?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+    `INSERT INTO user_gym_equipment (user_id, id, name, description, category_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
      ON CONFLICT(user_id, id) DO UPDATE SET
        name = excluded.name,
        description = excluded.description,
+       category_id = excluded.category_id,
        updated_at = excluded.updated_at`,
   )
-    .bind(user.id, payload.id, payload.name, payload.description || '')
+    .bind(user.id, payload.id, payload.name, payload.description || '', payload.categoryId || null)
     .run();
   return c.json({ ok: true });
 });
@@ -1305,7 +1316,63 @@ app.delete('/api/v1/gym/equipment/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// 4b. Equipment Categories
+app.get('/api/v1/gym/equipment-categories', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM user_equipment_categories WHERE user_id = ?`,
+  )
+    .bind(user.id)
+    .all();
+  return c.json({ categories: results });
+});
+
+app.post('/api/v1/gym/equipment-categories', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  let payload: any;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_equipment_categories (user_id, id, name, description, color, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, strftime('%s','now'), strftime('%s','now'))
+     ON CONFLICT(user_id, id) DO UPDATE SET
+       name = excluded.name,
+       description = excluded.description,
+       color = excluded.color,
+       updated_at = excluded.updated_at`,
+  )
+    .bind(user.id, payload.id, payload.name, payload.description || '', payload.color || null)
+    .run();
+  return c.json({ ok: true });
+});
+
+app.delete('/api/v1/gym/equipment-categories/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const categoryId = c.req.param('id');
+
+  // Set category_id to null for all equipment in this category
+  await c.env.DB.prepare(
+    `UPDATE user_gym_equipment SET category_id = NULL WHERE user_id = ? AND category_id = ?`,
+  )
+    .bind(user.id, categoryId)
+    .run();
+
+  // Delete the category
+  await c.env.DB.prepare(`DELETE FROM user_equipment_categories WHERE user_id = ? AND id = ?`)
+    .bind(user.id, categoryId)
+    .run();
+  return c.json({ ok: true });
+});
+
 // 5. User Muscle Groups
+
 app.get('/api/v1/gym/muscle-groups', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);

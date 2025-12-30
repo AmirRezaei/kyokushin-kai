@@ -1,5 +1,6 @@
 // File: ./src/app/TrainingManager/types.ts
 import {
+  UserEquipmentCategory,
   UserGymEquipment,
   UserGymExercise,
   UserGymSession,
@@ -7,6 +8,7 @@ import {
   UserWorkoutPlan,
 } from '../../../data/model/gym';
 
+export type EquipmentCategory = UserEquipmentCategory;
 export type Equipment = UserGymEquipment;
 export type MuscleGroup = UserMuscleGroup;
 export type Exercise = UserGymExercise;
