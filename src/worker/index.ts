@@ -7,6 +7,7 @@ type Bindings = {
   DB: D1Database;
   GOOGLE_CLIENT_ID: string;
   JWT_SECRET: string;
+  ADMIN_EMAIL?: string;
   VITE_GOOGLE_CLIENT_ID?: string;
   VITE_API_BASE_URL?: string;
   ALLOWED_ORIGINS?: string;
@@ -27,6 +28,108 @@ type UserProfile = {
   picture?: string;
 };
 
+type UserRole = 'admin' | 'user';
+type PublishStatus = 'draft' | 'published' | 'inactive';
+type Locale = 'romaji' | 'ja' | 'en' | 'sv';
+type LocalizedText = Partial<Record<Locale, string>>;
+
+type TechniqueRecord = {
+  id: string;
+  kind: string;
+  rank?: number;
+  name: LocalizedText;
+  aliases?: LocalizedText[];
+  nameParts?: Record<string, unknown>;
+  tags?: string[];
+  summary?: LocalizedText;
+  history?: LocalizedText;
+  detailedDescription?: LocalizedText;
+  relatedTermIds?: string[];
+  mediaIds?: string[];
+  sourceIds?: string[];
+  status: PublishStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type TechniqueRow = {
+  id: string;
+  data_json: string;
+  kind: string;
+  status: string;
+  rank: number | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
+type GradeRecord = {
+  id: string;
+  gradingSystemId: string;
+  kind: string;
+  number: number;
+  rank?: number;
+  name: LocalizedText;
+  aliases?: LocalizedText[];
+  beltColor: string;
+  sortOrder: number;
+  notes?: LocalizedText;
+  status: PublishStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type KataRecord = {
+  id: string;
+  rank?: number;
+  name: LocalizedText;
+  aliases?: LocalizedText[];
+  familyTermIds?: string[];
+  meaning?: LocalizedText;
+  history?: LocalizedText;
+  detailedDescription?: LocalizedText;
+  tags?: string[];
+  difficulty?: number;
+  expectedDurationSec?: number;
+  mediaIds?: string[];
+  sourceIds?: string[];
+  status: PublishStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type GradeRow = {
+  id: string;
+  data_json: string;
+  grading_system_id: string;
+  kind: string;
+  number: number;
+  rank: number | null;
+  belt_color: string;
+  sort_order: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
+type KataRow = {
+  id: string;
+  data_json: string;
+  status: string;
+  rank: number | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
+type GradeWithCurriculum = GradeRecord & {
+  techniqueIds: string[];
+  kataIds: string[];
+};
+
+const PUBLISH_STATUSES = new Set<PublishStatus>(['draft', 'published', 'inactive']);
+
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -40,7 +143,7 @@ app.use(
       if (!origin) return allowed[0];
       return allowed.includes(origin) ? origin : allowed[0];
     },
-    allowMethods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
   }),
@@ -115,6 +218,11 @@ app.post('/api/v1/auth/login', async (c) => {
     const email = String(googlePayload.email);
     const name = googlePayload.name ? String(googlePayload.name) : undefined;
     const picture = googlePayload.picture ? String(googlePayload.picture) : undefined;
+    const role = await upsertUserRole(
+      c.env.DB,
+      { id: userId, email, name, picture },
+      normalizeEmail(c.env.ADMIN_EMAIL),
+    );
 
     // Generate refresh token (30 days)
     const refreshToken = generateRefreshToken();
@@ -141,6 +249,7 @@ app.post('/api/v1/auth/login', async (c) => {
         email,
         name,
         picture,
+        role,
       },
     });
   } catch (error) {
@@ -204,10 +313,12 @@ app.post('/api/v1/auth/refresh', async (c) => {
 
     // Issue new custom JWT token (1 hour expiry)
     const accessToken = await createJWT(row.userId, row.email, c.env.JWT_SECRET, 3600);
+    const role = await getUserRole(c.env.DB, { id: row.userId, email: row.email }, normalizeEmail(c.env.ADMIN_EMAIL));
 
     return c.json({
       accessToken,
       expiresIn: 3600,
+      role,
     });
   } catch (error) {
     console.error('Refresh error:', error);
@@ -251,6 +362,21 @@ app.post('/api/v1/auth/logout', async (c) => {
     console.error('Logout error:', error);
     return c.json({ error: 'Logout failed' }, 500);
   }
+});
+
+app.get('/api/v1/auth/me', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const role = await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL));
+
+  return c.json({
+    user: {
+      id: user.id,
+      email: user.email,
+    },
+    role,
+  });
 });
 
 app.get('/api/v1/settings', async (c) => {
@@ -362,6 +488,533 @@ app.patch('/api/v1/settings', async (c) => {
 
     return c.json({ settings: sanitized, version: currentVersion + 1, updatedAt: now });
   }
+});
+
+// --- Admin Role Management ---
+
+app.get('/api/v1/admin/users', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT user_id as userId,
+            email,
+            display_name as displayName,
+            image_url as imageUrl,
+            role,
+            updated_at as updatedAt
+     FROM user_roles
+     ORDER BY role DESC, email ASC`,
+  ).all<{
+    userId: string;
+    email: string;
+    displayName: string | null;
+    imageUrl: string | null;
+    role: UserRole;
+    updatedAt: string;
+  }>();
+
+  return c.json({ users: results || [] });
+});
+
+app.post('/api/v1/admin/roles', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: { email: string; role: UserRole };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const normalizedEmail = normalizeEmail(payload?.email);
+  if (!normalizedEmail) {
+    return c.json({ error: 'Missing email' }, 400);
+  }
+
+  if (payload.role !== 'admin' && payload.role !== 'user') {
+    return c.json({ error: 'Invalid role' }, 400);
+  }
+
+  const adminEmail = normalizeEmail(c.env.ADMIN_EMAIL);
+  if (normalizedEmail === normalizeEmail(admin.email)) {
+    return c.json({ error: 'Cannot change your own role' }, 400);
+  }
+  if (adminEmail && normalizedEmail === adminEmail && payload.role !== 'admin') {
+    return c.json({ error: 'Cannot remove seeded admin role' }, 400);
+  }
+
+  const now = new Date().toISOString();
+  await c.env.DB.prepare(
+    `UPDATE user_roles
+     SET role = ?, updated_at = ?
+     WHERE email = ?`,
+  )
+    .bind(payload.role, now, normalizedEmail)
+    .run();
+
+  let updated = await c.env.DB.prepare(
+    `SELECT user_id as userId,
+            email,
+            display_name as displayName,
+            image_url as imageUrl,
+            role,
+            updated_at as updatedAt
+     FROM user_roles
+     WHERE email = ?`,
+  )
+    .bind(normalizedEmail)
+    .first<{
+      userId: string;
+      email: string;
+      displayName: string | null;
+      imageUrl: string | null;
+      role: UserRole;
+      updatedAt: string;
+    }>();
+
+  if (!updated) {
+    if (payload.role !== 'admin') {
+      return c.json({ error: 'User not found' }, 404);
+    }
+
+    const pendingId = `pending:${normalizedEmail}`;
+    await c.env.DB.prepare(
+      `INSERT INTO user_roles (user_id, email, display_name, image_url, role, created_at, updated_at)
+       VALUES (?, ?, NULL, NULL, ?, ?, ?)`,
+    )
+      .bind(pendingId, normalizedEmail, payload.role, now, now)
+      .run();
+
+    updated = await c.env.DB.prepare(
+      `SELECT user_id as userId,
+              email,
+              display_name as displayName,
+              image_url as imageUrl,
+              role,
+              updated_at as updatedAt
+       FROM user_roles
+       WHERE email = ?`,
+    )
+      .bind(normalizedEmail)
+      .first<{
+        userId: string;
+        email: string;
+        displayName: string | null;
+        imageUrl: string | null;
+        role: UserRole;
+        updatedAt: string;
+      }>();
+  }
+
+  return c.json({ user: updated });
+});
+
+// --- Technique Catalog Endpoints ---
+
+app.get('/api/v1/techniques', async (c) => {
+  const user = await requireUser(c);
+  const role = user
+    ? await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL))
+    : 'user';
+
+  const query =
+    role === 'admin'
+      ? `SELECT id, data_json, kind, status, rank, created_at, updated_at, version FROM techniques`
+      : `SELECT id, data_json, kind, status, rank, created_at, updated_at, version
+         FROM techniques
+         WHERE status = 'published'`;
+
+  const { results } = await c.env.DB.prepare(query).all<TechniqueRow>();
+  const techniques = (results || []).map((row) => techniqueFromRow(row));
+
+  return c.json({ techniques });
+});
+
+app.post('/api/v1/techniques', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: Partial<TechniqueRecord> & { gradeId?: string; gradeIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const technique = buildTechniqueForCreate(payload);
+  if (!technique) {
+    return c.json({ error: 'Invalid technique payload' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO techniques (id, data_json, kind, status, rank, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+  )
+    .bind(
+      technique.id,
+      JSON.stringify(technique),
+      technique.kind,
+      technique.status,
+      typeof technique.rank === 'number' ? technique.rank : null,
+      technique.createdAt,
+      technique.updatedAt,
+    )
+    .run();
+
+  const gradeId =
+    typeof payload.gradeId === 'string'
+      ? payload.gradeId
+      : Array.isArray(payload.gradeIds)
+        ? payload.gradeIds[0]
+        : undefined;
+  await replaceTechniqueAssignments(c.env.DB, technique.id, gradeId);
+
+  return c.json({ technique }, 201);
+});
+
+app.patch('/api/v1/techniques/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing technique id' }, 400);
+
+  let payload: Partial<TechniqueRecord> & { gradeId?: string; gradeIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, data_json, kind, status, rank, created_at, updated_at, version
+     FROM techniques
+     WHERE id = ?`,
+  )
+    .bind(id)
+    .first<TechniqueRow>();
+
+  if (!row) return c.json({ error: 'Technique not found' }, 404);
+
+  const existing = techniqueFromRow(row);
+  const patch = parseTechniquePatch(payload);
+  if (!patch) {
+    return c.json({ error: 'Invalid technique patch' }, 400);
+  }
+
+  const updated = mergeTechnique(existing, patch);
+  updated.updatedAt = new Date().toISOString();
+
+  await c.env.DB.prepare(
+    `UPDATE techniques
+     SET data_json = ?, kind = ?, status = ?, rank = ?, updated_at = ?, version = version + 1
+     WHERE id = ?`,
+  )
+    .bind(
+      JSON.stringify(updated),
+      updated.kind,
+      updated.status,
+      typeof updated.rank === 'number' ? updated.rank : null,
+      updated.updatedAt,
+      id,
+    )
+    .run();
+
+  const gradeId =
+    typeof payload.gradeId === 'string'
+      ? payload.gradeId
+      : Array.isArray(payload.gradeIds)
+        ? payload.gradeIds[0]
+        : undefined;
+  await replaceTechniqueAssignments(c.env.DB, id, gradeId);
+
+  return c.json({ technique: updated });
+});
+
+app.delete('/api/v1/techniques/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing technique id' }, 400);
+
+  await c.env.DB.prepare(`DELETE FROM grade_techniques WHERE technique_id = ?`).bind(id).run();
+  const { meta } = await c.env.DB.prepare(`DELETE FROM techniques WHERE id = ?`).bind(id).run();
+  if (meta.changes === 0) {
+    return c.json({ error: 'Technique not found' }, 404);
+  }
+
+  return c.json({ ok: true });
+});
+
+// --- Grade & Kata Catalog Endpoints ---
+
+app.get('/api/v1/grades', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, data_json, grading_system_id, kind, number, rank, belt_color, sort_order, status, created_at, updated_at, version
+     FROM grades`,
+  ).all<GradeRow>();
+
+  const curriculum = await loadCurriculumMap(c.env.DB);
+  const grades = (results || []).map((row) => {
+    const grade = gradeFromRow(row);
+    const assignments = curriculum.get(grade.id) || { techniqueIds: [], kataIds: [] };
+    return {
+      ...grade,
+      techniqueIds: assignments.techniqueIds,
+      kataIds: assignments.kataIds,
+    };
+  });
+
+  return c.json({ grades });
+});
+
+app.post('/api/v1/grades', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: Partial<GradeRecord> & { techniqueIds?: string[]; kataIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const grade = buildGradeForCreate(payload);
+  if (!grade) {
+    return c.json({ error: 'Invalid grade payload' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO grades (id, data_json, grading_system_id, kind, number, rank, belt_color, sort_order, status, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+  )
+    .bind(
+      grade.id,
+      JSON.stringify(grade),
+      grade.gradingSystemId,
+      grade.kind,
+      grade.number,
+      typeof grade.rank === 'number' ? grade.rank : null,
+      grade.beltColor,
+      grade.sortOrder,
+      grade.status,
+      grade.createdAt,
+      grade.updatedAt,
+    )
+    .run();
+
+  await replaceGradeAssignments(c.env.DB, grade.id, payload.techniqueIds, payload.kataIds);
+
+  return c.json({ grade }, 201);
+});
+
+app.patch('/api/v1/grades/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing grade id' }, 400);
+
+  let payload: Partial<GradeRecord> & { techniqueIds?: string[]; kataIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, data_json, grading_system_id, kind, number, rank, belt_color, sort_order, status, created_at, updated_at, version
+     FROM grades
+     WHERE id = ?`,
+  )
+    .bind(id)
+    .first<GradeRow>();
+
+  if (!row) return c.json({ error: 'Grade not found' }, 404);
+
+  const existing = gradeFromRow(row);
+  const patch = parseGradePatch(payload);
+  if (!patch && payload.techniqueIds === undefined && payload.kataIds === undefined) {
+    return c.json({ error: 'Invalid grade patch' }, 400);
+  }
+
+  const updated = patch ? mergeGrade(existing, patch) : existing;
+  updated.updatedAt = new Date().toISOString();
+
+  if (patch) {
+    await c.env.DB.prepare(
+      `UPDATE grades
+       SET data_json = ?, grading_system_id = ?, kind = ?, number = ?, rank = ?, belt_color = ?, sort_order = ?, status = ?, updated_at = ?, version = version + 1
+       WHERE id = ?`,
+    )
+      .bind(
+        JSON.stringify(updated),
+        updated.gradingSystemId,
+        updated.kind,
+        updated.number,
+        typeof updated.rank === 'number' ? updated.rank : null,
+        updated.beltColor,
+        updated.sortOrder,
+        updated.status,
+        updated.updatedAt,
+        id,
+      )
+      .run();
+  }
+
+  await replaceGradeAssignments(c.env.DB, id, payload.techniqueIds, payload.kataIds);
+
+  return c.json({ grade: updated });
+});
+
+app.delete('/api/v1/grades/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing grade id' }, 400);
+
+  await c.env.DB.prepare(`DELETE FROM grade_techniques WHERE grade_id = ?`).bind(id).run();
+  await c.env.DB.prepare(`DELETE FROM grade_katas WHERE grade_id = ?`).bind(id).run();
+  const { meta } = await c.env.DB.prepare(`DELETE FROM grades WHERE id = ?`).bind(id).run();
+
+  if (meta.changes === 0) {
+    return c.json({ error: 'Grade not found' }, 404);
+  }
+
+  return c.json({ ok: true });
+});
+
+app.get('/api/v1/katas', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, data_json, status, rank, created_at, updated_at, version FROM katas`,
+  ).all<KataRow>();
+
+  const katas = (results || []).map((row) => kataFromRow(row));
+  return c.json({ katas });
+});
+
+app.post('/api/v1/katas', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: Partial<KataRecord> & { gradeId?: string; gradeIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const kata = buildKataForCreate(payload);
+  if (!kata) {
+    return c.json({ error: 'Invalid kata payload' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO katas (id, data_json, status, rank, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+  )
+    .bind(
+      kata.id,
+      JSON.stringify(kata),
+      kata.status,
+      typeof kata.rank === 'number' ? kata.rank : null,
+      kata.createdAt,
+      kata.updatedAt,
+    )
+    .run();
+
+  const gradeId =
+    typeof payload.gradeId === 'string'
+      ? payload.gradeId
+      : Array.isArray(payload.gradeIds)
+        ? payload.gradeIds[0]
+        : undefined;
+  await replaceKataAssignments(c.env.DB, kata.id, gradeId);
+
+  return c.json({ kata }, 201);
+});
+
+app.patch('/api/v1/katas/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing kata id' }, 400);
+
+  let payload: Partial<KataRecord> & { gradeId?: string; gradeIds?: string[] };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, data_json, status, rank, created_at, updated_at, version FROM katas WHERE id = ?`,
+  )
+    .bind(id)
+    .first<KataRow>();
+
+  if (!row) return c.json({ error: 'Kata not found' }, 404);
+
+  const existing = kataFromRow(row);
+  const patch = parseKataPatch(payload);
+  if (!patch) {
+    return c.json({ error: 'Invalid kata patch' }, 400);
+  }
+
+  const updated = mergeKata(existing, patch);
+  updated.updatedAt = new Date().toISOString();
+
+  await c.env.DB.prepare(
+    `UPDATE katas
+     SET data_json = ?, status = ?, rank = ?, updated_at = ?, version = version + 1
+     WHERE id = ?`,
+  )
+    .bind(
+      JSON.stringify(updated),
+      updated.status,
+      typeof updated.rank === 'number' ? updated.rank : null,
+      updated.updatedAt,
+      id,
+    )
+    .run();
+
+  const gradeId =
+    typeof payload.gradeId === 'string'
+      ? payload.gradeId
+      : Array.isArray(payload.gradeIds)
+        ? payload.gradeIds[0]
+        : undefined;
+  await replaceKataAssignments(c.env.DB, id, gradeId);
+
+  return c.json({ kata: updated });
+});
+
+app.delete('/api/v1/katas/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing kata id' }, 400);
+
+  await c.env.DB.prepare(`DELETE FROM grade_katas WHERE kata_id = ?`).bind(id).run();
+  const { meta } = await c.env.DB.prepare(`DELETE FROM katas WHERE id = ?`).bind(id).run();
+
+  if (meta.changes === 0) {
+    return c.json({ error: 'Kata not found' }, 404);
+  }
+
+  return c.json({ ok: true });
 });
 
 // --- Technique Progress Endpoints ---
@@ -1677,6 +2330,84 @@ async function requireUser(c: Context<{ Bindings: Bindings }>) {
   }
 }
 
+function normalizeEmail(value?: string) {
+  return (value ?? '').trim().toLowerCase();
+}
+
+async function getUserRole(db: D1Database, user: { id: string; email: string }, adminEmail: string) {
+  if (adminEmail && normalizeEmail(user.email) === adminEmail) return 'admin';
+
+  const row = await db
+    .prepare(`SELECT role FROM user_roles WHERE user_id = ? LIMIT 1`)
+    .bind(user.id)
+    .first<{ role: UserRole }>();
+
+  return row?.role === 'admin' ? 'admin' : 'user';
+}
+
+async function upsertUserRole(
+  db: D1Database,
+  user: { id: string; email: string; name?: string; picture?: string },
+  adminEmail: string,
+): Promise<UserRole> {
+  const normalizedEmail = normalizeEmail(user.email);
+  const existingById = await db
+    .prepare(`SELECT user_id as userId, role FROM user_roles WHERE user_id = ? LIMIT 1`)
+    .bind(user.id)
+    .first<{ userId: string; role: UserRole }>();
+  const existingByEmail = await db
+    .prepare(`SELECT user_id as userId, role FROM user_roles WHERE email = ? LIMIT 1`)
+    .bind(normalizedEmail)
+    .first<{ userId: string; role: UserRole }>();
+
+  let role: UserRole = existingById?.role === 'admin' ? 'admin' : 'user';
+  if (!existingById && existingByEmail?.role === 'admin') {
+    role = 'admin';
+  }
+  if (adminEmail && normalizedEmail === adminEmail) {
+    role = 'admin';
+  }
+
+  const now = new Date().toISOString();
+  if (existingByEmail && existingByEmail.userId !== user.id) {
+    await db
+      .prepare(
+        `UPDATE user_roles
+         SET user_id = ?, display_name = ?, image_url = ?, role = ?, updated_at = ?
+         WHERE email = ?`,
+      )
+      .bind(user.id, user.name || null, user.picture || null, role, now, normalizedEmail)
+      .run();
+    return role;
+  }
+
+  await db
+    .prepare(
+      `INSERT INTO user_roles (user_id, email, display_name, image_url, role, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         email = excluded.email,
+         display_name = excluded.display_name,
+         image_url = excluded.image_url,
+         role = excluded.role,
+         updated_at = excluded.updated_at`,
+    )
+    .bind(user.id, normalizedEmail, user.name || null, user.picture || null, role, now, now)
+    .run();
+
+  return role;
+}
+
+async function requireAdmin(c: Context<{ Bindings: Bindings }>) {
+  const user = await requireUser(c);
+  if (!user) return null;
+
+  const role = await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL));
+  if (role !== 'admin') return null;
+
+  return user;
+}
+
 function parseAllowedOrigins(value?: string) {
   return (value ?? '')
     .split(',')
@@ -1771,6 +2502,506 @@ function parseJsonSafely<T>(str: string | null | undefined, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function sanitizeLocalizedText(value: unknown): LocalizedText | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const next: LocalizedText = {};
+
+  for (const [key, val] of entries) {
+    if (key !== 'romaji' && key !== 'ja' && key !== 'en' && key !== 'sv') continue;
+    if (typeof val === 'string' && val.trim().length > 0) {
+      next[key as Locale] = val.trim();
+    }
+  }
+
+  return Object.keys(next).length ? next : undefined;
+}
+
+function parseNumberInput(value: unknown): number | undefined {
+  const parsed = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  return Number.isFinite(parsed) ? Number(parsed) : undefined;
+}
+
+function normalizeGradeRank(kind: string, rank: number): number {
+  if (!Number.isFinite(rank)) return 0;
+  const rounded = Math.round(rank);
+  if (kind === 'Dan') return Math.min(Math.max(rounded, 11), 20);
+  if (kind === 'Kyu') return Math.min(Math.max(rounded, 1), 10);
+  return 0;
+}
+
+function deriveGradeNumber(kind: string, rank: number): number {
+  if (!Number.isFinite(rank)) return 0;
+  if (kind === 'Dan') return Math.max(rank - 10, 1);
+  if (kind === 'Kyu') return 11 - rank;
+  return 0;
+}
+
+function deriveGradeRank(kind: string, number: number): number {
+  if (!Number.isFinite(number)) return 0;
+  if (kind === 'Dan') return number > 0 ? 10 + number : 0;
+  if (kind === 'Kyu') {
+    if (number >= 1 && number <= 10) return 11 - number;
+    return 0;
+  }
+  return 0;
+}
+
+function buildTechniqueForCreate(payload: Partial<TechniqueRecord> | null): TechniqueRecord | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const kind = typeof payload.kind === 'string' ? payload.kind.trim() : '';
+  if (!kind) return null;
+
+  const name = sanitizeLocalizedText(payload.name);
+  if (!name) return null;
+
+  const rank = parseNumberInput(payload.rank);
+
+  const status = PUBLISH_STATUSES.has(payload.status as PublishStatus)
+    ? (payload.status as PublishStatus)
+    : 'draft';
+
+  const now = new Date().toISOString();
+  const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
+
+  return {
+    id: providedId || crypto.randomUUID(),
+    kind,
+    rank,
+    name,
+    aliases: Array.isArray(payload.aliases) ? payload.aliases : undefined,
+    nameParts: payload.nameParts,
+    tags: Array.isArray(payload.tags) ? payload.tags : undefined,
+    summary: payload.summary,
+    history: payload.history,
+    detailedDescription: payload.detailedDescription,
+    relatedTermIds: Array.isArray(payload.relatedTermIds) ? payload.relatedTermIds : undefined,
+    mediaIds: Array.isArray(payload.mediaIds) ? payload.mediaIds : undefined,
+    sourceIds: Array.isArray(payload.sourceIds) ? payload.sourceIds : undefined,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function parseTechniquePatch(payload: Partial<TechniqueRecord> | null): Partial<TechniqueRecord> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const patch: Partial<TechniqueRecord> = {};
+
+  if (typeof payload.kind === 'string' && payload.kind.trim().length > 0) {
+    patch.kind = payload.kind.trim();
+  }
+
+  if (payload.rank !== undefined) {
+    const rank = parseNumberInput(payload.rank);
+    if (rank !== undefined) {
+      patch.rank = rank;
+    }
+  }
+
+  if (payload.status && PUBLISH_STATUSES.has(payload.status as PublishStatus)) {
+    patch.status = payload.status as PublishStatus;
+  }
+
+  if (payload.name !== undefined) {
+    const name = sanitizeLocalizedText(payload.name);
+    if (!name) return null;
+    patch.name = name;
+  }
+
+  if (Object.keys(patch).length === 0) return null;
+
+  return patch;
+}
+
+function mergeTechnique(existing: TechniqueRecord, patch: Partial<TechniqueRecord>): TechniqueRecord {
+  return {
+    ...existing,
+    ...patch,
+    name: patch.name ? { ...existing.name, ...patch.name } : existing.name,
+  };
+}
+
+function techniqueFromRow(row: TechniqueRow): TechniqueRecord {
+  const parsed = parseJsonSafely<TechniqueRecord | null>(row.data_json, null);
+  const base: TechniqueRecord = {
+    id: row.id,
+    kind: row.kind,
+    rank: Number.isFinite(row.rank) ? row.rank : undefined,
+    name: {},
+    status: PUBLISH_STATUSES.has(row.status as PublishStatus)
+      ? (row.status as PublishStatus)
+      : 'draft',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!parsed || typeof parsed !== 'object') return base;
+
+  return {
+    ...base,
+    ...parsed,
+    id: row.id,
+    kind: typeof parsed.kind === 'string' ? parsed.kind : base.kind,
+    rank: Number.isFinite(parsed.rank) ? Number(parsed.rank) : base.rank,
+    name: parsed.name && typeof parsed.name === 'object' ? parsed.name : base.name,
+    status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
+      ? (parsed.status as PublishStatus)
+      : base.status,
+    createdAt: parsed.createdAt || base.createdAt,
+    updatedAt: parsed.updatedAt || base.updatedAt,
+  };
+}
+
+function buildGradeForCreate(payload: Partial<GradeRecord> | null): GradeRecord | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const gradingSystemId =
+    typeof payload.gradingSystemId === 'string' ? payload.gradingSystemId.trim() : '';
+  const kind = typeof payload.kind === 'string' ? payload.kind.trim() : '';
+  if (!gradingSystemId || !kind) return null;
+
+  const name = sanitizeLocalizedText(payload.name);
+  if (!name) return null;
+
+  const rankInput = parseNumberInput(payload.rank);
+  const numberInput = parseNumberInput(payload.number);
+  const normalizedRank =
+    rankInput !== undefined ? normalizeGradeRank(kind, rankInput) : deriveGradeRank(kind, numberInput || 0);
+  const normalizedNumber =
+    rankInput !== undefined
+      ? deriveGradeNumber(kind, normalizedRank)
+      : Number.isFinite(numberInput)
+        ? Number(numberInput)
+        : deriveGradeNumber(kind, normalizedRank);
+
+  const status = PUBLISH_STATUSES.has(payload.status as PublishStatus)
+    ? (payload.status as PublishStatus)
+    : 'draft';
+
+  const now = new Date().toISOString();
+  const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
+
+  return {
+    id: providedId || crypto.randomUUID(),
+    gradingSystemId,
+    kind,
+    number: normalizedNumber,
+    rank: normalizedRank,
+    name,
+    aliases: Array.isArray(payload.aliases) ? payload.aliases : undefined,
+    beltColor: typeof payload.beltColor === 'string' ? payload.beltColor : 'white',
+    sortOrder: Number.isFinite(payload.sortOrder) ? Number(payload.sortOrder) : 0,
+    notes: payload.notes,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function parseGradePatch(payload: Partial<GradeRecord> | null): Partial<GradeRecord> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const patch: Partial<GradeRecord> = {};
+
+  if (payload.name !== undefined) {
+    const name = sanitizeLocalizedText(payload.name);
+    if (!name) return null;
+    patch.name = name;
+  }
+
+  if (typeof payload.gradingSystemId === 'string' && payload.gradingSystemId.trim().length > 0) {
+    patch.gradingSystemId = payload.gradingSystemId.trim();
+  }
+
+  if (typeof payload.kind === 'string' && payload.kind.trim().length > 0) {
+    patch.kind = payload.kind.trim();
+  }
+
+  if (Number.isFinite(payload.number)) {
+    patch.number = Number(payload.number);
+  }
+
+  if (payload.rank !== undefined) {
+    const rank = parseNumberInput(payload.rank);
+    if (rank !== undefined) {
+      patch.rank = rank;
+    }
+  }
+
+  if (typeof payload.beltColor === 'string' && payload.beltColor.trim().length > 0) {
+    patch.beltColor = payload.beltColor.trim();
+  }
+
+  if (Number.isFinite(payload.sortOrder)) {
+    patch.sortOrder = Number(payload.sortOrder);
+  }
+
+  if (payload.status && PUBLISH_STATUSES.has(payload.status as PublishStatus)) {
+    patch.status = payload.status as PublishStatus;
+  }
+
+  if (Object.keys(patch).length === 0) return null;
+  return patch;
+}
+
+function mergeGrade(existing: GradeRecord, patch: Partial<GradeRecord>): GradeRecord {
+  const merged: GradeRecord = {
+    ...existing,
+    ...patch,
+    name: patch.name ? { ...existing.name, ...patch.name } : existing.name,
+  };
+
+  const nextKind = merged.kind;
+
+  if (patch.rank !== undefined) {
+    const normalizedRank = normalizeGradeRank(nextKind, Number(patch.rank));
+    merged.rank = normalizedRank;
+    merged.number = deriveGradeNumber(nextKind, normalizedRank);
+  } else if (patch.number !== undefined || patch.kind !== undefined) {
+    merged.rank = deriveGradeRank(nextKind, merged.number);
+  }
+
+  return merged;
+}
+
+function gradeFromRow(row: GradeRow): GradeRecord {
+  const parsed = parseJsonSafely<GradeRecord | null>(row.data_json, null);
+  const base: GradeRecord = {
+    id: row.id,
+    gradingSystemId: row.grading_system_id,
+    kind: row.kind,
+    number: row.number,
+    rank: Number.isFinite(row.rank) ? row.rank : deriveGradeRank(row.kind, row.number),
+    name: {},
+    beltColor: row.belt_color,
+    sortOrder: row.sort_order,
+    status: PUBLISH_STATUSES.has(row.status as PublishStatus)
+      ? (row.status as PublishStatus)
+      : 'draft',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!parsed || typeof parsed !== 'object') return base;
+
+  return {
+    ...base,
+    ...parsed,
+    id: row.id,
+    gradingSystemId:
+      typeof parsed.gradingSystemId === 'string' ? parsed.gradingSystemId : base.gradingSystemId,
+    kind: typeof parsed.kind === 'string' ? parsed.kind : base.kind,
+    number: Number.isFinite(parsed.number) ? Number(parsed.number) : base.number,
+    rank: Number.isFinite(parsed.rank) ? Number(parsed.rank) : base.rank,
+    name: parsed.name && typeof parsed.name === 'object' ? parsed.name : base.name,
+    beltColor: typeof parsed.beltColor === 'string' ? parsed.beltColor : base.beltColor,
+    sortOrder: Number.isFinite(parsed.sortOrder) ? Number(parsed.sortOrder) : base.sortOrder,
+    status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
+      ? (parsed.status as PublishStatus)
+      : base.status,
+    createdAt: parsed.createdAt || base.createdAt,
+    updatedAt: parsed.updatedAt || base.updatedAt,
+  };
+}
+
+function buildKataForCreate(payload: Partial<KataRecord> | null): KataRecord | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const name = sanitizeLocalizedText(payload.name);
+  if (!name) return null;
+
+  const rank = parseNumberInput(payload.rank);
+
+  const status = PUBLISH_STATUSES.has(payload.status as PublishStatus)
+    ? (payload.status as PublishStatus)
+    : 'draft';
+
+  const now = new Date().toISOString();
+  const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
+
+  return {
+    id: providedId || crypto.randomUUID(),
+    rank,
+    name,
+    aliases: Array.isArray(payload.aliases) ? payload.aliases : undefined,
+    familyTermIds: Array.isArray(payload.familyTermIds) ? payload.familyTermIds : undefined,
+    meaning: payload.meaning,
+    history: payload.history,
+    detailedDescription: payload.detailedDescription,
+    tags: Array.isArray(payload.tags) ? payload.tags : undefined,
+    difficulty: Number.isFinite(payload.difficulty) ? Number(payload.difficulty) : undefined,
+    expectedDurationSec: Number.isFinite(payload.expectedDurationSec)
+      ? Number(payload.expectedDurationSec)
+      : undefined,
+    mediaIds: Array.isArray(payload.mediaIds) ? payload.mediaIds : undefined,
+    sourceIds: Array.isArray(payload.sourceIds) ? payload.sourceIds : undefined,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function parseKataPatch(payload: Partial<KataRecord> | null): Partial<KataRecord> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const patch: Partial<KataRecord> = {};
+
+  if (payload.name !== undefined) {
+    const name = sanitizeLocalizedText(payload.name);
+    if (!name) return null;
+    patch.name = name;
+  }
+
+  if (payload.status && PUBLISH_STATUSES.has(payload.status as PublishStatus)) {
+    patch.status = payload.status as PublishStatus;
+  }
+
+  if (payload.rank !== undefined) {
+    const rank = parseNumberInput(payload.rank);
+    if (rank !== undefined) {
+      patch.rank = rank;
+    }
+  }
+
+  if (Object.keys(patch).length === 0) return null;
+  return patch;
+}
+
+function mergeKata(existing: KataRecord, patch: Partial<KataRecord>): KataRecord {
+  return {
+    ...existing,
+    ...patch,
+    name: patch.name ? { ...existing.name, ...patch.name } : existing.name,
+  };
+}
+
+function kataFromRow(row: KataRow): KataRecord {
+  const parsed = parseJsonSafely<KataRecord | null>(row.data_json, null);
+  const base: KataRecord = {
+    id: row.id,
+    rank: Number.isFinite(row.rank) ? row.rank : undefined,
+    name: {},
+    status: PUBLISH_STATUSES.has(row.status as PublishStatus)
+      ? (row.status as PublishStatus)
+      : 'draft',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!parsed || typeof parsed !== 'object') return base;
+
+  return {
+    ...base,
+    ...parsed,
+    id: row.id,
+    rank: Number.isFinite(parsed.rank) ? Number(parsed.rank) : base.rank,
+    name: parsed.name && typeof parsed.name === 'object' ? parsed.name : base.name,
+    status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
+      ? (parsed.status as PublishStatus)
+      : base.status,
+    createdAt: parsed.createdAt || base.createdAt,
+    updatedAt: parsed.updatedAt || base.updatedAt,
+  };
+}
+
+async function loadCurriculumMap(db: D1Database) {
+  const { results: techRows } = await db
+    .prepare(`SELECT grade_id as gradeId, technique_id as techniqueId FROM grade_techniques`)
+    .all<{ gradeId: string; techniqueId: string }>();
+  const { results: kataRows } = await db
+    .prepare(`SELECT grade_id as gradeId, kata_id as kataId FROM grade_katas`)
+    .all<{ gradeId: string; kataId: string }>();
+
+  const map = new Map<string, { techniqueIds: string[]; kataIds: string[] }>();
+
+  for (const row of techRows || []) {
+    if (!map.has(row.gradeId)) {
+      map.set(row.gradeId, { techniqueIds: [], kataIds: [] });
+    }
+    map.get(row.gradeId)!.techniqueIds.push(row.techniqueId);
+  }
+
+  for (const row of kataRows || []) {
+    if (!map.has(row.gradeId)) {
+      map.set(row.gradeId, { techniqueIds: [], kataIds: [] });
+    }
+    map.get(row.gradeId)!.kataIds.push(row.kataId);
+  }
+
+  return map;
+}
+
+async function replaceGradeAssignments(
+  db: D1Database,
+  gradeId: string,
+  techniqueIds?: string[],
+  kataIds?: string[],
+) {
+  if (Array.isArray(techniqueIds)) {
+    await db.prepare(`DELETE FROM grade_techniques WHERE grade_id = ?`).bind(gradeId).run();
+    for (const techniqueId of new Set(techniqueIds.filter(Boolean))) {
+      await db.prepare(`DELETE FROM grade_techniques WHERE technique_id = ?`).bind(techniqueId).run();
+      await db
+        .prepare(
+          `INSERT INTO grade_techniques (grade_id, technique_id, created_at)
+           VALUES (?, ?, ?)`,
+        )
+        .bind(gradeId, techniqueId, new Date().toISOString())
+        .run();
+    }
+  }
+
+  if (Array.isArray(kataIds)) {
+    await db.prepare(`DELETE FROM grade_katas WHERE grade_id = ?`).bind(gradeId).run();
+    for (const kataId of new Set(kataIds.filter(Boolean))) {
+      await db.prepare(`DELETE FROM grade_katas WHERE kata_id = ?`).bind(kataId).run();
+      await db
+        .prepare(
+          `INSERT INTO grade_katas (grade_id, kata_id, created_at)
+           VALUES (?, ?, ?)`,
+        )
+        .bind(gradeId, kataId, new Date().toISOString())
+        .run();
+    }
+  }
+}
+
+async function replaceTechniqueAssignments(
+  db: D1Database,
+  techniqueId: string,
+  gradeId?: string,
+) {
+  await db.prepare(`DELETE FROM grade_techniques WHERE technique_id = ?`).bind(techniqueId).run();
+  if (!gradeId) return;
+
+  await db
+    .prepare(
+      `INSERT INTO grade_techniques (grade_id, technique_id, created_at)
+       VALUES (?, ?, ?)`,
+    )
+    .bind(gradeId, techniqueId, new Date().toISOString())
+    .run();
+}
+
+async function replaceKataAssignments(
+  db: D1Database,
+  kataId: string,
+  gradeId?: string,
+) {
+  await db.prepare(`DELETE FROM grade_katas WHERE kata_id = ?`).bind(kataId).run();
+  if (!gradeId) return;
+
+  await db
+    .prepare(
+      `INSERT INTO grade_katas (grade_id, kata_id, created_at)
+       VALUES (?, ?, ?)`,
+    )
+    .bind(gradeId, kataId, new Date().toISOString())
+    .run();
 }
 
 // --- Auth Utility Functions ---

@@ -14,6 +14,7 @@ interface User {
    token: string;
    refreshToken?: string;
    expiresAt?: number; // Unix timestamp in seconds
+   role: 'admin' | 'user';
 }
 
 interface AuthContextType {
@@ -52,6 +53,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
    const [error, setError] = useState<string | null>(null);
    const [googleClientId, setGoogleClientId] = useState<string | null>(() => getClientConfigSnapshot().googleClientId ?? null);
    const refreshTimerRef = React.useRef<number | null>(null);
+   const refreshUserProfile = React.useCallback(async (token: string) => {
+      try {
+         const res = await fetch('/api/v1/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+         });
+         if (!res.ok) return;
+
+         const data = await res.json() as { role?: 'admin' | 'user' };
+         if (!data?.role) return;
+
+         setUser((current) => {
+            if (!current) return current;
+            const updated = { ...current, role: data.role ?? current.role };
+            localStorage.setItem('user', JSON.stringify(updated));
+            return updated;
+         });
+      } catch (profileError) {
+         console.warn('Unable to refresh user profile', profileError);
+      }
+   }, []);
    const resolveClientId = React.useCallback(async (): Promise<string | null> => {
       if (googleClientId) {
          return googleClientId;
@@ -114,11 +135,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             throw new Error('Token refresh failed');
          }
 
-         const data = await res.json() as { accessToken: string; expiresIn: number };
+         const data = await res.json() as { accessToken: string; expiresIn: number; role?: 'admin' | 'user' };
          const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
 
          // Update user with new access token and expiry
-         const updatedUser = { ...user, token: data.accessToken, expiresAt };
+         const updatedUser = { ...user, token: data.accessToken, expiresAt, role: data.role ?? user.role };
          setUser(updatedUser);
          localStorage.setItem('user', JSON.stringify(updatedUser));
 
@@ -188,8 +209,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
          try {
             const parsedUser = JSON.parse(storedUser) as User;
             if (parsedUser?.token) {
-               setUser(parsedUser);
+               const hydratedUser = {
+                  ...parsedUser,
+                  role: parsedUser.role ?? 'user',
+               };
+               setUser(hydratedUser);
+               localStorage.setItem('user', JSON.stringify(hydratedUser));
                void syncUserSettings(parsedUser.token);
+               void refreshUserProfile(parsedUser.token);
             } else {
                localStorage.removeItem('user');
             }
@@ -199,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
          }
       }
       setIsLoading(false);
-   }, []);
+   }, [refreshUserProfile]);
 
    useEffect(() => {
       let isCancelled = false;
@@ -255,6 +282,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
                email: string;
                name?: string;
                picture?: string;
+               role?: 'admin' | 'user';
             };
          };
 
@@ -268,6 +296,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             token: data.accessToken,
             refreshToken: data.refreshToken,
             expiresAt,
+            role: data.user.role ?? 'user',
          };
 
          setUser(userData);

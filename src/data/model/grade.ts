@@ -48,6 +48,13 @@ export interface GradeRecord {
   number: number;
 
   /**
+   * Rank index used for progression ordering.
+   * - 10th Kyu = 1 ... 1st Kyu = 10
+   * - 1st Dan = 11 ... 10th Dan = 20
+   */
+  rank?: number;
+
+  /**
    * Admin-managed names, safe to rename anytime.
    */
   name: LocalizedText;

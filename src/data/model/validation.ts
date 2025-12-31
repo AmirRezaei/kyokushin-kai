@@ -66,6 +66,7 @@ export const TermRecordSchema = z.object({
 export const TechniqueRecordSchema = z.object({
   id: z.string(),
   kind: z.nativeEnum(TechniqueKind),
+  rank: z.number().optional(),
   name: LocalizedTextSchema,
   aliases: z.array(LocalizedTextSchema).optional(),
   nameParts: z.record(z.string(), z.array(z.string())).optional(),
@@ -85,6 +86,7 @@ export const TechniqueRecordSchema = z.object({
 
 export const KataRecordSchema = z.object({
   id: z.string(),
+  rank: z.number().optional(),
   name: LocalizedTextSchema,
   aliases: z.array(LocalizedTextSchema).optional(),
   familyTermIds: z.array(z.string()).optional(),
@@ -108,6 +110,7 @@ export const GradeRecordSchema = z.object({
   gradingSystemId: z.string(),
   kind: z.nativeEnum(GradeKind),
   number: z.number(),
+  rank: z.number().optional(),
   name: LocalizedTextSchema,
   aliases: z.array(LocalizedTextSchema).optional(),
   beltColor: z.nativeEnum(BeltColor),

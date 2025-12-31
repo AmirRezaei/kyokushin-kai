@@ -88,3 +88,27 @@ npx wrangler tail
 - [Vite Documentation](https://vitejs.dev/guide/)
 - [React Documentation](https://reactjs.org/)
 - [Hono Documentation](https://hono.dev/)
+
+## Admin Roles & Technique Catalog
+
+This app now supports admin-only technique management backed by the D1 database.
+
+- Seed the first admin by setting `ADMIN_EMAIL` in your Worker environment.
+- For local development, add `ADMIN_EMAIL` to `.dev.vars` (used by `wrangler dev`), not `.env`.
+- Admin console route: `#/admin` after signing in with Google.
+- Admins can grant/revoke admin role for existing users (users must sign in at least once).
+- Techniques are stored in the `techniques` table; roles are stored in `user_roles`.
+- Grades, katas, and curriculum assignments live in `grades`, `katas`, `grade_techniques`, and `grade_katas`.
+- Use the Grade Management section in the admin console to assign techniques and katas to grades.
+- Each technique or kata can belong to a single grade.
+
+To seed the `techniques`, `grades`, `katas`, and curriculum tables from
+`src/data/repo/catalog.json` (local D1):
+
+```bash
+bun run db:seed:techniques
+wrangler d1 execute DB --local --file scripts/seed_techniques.sql
+```
+
+If you want the main technique views to use DB-backed techniques instead of the static
+`src/data/repo/catalog.json`, wire `/api/v1/techniques` into the client data layer.

@@ -20,6 +20,7 @@ import StyleIcon from '@mui/icons-material/Style';
 import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
 import CloseIcon from '@mui/icons-material/Close';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
@@ -487,6 +488,47 @@ export default function TemporaryDrawer() {
             handleNavigation={handleNavigation}
             theme={theme}
           />
+          {user?.role === 'admin' && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <SectionHeader
+                section="admin"
+                icon={<AdminPanelSettingsIcon />}
+                label="Administration"
+                protected
+                isOpen={openSection === 'admin'}
+                isAuthenticated={isAuthenticated}
+                handleSectionClick={handleSectionClick}
+                theme={theme}
+              />
+              <Collapse in={openSection === 'admin'} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <NavItem
+                    path="/admin"
+                    icon={<AdminPanelSettingsIcon />}
+                    label="Admin Console"
+                    nested
+                    protected
+                    isActive={isActive('/admin')}
+                    isAuthenticated={isAuthenticated}
+                    handleNavigation={handleNavigation}
+                    theme={theme}
+                  />
+                  <NavItem
+                    path="/admin/roles"
+                    icon={<AdminPanelSettingsIcon />}
+                    label="Admin Roles"
+                    nested
+                    protected
+                    isActive={isActive('/admin/roles')}
+                    isAuthenticated={isAuthenticated}
+                    handleNavigation={handleNavigation}
+                    theme={theme}
+                  />
+                </List>
+              </Collapse>
+            </>
+          )}
           <NavItem
             path="/feedback"
             icon={<BugReportIcon />}

@@ -13,6 +13,11 @@ export interface KataRecord {
   id: KataId;
 
   /**
+   * Optional training rank (admin-managed).
+   */
+  rank?: number;
+
+  /**
    * Admin-managed names. Safe to rename at any time.
    */
   name: LocalizedText; // romaji + translations

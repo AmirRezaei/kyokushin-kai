@@ -43,12 +43,15 @@ import OsuSpiritPage from './app/osu-spirit/OsuSpiritPage';
 import TemporaryDrawer from './components/TemporaryDrawer';
 import LogoutPage from './components/LogoutPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import DarkModeToggle from './components/UI/DarkModeToggle';
 import LanguageSelector from './components/UI/LanguageSelector';
 import Home from './Home';
 import MottoPage from './app/motto/MottoPage';
 import Footer from './components/Footer';
 import FeedbackPage from './app/feedback/FeedbackPage';
+import AdminPage from './app/admin/AdminPage';
+import AdminRolesPage from './app/admin/AdminRolesPage';
 
 function AppContent() {
   const theme = useTheme();
@@ -110,6 +113,8 @@ function AppContent() {
       '/dojo-kun': 'Dojo Kun',
       '/spirit-of-osu': 'Spirit of Osu',
       '/feedback': 'Feedback',
+      '/admin': 'Admin',
+      '/admin/roles': 'Admin Roles',
       '/about': 'About',
     };
     return pathMap[pathname] || 'Unknown Page';
@@ -490,6 +495,22 @@ function AppContent() {
                 <ProtectedRoute>
                   <SettingsPage />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/roles"
+              element={
+                <AdminRoute>
+                  <AdminRolesPage />
+                </AdminRoute>
               }
             />
             <Route path="/logout" element={<LogoutPage />} />
