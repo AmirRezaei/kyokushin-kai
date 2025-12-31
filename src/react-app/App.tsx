@@ -115,6 +115,7 @@ function AppContent() {
       '/feedback': 'Feedback',
       '/admin': 'Admin',
       '/admin/roles': 'Admin Roles',
+      '/admin/feedback': 'Feedback',
       '/about': 'About',
     };
     return pathMap[pathname] || 'Unknown Page';
@@ -510,6 +511,14 @@ function AppContent() {
               element={
                 <AdminRoute>
                   <AdminRolesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/feedback"
+              element={
+                <AdminRoute>
+                  <FeedbackPage mode="admin" />
                 </AdminRoute>
               }
             />

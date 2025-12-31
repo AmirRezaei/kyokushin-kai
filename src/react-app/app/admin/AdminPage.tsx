@@ -22,6 +22,8 @@ import {
    TableHead,
    TableRow,
    TableSortLabel,
+   Tab,
+   Tabs,
    TextField,
    Typography,
 } from '@mui/material';
@@ -148,6 +150,7 @@ const AdminPage: React.FC = () => {
    const [kataSortDirection, setKataSortDirection] = useState<SortDirection>('asc');
    const [techniqueSortKey, setTechniqueSortKey] = useState<TechniqueSortKey>('name');
    const [techniqueSortDirection, setTechniqueSortDirection] = useState<SortDirection>('asc');
+   const [activeTab, setActiveTab] = useState(0);
 
    const sortedTechniques = useMemo(() => {
       return [...techniques].sort((a, b) => {
@@ -846,6 +849,15 @@ const AdminPage: React.FC = () => {
       setShowCreateRow(true);
    };
 
+   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+      setActiveTab(newValue);
+   };
+
+   const tabProps = (index: number) => ({
+      id: `admin-tab-${index}`,
+      'aria-controls': `admin-tabpanel-${index}`,
+   });
+
    return (
       <Container maxWidth="lg" sx={{py: 4}}>
          <Stack spacing={3}>
@@ -854,11 +866,31 @@ const AdminPage: React.FC = () => {
                   Admin Console
                </Typography>
                <Typography variant="body1" color="text.secondary">
-                  Manage techniques and admin access for the dojo.
+                  Manage techniques, grades, and katas.
                </Typography>
             </Box>
 
-            <Paper elevation={2} sx={{p: 3}}>
+            <Paper elevation={1} sx={{overflow: 'hidden'}}>
+               <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  variant="scrollable"
+                  allowScrollButtonsMobile
+               >
+                  <Tab label="Techniques" {...tabProps(0)} />
+                  <Tab label="Grades" {...tabProps(1)} />
+                  <Tab label="Katas" {...tabProps(2)} />
+               </Tabs>
+            </Paper>
+
+            <Box
+               role="tabpanel"
+               hidden={activeTab !== 0}
+               id="admin-tabpanel-0"
+               aria-labelledby="admin-tab-0"
+               sx={{display: activeTab === 0 ? 'block' : 'none'}}
+            >
+               <Paper elevation={2} sx={{p: 3}}>
                <Stack spacing={1.5}>
                   <Typography variant="h6" fontWeight={600}>
                      Technique Management
@@ -1418,9 +1450,17 @@ const AdminPage: React.FC = () => {
                      </Table>
                   </TableContainer>
                </Paper>
-            </Paper>
+               </Paper>
+            </Box>
 
-            <Paper elevation={2} sx={{p: 3}}>
+            <Box
+               role="tabpanel"
+               hidden={activeTab !== 1}
+               id="admin-tabpanel-1"
+               aria-labelledby="admin-tab-1"
+               sx={{display: activeTab === 1 ? 'block' : 'none'}}
+            >
+               <Paper elevation={2} sx={{p: 3}}>
                <Stack spacing={1.5}>
                   <Typography variant="h6" fontWeight={600}>
                      Grade Management
@@ -2134,9 +2174,17 @@ const AdminPage: React.FC = () => {
                      </Table>
                   </TableContainer>
                </Paper>
-            </Paper>
+               </Paper>
+            </Box>
 
-            <Paper elevation={2} sx={{p: 3}}>
+            <Box
+               role="tabpanel"
+               hidden={activeTab !== 2}
+               id="admin-tabpanel-2"
+               aria-labelledby="admin-tab-2"
+               sx={{display: activeTab === 2 ? 'block' : 'none'}}
+            >
+               <Paper elevation={2} sx={{p: 3}}>
                <Stack spacing={1.5}>
                   <Typography variant="h6" fontWeight={600}>
                      Kata Management
@@ -2623,7 +2671,8 @@ const AdminPage: React.FC = () => {
                      </Table>
                   </TableContainer>
                </Paper>
-            </Paper>
+               </Paper>
+            </Box>
 
          </Stack>
       </Container>

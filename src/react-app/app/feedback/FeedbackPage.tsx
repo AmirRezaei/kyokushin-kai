@@ -33,10 +33,12 @@ import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
 import {
   fetchFeedback,
+  fetchAdminFeedback,
   createFeedback,
   updateFeedback,
+  updateAdminFeedback,
   getAppVersion,
-  type Feedback,
+  type AdminFeedback,
   type CreateFeedbackData,
 } from '@/services/feedbackService';
 
@@ -62,16 +64,23 @@ const priorityColors: Record<FeedbackPriority, 'default' | 'primary' | 'warning'
   critical: 'error',
 };
 
-export default function FeedbackPage() {
+type FeedbackPageMode = 'user' | 'admin';
+
+type FeedbackPageProps = {
+  mode?: FeedbackPageMode;
+};
+
+export default function FeedbackPage({ mode = 'user' }: FeedbackPageProps) {
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+  const [feedbackList, setFeedbackList] = useState<AdminFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [appVersion, setAppVersion] = useState<string>('');
   const [filterType, setFilterType] = useState<'all' | FeedbackType>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | FeedbackStatus>('all');
+  const isAdminView = mode === 'admin';
 
   // Form state
   const [openDialog, setOpenDialog] = useState(false);
@@ -91,16 +100,18 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     void loadFeedback();
-    void loadAppVersion();
+    if (!isAdminView) {
+      void loadAppVersion();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAdminView, token]);
 
   // Handle URL parameters for pre-filling the form
   useEffect(() => {
     const typeParam = searchParams.get('type');
     const pageParam = searchParams.get('page');
 
-    if (typeParam || pageParam) {
+    if ((typeParam || pageParam) && !isAdminView) {
       // Set form type if provided
       if (typeParam === 'bug' || typeParam === 'feature') {
         setFormType(typeParam);
@@ -124,7 +135,7 @@ export default function FeedbackPage() {
     if (!token) return;
     try {
       setLoading(true);
-      const data = await fetchFeedback(token);
+      const data = isAdminView ? await fetchAdminFeedback(token) : await fetchFeedback(token);
       setFeedbackList(data);
     } catch (error) {
       showSnackbar('Failed to load feedback', 'error');
@@ -158,6 +169,7 @@ export default function FeedbackPage() {
 
   const handleSubmit = async () => {
     if (!token) return;
+    if (isAdminView) return;
     if (!formTitle.trim() || !formDescription.trim()) {
       showSnackbar('Please fill in all required fields', 'warning');
       return;
@@ -187,7 +199,7 @@ export default function FeedbackPage() {
     }
   };
 
-  const handleEdit = (feedback: Feedback) => {
+  const handleEdit = (feedback: AdminFeedback) => {
     setEditingId(feedback.id);
     setEditTitle(feedback.title);
     setEditDescription(feedback.description);
@@ -203,12 +215,15 @@ export default function FeedbackPage() {
   const handleSaveEdit = async (id: string) => {
     if (!token) return;
     try {
-      const updated = await updateFeedback(token, id, editVersion, {
+      const patch = {
         title: editTitle,
         description: editDescription,
         status: editStatus,
         priority: editPriority,
-      });
+      };
+      const updated = isAdminView
+        ? await updateAdminFeedback(token, id, editVersion, patch)
+        : await updateFeedback(token, id, editVersion, patch);
 
       setFeedbackList((prev) => prev.map((item) => (item.id === id ? updated : item)));
       showSnackbar('Feedback updated successfully', 'success');
@@ -234,17 +249,21 @@ export default function FeedbackPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom>
-          Bug Reports & Feature Requests
+          {isAdminView ? 'Feedback Management' : 'Bug Reports & Feature Requests'}
         </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          App Version: {appVersion}
-        </Typography>
+        {!isAdminView && (
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            App Version: {appVersion}
+          </Typography>
+        )}
       </Box>
 
       <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button variant="contained" startIcon={<Add />} onClick={handleOpenDialog}>
-          Submit Feedback
-        </Button>
+        {!isAdminView && (
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpenDialog}>
+            Submit Feedback
+          </Button>
+        )}
 
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Type</InputLabel>
@@ -381,6 +400,7 @@ export default function FeedbackPage() {
                       }}
                     >
                       <Typography variant="caption" color="text.secondary">
+                        {isAdminView ? `User: ${item.email || item.userId} | ` : ''}
                         Version: {item.appVersion} | Created:{' '}
                         {new Date(item.createdAt).toLocaleDateString()}
                       </Typography>
@@ -397,7 +417,7 @@ export default function FeedbackPage() {
       )}
 
       {/* Submit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog open={!isAdminView && openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Submit Feedback</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1 }}>

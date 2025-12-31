@@ -15,6 +15,10 @@ export interface Feedback {
   version: number;
 }
 
+export interface AdminFeedback extends Feedback {
+  email?: string;
+}
+
 export interface CreateFeedbackData {
   id: string;
   type: 'bug' | 'feature';
@@ -89,6 +93,49 @@ export const updateFeedback = async (
   }
 
   return (await response.json()) as Feedback;
+};
+
+export const fetchAdminFeedback = async (token: string): Promise<AdminFeedback[]> => {
+  const response = await fetch(`${API_BASE}/admin/feedback`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch feedback');
+  }
+
+  const data = (await response.json()) as { feedback: AdminFeedback[] };
+  return data.feedback;
+};
+
+export const updateAdminFeedback = async (
+  token: string,
+  id: string,
+  expectedVersion: number,
+  patch: Partial<Pick<Feedback, 'title' | 'description' | 'status' | 'priority'>>,
+): Promise<AdminFeedback> => {
+  const response = await fetch(`${API_BASE}/admin/feedback/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ expectedVersion, patch }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    if (response.status === 409) {
+      throw new Error('CONFLICT');
+    }
+    throw new Error(error.error || 'Failed to update feedback');
+  }
+
+  return (await response.json()) as AdminFeedback;
 };
 
 export const getAppVersion = async (): Promise<{ version: string; name: string }> => {

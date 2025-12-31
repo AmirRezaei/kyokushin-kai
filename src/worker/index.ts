@@ -2083,6 +2083,30 @@ interface FeedbackRow {
   version: number;
 }
 
+type FeedbackRowWithEmail = FeedbackRow & {
+  email: string | null;
+};
+
+const mapFeedbackRow = (row: FeedbackRow) => ({
+  id: row.id,
+  userId: row.userId,
+  type: row.type,
+  title: row.title,
+  description: row.description,
+  appVersion: row.appVersion,
+  browserInfo: row.browserInfo || undefined,
+  status: row.status,
+  priority: row.priority,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+  version: row.version,
+});
+
+const mapAdminFeedbackRow = (row: FeedbackRowWithEmail) => ({
+  ...mapFeedbackRow(row),
+  email: row.email || undefined,
+});
+
 app.get('/api/v1/feedback', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
@@ -2098,20 +2122,7 @@ app.get('/api/v1/feedback', async (c) => {
     .bind(user.id)
     .all<FeedbackRow>();
 
-  const feedback = (results || []).map((row) => ({
-    id: row.id,
-    userId: row.userId,
-    type: row.type,
-    title: row.title,
-    description: row.description,
-    appVersion: row.appVersion,
-    browserInfo: row.browserInfo || undefined,
-    status: row.status,
-    priority: row.priority,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    version: row.version,
-  }));
+  const feedback = (results || []).map((row) => mapFeedbackRow(row));
 
   return c.json({ feedback });
 });
@@ -2263,6 +2274,84 @@ app.patch('/api/v1/feedback/:id', async (c) => {
       409,
     );
   }
+});
+
+app.get('/api/v1/admin/feedback', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT user_feedback.id as id,
+            user_feedback.user_id as userId,
+            user_feedback.type as type,
+            user_feedback.title as title,
+            user_feedback.description as description,
+            user_feedback.app_version as appVersion,
+            user_feedback.browser_info as browserInfo,
+            user_feedback.status as status,
+            user_feedback.priority as priority,
+            user_feedback.created_at as createdAt,
+            user_feedback.updated_at as updatedAt,
+            user_feedback.version as version,
+            user_roles.email as email
+     FROM user_feedback
+     LEFT JOIN user_roles ON user_roles.user_id = user_feedback.user_id
+     ORDER BY user_feedback.created_at DESC`,
+  ).all<FeedbackRowWithEmail>();
+
+  const feedback = (results || []).map((row) => mapAdminFeedbackRow(row));
+
+  return c.json({ feedback });
+});
+
+app.patch('/api/v1/admin/feedback/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+
+  let payload: {
+    expectedVersion: number;
+    patch: {
+      title?: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+    };
+  };
+
+  try {
+    payload = await c.req.json();
+    if (typeof payload.expectedVersion !== 'number') throw new Error('Missing expectedVersion');
+  } catch {
+    return c.json({ error: 'Invalid JSON or missing expectedVersion' }, 400);
+  }
+
+  const allowList = ['title', 'description', 'status', 'priority'];
+
+  const result = await performOptimisticUpdateById(
+    c.env.DB,
+    'user_feedback',
+    id,
+    payload.expectedVersion,
+    payload.patch,
+    allowList,
+  );
+
+  const row = await selectFeedbackWithEmail(c.env.DB, id);
+  if (!row) return c.json({ error: 'not_found' }, 404);
+
+  if (result.ok) {
+    return c.json(mapAdminFeedbackRow(row));
+  }
+
+  return c.json(
+    {
+      error: 'conflict',
+      latest: mapAdminFeedbackRow(row),
+    },
+    409,
+  );
 });
 
 app.get('/api/v1/app-version', (c) => {
@@ -3159,4 +3248,69 @@ async function performOptimisticUpdate(
     .first();
 
   return { ok: true, data: updated };
+}
+
+async function performOptimisticUpdateById(
+  db: D1Database,
+  table: string,
+  id: string,
+  expectedVersion: number,
+  patch: Record<string, any>,
+  allowList: string[],
+  idColumn: string = 'id',
+) {
+  const keys = Object.keys(patch);
+  for (const key of keys) {
+    if (!allowList.includes(key)) {
+      throw new Error(`Invalid patch key: ${key}`);
+    }
+  }
+  if (keys.length === 0) throw new Error('Empty patch');
+
+  const setClauses = keys.map((k) => `${k} = ?`).join(', ');
+  const values = keys.map((k) => patch[k]);
+  const now = new Date().toISOString();
+
+  const query = `
+    UPDATE ${table}
+    SET ${setClauses}, version = version + 1, updated_at = ?
+    WHERE ${idColumn} = ? AND version = ?
+  `;
+
+  const { meta } = await db.prepare(query).bind(...values, now, id, expectedVersion).run();
+
+  if (meta.changes === 0) {
+    const current = await db.prepare(`SELECT * FROM ${table} WHERE ${idColumn} = ?`).bind(id).first();
+    if (!current) {
+      return { ok: false, error: 'not_found', latest: null };
+    }
+    return { ok: false, error: 'conflict', latest: current };
+  }
+
+  const updated = await db.prepare(`SELECT * FROM ${table} WHERE ${idColumn} = ?`).bind(id).first();
+  return { ok: true, data: updated };
+}
+
+async function selectFeedbackWithEmail(db: D1Database, id: string) {
+  return db
+    .prepare(
+      `SELECT user_feedback.id as id,
+              user_feedback.user_id as userId,
+              user_feedback.type as type,
+              user_feedback.title as title,
+              user_feedback.description as description,
+              user_feedback.app_version as appVersion,
+              user_feedback.browser_info as browserInfo,
+              user_feedback.status as status,
+              user_feedback.priority as priority,
+              user_feedback.created_at as createdAt,
+              user_feedback.updated_at as updatedAt,
+              user_feedback.version as version,
+              user_roles.email as email
+       FROM user_feedback
+       LEFT JOIN user_roles ON user_roles.user_id = user_feedback.user_id
+       WHERE user_feedback.id = ?`,
+    )
+    .bind(id)
+    .first<FeedbackRowWithEmail>();
 }

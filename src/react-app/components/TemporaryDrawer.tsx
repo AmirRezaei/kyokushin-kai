@@ -525,6 +525,17 @@ export default function TemporaryDrawer() {
                     handleNavigation={handleNavigation}
                     theme={theme}
                   />
+                  <NavItem
+                    path="/admin/feedback"
+                    icon={<BugReportIcon />}
+                    label="Feedback"
+                    nested
+                    protected
+                    isActive={isActive('/admin/feedback')}
+                    isAuthenticated={isAuthenticated}
+                    handleNavigation={handleNavigation}
+                    theme={theme}
+                  />
                 </List>
               </Collapse>
             </>
