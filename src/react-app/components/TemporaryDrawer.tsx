@@ -21,6 +21,8 @@ import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
 import CloseIcon from '@mui/icons-material/Close';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PolicyIcon from '@mui/icons-material/Policy';
+import GavelIcon from '@mui/icons-material/Gavel';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
@@ -546,6 +548,24 @@ export default function TemporaryDrawer() {
             label="Bug Reports & Features"
             protected
             isActive={isActive('/feedback')}
+            isAuthenticated={isAuthenticated}
+            handleNavigation={handleNavigation}
+            theme={theme}
+          />
+          <NavItem
+            path="/privacy-policy"
+            icon={<PolicyIcon />}
+            label="Privacy Policy"
+            isActive={isActive('/privacy-policy')}
+            isAuthenticated={isAuthenticated}
+            handleNavigation={handleNavigation}
+            theme={theme}
+          />
+          <NavItem
+            path="/terms-of-service"
+            icon={<GavelIcon />}
+            label="Terms of Service"
+            isActive={isActive('/terms-of-service')}
             isAuthenticated={isAuthenticated}
             handleNavigation={handleNavigation}
             theme={theme}

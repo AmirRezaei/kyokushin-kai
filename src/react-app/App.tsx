@@ -40,6 +40,8 @@ import AppNotFoundPage from './AppNotFoundPage';
 import BreathingTechniquesPage from './BreathingTechniquesPage';
 import DojoKunPage from './app/dojo-kun/DojoKunPage';
 import OsuSpiritPage from './app/osu-spirit/OsuSpiritPage';
+import PrivacyPolicyPage from './app/privacy/PrivacyPolicyPage';
+import TermsOfServicePage from './app/terms/TermsOfServicePage';
 import TemporaryDrawer from './components/TemporaryDrawer';
 import LogoutPage from './components/LogoutPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -54,6 +56,8 @@ import AdminPage from './app/admin/AdminPage';
 import AdminRolesPage from './app/admin/AdminRolesPage';
 import AccountPage from './app/account/AccountPage';
 import { useCatalogQuery } from '@/hooks/useCatalog';
+import FacebookCallbackPage from './app/auth/FacebookCallbackPage';
+import LoginPage from './components/LoginPage';
 
 function AppContent() {
   const theme = useTheme();
@@ -84,7 +88,7 @@ function AppContent() {
       window.removeEventListener('orientationchange', updateOffset);
     };
   }, [appBarHeight]);
-  const { user, isAuthenticated, login, logout, error: authError } = useAuth();
+  const { user, isAuthenticated, logout, error: authError } = useAuth();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const navigate = useNavigate();
   const location = useLocation();
@@ -122,6 +126,8 @@ function AppContent() {
       '/admin/feedback': 'Feedback',
       '/account': 'Account',
       '/about': 'About',
+      '/privacy-policy': 'Privacy Policy',
+      '/terms-of-service': 'Terms of Service',
     };
     return pathMap[pathname] || 'Unknown Page';
   };
@@ -195,11 +201,6 @@ function AppContent() {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleGoogleLogin = () => {
-    login();
-    handleClose();
   };
 
   const handleLogout = () => {
@@ -405,9 +406,14 @@ function AppContent() {
                 </MenuItem>
               )}
               {!isAuthenticated && (
-                <MenuItem onClick={handleGoogleLogin}>
+                <MenuItem
+                  onClick={() => {
+                    navigate('/login');
+                    handleClose();
+                  }}
+                >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography>Login with Google</Typography>
+                    <Typography>Sign In</Typography>
                   </Box>
                 </MenuItem>
               )}
@@ -584,7 +590,11 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/link/facebook" element={<FacebookCallbackPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/about" element={<About />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-service" element={<TermsOfServicePage />} />
             <Route path="*" element={<AppNotFoundPage />} />
           </Routes>
         </Box>
