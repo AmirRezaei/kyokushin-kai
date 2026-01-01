@@ -1,28 +1,28 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "kyokushin-kai",
-	"main": "./src/worker/index.ts",
-	"compatibility_date": "2025-10-08",
-	"compatibility_flags": ["nodejs_compat"],
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"assets": {
-		"directory": "./dist/client",
-		"not_found_handling": "single-page-application"
-	},
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "kyokushin-kai-db",
-			"database_id": "5bcc0f7a-48fa-46b9-b25a-91d33e7a9293",
-			"migrations_dir": "src/worker/migrations"
-		}
-	],
-	"vars": {
-		"GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
-		"VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
-		"ADMIN_EMAIL": "first.admin@example.com"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kyokushin-kai",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2025-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kyokushin-kai-db",
+      "database_id": "5bcc0f7a-48fa-46b9-b25a-91d33e7a9293",
+      "migrations_dir": "src/worker/migrations"
+    }
+  ],
+  "vars": {
+    "GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
+    "VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
+    "ADMIN_EMAIL": "itkompaniet@gmail.com"
+  }
 }
