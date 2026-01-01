@@ -99,15 +99,16 @@ This app now supports admin-only technique management backed by the D1 database.
 - Admins can grant/revoke admin role for existing users (users must sign in at least once).
 - Techniques are stored in the `techniques` table; roles are stored in `user_roles`.
 - Grades, katas, and curriculum assignments live in `grades`, `katas`, `grade_techniques`, and `grade_katas`.
+- Quotes shown on the home screen live in the `quotes` table.
 - Use the Grade Management section in the admin console to assign techniques and katas to grades.
 - Each technique or kata can belong to a single grade.
 
-To seed the `techniques`, `grades`, `katas`, and curriculum tables from
-`src/data/repo/catalog.json` (local D1):
+To seed the `techniques`, `grades`, `katas`, curriculum tables, and quotes from
+`src/data/repo/catalog.json` + `src/react-app/Quote/quoteData.ts` (local D1):
 
 ```bash
 bun run db:seed:techniques
-wrangler d1 execute DB --local --file scripts/seed_techniques.sql
+bun run db:seed:quotes
 ```
 
 If you want the main technique views to use DB-backed techniques instead of the static

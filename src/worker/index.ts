@@ -98,6 +98,20 @@ type KataRecord = {
   updatedAt: string;
 };
 
+type QuoteRecord = {
+  id: string;
+  author: string;
+  tags: string[];
+  date?: string;
+  text: string;
+  meaning: string;
+  history?: string;
+  reference?: string;
+  status: PublishStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type GradeRow = {
   id: string;
   data_json: string;
@@ -118,6 +132,16 @@ type KataRow = {
   data_json: string;
   status: string;
   rank: number | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
+type QuoteRow = {
+  id: string;
+  data_json: string;
+  author: string;
+  status: string;
   created_at: string;
   updated_at: string;
   version: number;
@@ -1012,6 +1036,119 @@ app.delete('/api/v1/katas/:id', async (c) => {
 
   if (meta.changes === 0) {
     return c.json({ error: 'Kata not found' }, 404);
+  }
+
+  return c.json({ ok: true });
+});
+
+// --- Quote Endpoints ---
+
+app.get('/api/v1/quotes', async (c) => {
+  const user = await requireUser(c);
+  const role = user
+    ? await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL))
+    : 'user';
+
+  const query =
+    role === 'admin'
+      ? `SELECT id, data_json, author, status, created_at, updated_at, version FROM quotes`
+      : `SELECT id, data_json, author, status, created_at, updated_at, version
+         FROM quotes
+         WHERE status = 'published'`;
+
+  const { results } = await c.env.DB.prepare(query).all<QuoteRow>();
+  const quotes = (results || []).map((row) => quoteFromRow(row));
+
+  return c.json({ quotes });
+});
+
+app.post('/api/v1/quotes', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: Partial<QuoteRecord>;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const quote = buildQuoteForCreate(payload);
+  if (!quote) {
+    return c.json({ error: 'Invalid quote payload' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO quotes (id, data_json, author, status, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+  )
+    .bind(
+      quote.id,
+      JSON.stringify(quote),
+      quote.author,
+      quote.status,
+      quote.createdAt,
+      quote.updatedAt,
+    )
+    .run();
+
+  return c.json({ quote }, 201);
+});
+
+app.patch('/api/v1/quotes/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing quote id' }, 400);
+
+  let payload: Partial<QuoteRecord>;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, data_json, author, status, created_at, updated_at, version
+     FROM quotes
+     WHERE id = ?`,
+  )
+    .bind(id)
+    .first<QuoteRow>();
+
+  if (!row) return c.json({ error: 'Quote not found' }, 404);
+
+  const existing = quoteFromRow(row);
+  const patch = parseQuotePatch(payload);
+  if (!patch) {
+    return c.json({ error: 'Invalid quote patch' }, 400);
+  }
+
+  const updated = mergeQuote(existing, patch);
+  updated.updatedAt = new Date().toISOString();
+
+  await c.env.DB.prepare(
+    `UPDATE quotes
+     SET data_json = ?, author = ?, status = ?, updated_at = ?, version = version + 1
+     WHERE id = ?`,
+  )
+    .bind(JSON.stringify(updated), updated.author, updated.status, updated.updatedAt, id)
+    .run();
+
+  return c.json({ quote: updated });
+});
+
+app.delete('/api/v1/quotes/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing quote id' }, 400);
+
+  const { meta } = await c.env.DB.prepare(`DELETE FROM quotes WHERE id = ?`).bind(id).run();
+  if (meta.changes === 0) {
+    return c.json({ error: 'Quote not found' }, 404);
   }
 
   return c.json({ ok: true });
@@ -2614,6 +2751,21 @@ function parseNumberInput(value: unknown): number | undefined {
   return Number.isFinite(parsed) ? Number(parsed) : undefined;
 }
 
+function sanitizeStringInput(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function sanitizeStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const cleaned = value
+    .filter((entry) => typeof entry === 'string')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+  return cleaned.length ? Array.from(new Set(cleaned)) : [];
+}
+
 function normalizeGradeRank(kind: string, rank: number): number {
   if (!Number.isFinite(rank)) return 0;
   const rounded = Math.round(rank);
@@ -2989,6 +3141,154 @@ function kataFromRow(row: KataRow): KataRecord {
     id: row.id,
     rank: Number.isFinite(parsed.rank) ? Number(parsed.rank) : base.rank,
     name: parsed.name && typeof parsed.name === 'object' ? parsed.name : base.name,
+    status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
+      ? (parsed.status as PublishStatus)
+      : base.status,
+    createdAt: parsed.createdAt || base.createdAt,
+    updatedAt: parsed.updatedAt || base.updatedAt,
+  };
+}
+
+function buildQuoteForCreate(payload: Partial<QuoteRecord> | null): QuoteRecord | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const author = sanitizeStringInput(payload.author);
+  const text = sanitizeStringInput(payload.text);
+  const meaning = sanitizeStringInput(payload.meaning);
+  if (!author || !text || !meaning) return null;
+
+  const tags = sanitizeStringArray(payload.tags) ?? [];
+  const date = sanitizeStringInput(payload.date);
+  const history = sanitizeStringInput(payload.history);
+  const reference = sanitizeStringInput(payload.reference);
+
+  const status = PUBLISH_STATUSES.has(payload.status as PublishStatus)
+    ? (payload.status as PublishStatus)
+    : 'draft';
+
+  const now = new Date().toISOString();
+  const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
+
+  return {
+    id: providedId || crypto.randomUUID(),
+    author,
+    tags,
+    date,
+    text,
+    meaning,
+    history,
+    reference,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function parseQuotePatch(payload: Partial<QuoteRecord> | null): Partial<QuoteRecord> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const patch: Partial<QuoteRecord> = {};
+
+  if (payload.author !== undefined) {
+    const author = sanitizeStringInput(payload.author);
+    if (!author) return null;
+    patch.author = author;
+  }
+
+  if (payload.text !== undefined) {
+    const text = sanitizeStringInput(payload.text);
+    if (!text) return null;
+    patch.text = text;
+  }
+
+  if (payload.meaning !== undefined) {
+    const meaning = sanitizeStringInput(payload.meaning);
+    if (!meaning) return null;
+    patch.meaning = meaning;
+  }
+
+  if (payload.tags !== undefined) {
+    const tags = sanitizeStringArray(payload.tags);
+    if (!tags) return null;
+    patch.tags = tags;
+  }
+
+  if (payload.date !== undefined) {
+    if (payload.date === null) {
+      patch.date = undefined;
+    } else if (typeof payload.date === 'string') {
+      patch.date = payload.date.trim() || undefined;
+    } else {
+      return null;
+    }
+  }
+
+  if (payload.history !== undefined) {
+    if (payload.history === null) {
+      patch.history = undefined;
+    } else if (typeof payload.history === 'string') {
+      patch.history = payload.history.trim() || undefined;
+    } else {
+      return null;
+    }
+  }
+
+  if (payload.reference !== undefined) {
+    if (payload.reference === null) {
+      patch.reference = undefined;
+    } else if (typeof payload.reference === 'string') {
+      patch.reference = payload.reference.trim() || undefined;
+    } else {
+      return null;
+    }
+  }
+
+  if (payload.status && PUBLISH_STATUSES.has(payload.status as PublishStatus)) {
+    patch.status = payload.status as PublishStatus;
+  }
+
+  if (Object.keys(patch).length === 0) return null;
+  return patch;
+}
+
+function mergeQuote(existing: QuoteRecord, patch: Partial<QuoteRecord>): QuoteRecord {
+  return {
+    ...existing,
+    ...patch,
+    tags: patch.tags ? [...patch.tags] : existing.tags,
+  };
+}
+
+function quoteFromRow(row: QuoteRow): QuoteRecord {
+  const parsed = parseJsonSafely<QuoteRecord | null>(row.data_json, null);
+  const base: QuoteRecord = {
+    id: row.id,
+    author: row.author,
+    tags: [],
+    text: '',
+    meaning: '',
+    status: PUBLISH_STATUSES.has(row.status as PublishStatus)
+      ? (row.status as PublishStatus)
+      : 'draft',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!parsed || typeof parsed !== 'object') return base;
+
+  const tags = sanitizeStringArray(parsed.tags) ?? base.tags;
+
+  return {
+    ...base,
+    ...parsed,
+    id: row.id,
+    author: typeof parsed.author === 'string' ? parsed.author : base.author,
+    tags,
+    text: typeof parsed.text === 'string' ? parsed.text : base.text,
+    meaning: typeof parsed.meaning === 'string' ? parsed.meaning : base.meaning,
+    date: typeof parsed.date === 'string' ? parsed.date : base.date,
+    history: typeof parsed.history === 'string' ? parsed.history : base.history,
+    reference: typeof parsed.reference === 'string' ? parsed.reference : base.reference,
     status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
       ? (parsed.status as PublishStatus)
       : base.status,

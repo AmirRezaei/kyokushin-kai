@@ -2,25 +2,47 @@
 // * Path: ./src/Quote/QuoteComponent.tsx
 // HEADER-END
 import {ArrowBackIos, ArrowForwardIos, Favorite, FavoriteBorder, Info as InfoIcon} from '@mui/icons-material';
-import {Avatar, Box, BoxProps, Card, CardActions, CardContent, Chip, Collapse, IconButton, Paper, Stack, Typography} from '@mui/material';
-import {SxProps, Theme} from '@mui/material/styles';
-import React, {useState} from 'react';
+import {Avatar, Box, BoxProps, Card, CardContent, Chip, Collapse, IconButton, Paper, Stack, Typography} from '@mui/material';
+import React, {useEffect, useState} from 'react';
 
 import CopyButton from '../components/UI/CopyButton';
 import {getLocalStorageItemById, setLocalStorageItemById} from '../components/utils/localStorageUtils';
-import {Quote} from './Quote';
+type QuoteRecord = {
+   id: string;
+   author: string;
+   tags: string[];
+   date?: string;
+   text: string;
+   meaning: string;
+   history?: string;
+   reference?: string;
+   isFavorited?: boolean;
+};
 
 // Define the component props
 interface QuoteProps extends BoxProps {
-   quotes: Quote[];
+   quotes?: QuoteRecord[];
 }
 
 const FAVORITE_QUOTES_KEY = 'favoriteQuotes';
 
+const normalizeQuote = (quote: QuoteRecord): QuoteRecord => ({
+   ...quote,
+   author: typeof quote.author === 'string' ? quote.author : '',
+   text: typeof quote.text === 'string' ? quote.text : '',
+   meaning: typeof quote.meaning === 'string' ? quote.meaning : '',
+   tags: Array.isArray(quote.tags) ? quote.tags : [],
+   isFavorited: Boolean(quote.isFavorited),
+});
+
 // QuoteComponent definition
-const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
-   // Initialize currentIndex to a random index
-   const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * quotes.length));
+const QuoteDeck: React.FC<QuoteProps> = ({quotes: initialQuotes, sx}) => {
+   const [quotes, setQuotes] = useState<QuoteRecord[]>(
+      Array.isArray(initialQuotes) ? initialQuotes.map(normalizeQuote) : [],
+   );
+   const [isLoading, setIsLoading] = useState(!initialQuotes?.length);
+   const [loadError, setLoadError] = useState<string | null>(null);
+   const [currentIndex, setCurrentIndex] = useState(0);
    
    // Force update trigger for favorite toggles
    const [favoriteUpdateTrigger, setFavoriteUpdateTrigger] = useState(0);
@@ -30,7 +52,7 @@ const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _trigger = favoriteUpdateTrigger; // Ensure dependency is used
       const current = quotes[currentIndex];
-      const favoriteQuote = getLocalStorageItemById<Quote>(FAVORITE_QUOTES_KEY, current?.id); // Safe access in case quotes is empty/invalid
+      const favoriteQuote = getLocalStorageItemById<QuoteRecord>(FAVORITE_QUOTES_KEY, current?.id); // Safe access in case quotes is empty/invalid
       return favoriteQuote ? favoriteQuote : current;
    }, [currentIndex, quotes, favoriteUpdateTrigger]);
 
@@ -38,11 +60,13 @@ const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
    const [infoState, setInfoState] = useState<boolean>(false);
 
    const handleNextQuote = () => {
+      if (!quotes.length) return;
       setCurrentIndex(prev => (prev + 1) % quotes.length);
       setInfoState(false); // Optionally close info on change
    };
 
    const handlePrevQuote = () => {
+      if (!quotes.length) return;
       setCurrentIndex(prev => (prev - 1 + quotes.length) % quotes.length);
       setInfoState(false);
    };
@@ -58,6 +82,81 @@ const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
    const handleToggleInfo = () => {
       setInfoState(!infoState);
    };
+
+   useEffect(() => {
+      if (initialQuotes && initialQuotes.length) {
+         setQuotes(initialQuotes.map(normalizeQuote));
+         setIsLoading(false);
+         return;
+      }
+
+      let isMounted = true;
+      setIsLoading(true);
+      setLoadError(null);
+
+      fetch('/api/v1/quotes', {
+         method: 'GET',
+         headers: {
+            Accept: 'application/json',
+         },
+      })
+         .then(async response => {
+            if (!response.ok) {
+               throw new Error('Unable to load quotes');
+            }
+            const payload = (await response.json()) as {quotes?: QuoteRecord[]};
+            const nextQuotes = Array.isArray(payload.quotes)
+               ? payload.quotes.map(normalizeQuote)
+               : [];
+            if (isMounted) {
+               setQuotes(nextQuotes);
+               setIsLoading(false);
+            }
+         })
+         .catch(error => {
+            console.error(error);
+            if (isMounted) {
+               setLoadError('Unable to load quotes');
+               setIsLoading(false);
+            }
+         });
+
+      return () => {
+         isMounted = false;
+      };
+   }, [initialQuotes]);
+
+   useEffect(() => {
+      if (quotes.length) {
+         setCurrentIndex(Math.floor(Math.random() * quotes.length));
+      }
+   }, [quotes.length]);
+
+   if (isLoading) {
+      return (
+         <Paper variant="outlined" elevation={0} square={false} sx={{p: 2}}>
+            <Typography variant="body2">Loading quotes...</Typography>
+         </Paper>
+      );
+   }
+
+   if (loadError) {
+      return (
+         <Paper variant="outlined" elevation={0} square={false} sx={{p: 2}}>
+            <Typography variant="body2">{loadError}</Typography>
+         </Paper>
+      );
+   }
+
+   if (!quote) {
+      return (
+         <Paper variant="outlined" elevation={0} square={false} sx={{p: 2}}>
+            <Typography variant="body2">No quotes available.</Typography>
+         </Paper>
+      );
+   }
+
+   const avatarUrl = quote.author ? `/media/avatar/${quote.author.replace(/ /g, '-')}.jpg` : '';
 
    return (
       <Paper variant='outlined' elevation={0} square={false}>
@@ -81,7 +180,7 @@ const QuoteDeck: React.FC<QuoteProps> = ({quotes, sx}) => {
                   {/* Placeholder for Author's Image */}
 
                   <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: 2}}>
-                     <Avatar sx={{width: 100, height: 100}} src={quote.avatar} alt={quote.author}>
+                     <Avatar sx={{width: 100, height: 100}} src={avatarUrl} alt={quote.author}>
                         {quote.author.charAt(0)}
                      </Avatar>
                   </Box>

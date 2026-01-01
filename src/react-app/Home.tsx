@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 import MottoDeck from './components/kyokushin/MottoDeck';
 import QuoteDeck from './Quote/QuoteDeck';
-import quoteData from './Quote/quoteData';
 import mainBackground from './media/400x600/main.png';
 
 const Home: React.FC = () => {
@@ -26,7 +25,7 @@ const Home: React.FC = () => {
             backgroundRepeat: 'no-repeat',
             backgroundAttachment: 'fixed',
          }}>
-         {showMottos ? <MottoDeck onClose={() => setShowMottos(false)} /> : <QuoteDeck quotes={quoteData} />}
+         {showMottos ? <MottoDeck onClose={() => setShowMottos(false)} /> : <QuoteDeck />}
       </Box>
    );
 };

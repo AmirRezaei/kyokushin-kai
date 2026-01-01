@@ -35,6 +35,7 @@ import {TechniqueKind, TechniqueRecord} from '../../../data/model/technique';
 import {PublishStatus} from '../../../data/model/common';
 import {BeltColor, GradeKind, GradeRecord} from '../../../data/model/grade';
 import {KataRecord} from '../../../data/model/kata';
+import QuoteManagementTab from './QuoteManagementTab';
 
 type AdminGrade = GradeRecord & {
    techniqueIds: string[];
@@ -880,6 +881,7 @@ const AdminPage: React.FC = () => {
                   <Tab label="Techniques" {...tabProps(0)} />
                   <Tab label="Grades" {...tabProps(1)} />
                   <Tab label="Katas" {...tabProps(2)} />
+                  <Tab label="Quotes" {...tabProps(3)} />
                </Tabs>
             </Paper>
 
@@ -2672,6 +2674,16 @@ const AdminPage: React.FC = () => {
                   </TableContainer>
                </Paper>
                </Paper>
+            </Box>
+
+            <Box
+               role="tabpanel"
+               hidden={activeTab !== 3}
+               id="admin-tabpanel-3"
+               aria-labelledby="admin-tab-3"
+               sx={{display: activeTab === 3 ? 'block' : 'none'}}
+            >
+               <QuoteManagementTab />
             </Box>
 
          </Stack>
