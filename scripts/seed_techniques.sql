@@ -1715,389 +1715,389 @@ DELETE FROM grade_techniques;
 DELETE FROM grade_katas;
 
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '1', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '1', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '2', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '2', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '3', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '3', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '4', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '4', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '5', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '5', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '6', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '6', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '7', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '7', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '8', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '8', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('2', '9', '2025-12-31T10:46:27.893Z')
+VALUES ('2', '9', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '10', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '10', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '11', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '11', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '12', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '12', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '13', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '13', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '14', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '14', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '15', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '15', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '16', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '16', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '17', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '17', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '18', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '18', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '19', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '19', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('3', '20', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '20', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('3', '1', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '1', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('3', '2', '2025-12-31T10:46:27.893Z')
+VALUES ('3', '2', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '21', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '21', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '22', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '22', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '23', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '23', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '24', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '24', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '25', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '25', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '26', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '26', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('4', '27', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '27', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('4', '3', '2025-12-31T10:46:27.893Z')
+VALUES ('4', '3', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '28', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '28', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '29', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '29', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '30', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '30', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '31', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '31', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '32', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '32', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '33', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '33', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '34', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '34', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '35', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '35', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '36', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '36', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '37', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '37', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '38', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '38', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '39', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '39', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '40', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '40', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('5', '41', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '41', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('5', '4', '2025-12-31T10:46:27.893Z')
+VALUES ('5', '4', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '42', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '42', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '43', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '43', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '44', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '44', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '45', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '45', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '46', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '46', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '47', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '47', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '48', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '48', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '49', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '49', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '50', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '50', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '51', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '51', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '52', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '52', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('6', '53', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '53', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('6', '5', '2025-12-31T10:46:27.893Z')
+VALUES ('6', '5', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '54', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '54', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '55', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '55', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '56', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '56', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '57', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '57', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '58', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '58', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '59', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '59', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('7', '60', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '60', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('7', '6', '2025-12-31T10:46:27.893Z')
+VALUES ('7', '6', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '61', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '61', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '62', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '62', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '63', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '63', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '64', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '64', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '65', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '65', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '66', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '66', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '67', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '67', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '68', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '68', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '69', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '69', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '70', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '70', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '71', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '71', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '72', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '72', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '73', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '73', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '74', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '74', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '75', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '75', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '76', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '76', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '77', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '77', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('8', '78', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '78', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('8', '7', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '7', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('8', '8', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '8', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('8', '9', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '9', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('8', '10', '2025-12-31T10:46:27.893Z')
+VALUES ('8', '10', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '79', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '79', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '80', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '80', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '81', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '81', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '82', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '82', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '83', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '83', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '84', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '84', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '85', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '85', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('9', '86', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '86', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('9', '11', '2025-12-31T10:46:27.893Z')
+VALUES ('9', '11', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '87', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '87', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '88', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '88', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '89', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '89', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '90', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '90', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '91', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '91', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '92', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '92', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '93', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '93', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '94', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '94', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '95', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '95', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('10', '96', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '96', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('10', '12', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '12', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('10', '13', '2025-12-31T10:46:27.893Z')
+VALUES ('10', '13', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '97', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '97', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '98', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '98', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '99', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '99', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '100', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '100', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '101', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '101', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '102', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '102', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '103', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '103', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '104', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '104', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '105', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '105', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '106', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '106', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_techniques (grade_id, technique_id, created_at)
-VALUES ('11', '107', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '107', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, technique_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('11', '14', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '14', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('11', '15', '2025-12-31T10:46:27.893Z')
+VALUES ('11', '15', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('12', '16', '2025-12-31T10:46:27.893Z')
+VALUES ('12', '16', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('13', '17', '2025-12-31T10:46:27.893Z')
+VALUES ('13', '17', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('13', '18', '2025-12-31T10:46:27.893Z')
+VALUES ('13', '18', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('13', '19', '2025-12-31T10:46:27.893Z')
+VALUES ('13', '19', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('14', '20', '2025-12-31T10:46:27.893Z')
+VALUES ('14', '20', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('14', '21', '2025-12-31T10:46:27.893Z')
+VALUES ('14', '21', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
 INSERT INTO grade_katas (grade_id, kata_id, created_at)
-VALUES ('14', '22', '2025-12-31T10:46:27.893Z')
+VALUES ('14', '22', '2026-01-01T12:47:53.815Z')
 ON CONFLICT(grade_id, kata_id) DO NOTHING;
