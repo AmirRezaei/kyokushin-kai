@@ -243,6 +243,20 @@ app.post('/api/v1/auth/login', async (c) => {
       normalizeEmail(c.env.ADMIN_EMAIL),
     );
 
+    const settingsPayload = JSON.stringify(sanitizeSettings({}));
+    const settingsTimestamp = new Date().toISOString();
+    await c.env.DB.prepare(
+      `INSERT INTO user_settings (user_id, email, display_name, image_url, settings_json, version, updated_at)
+       VALUES (?, ?, ?, ?, ?, 1, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         email = excluded.email,
+         display_name = excluded.display_name,
+         image_url = excluded.image_url,
+         updated_at = excluded.updated_at`,
+    )
+      .bind(userId, email, name || null, picture || null, settingsPayload, settingsTimestamp)
+      .run();
+
     // Generate refresh token (30 days)
     const refreshToken = generateRefreshToken();
     const tokenHash = await hashToken(refreshToken);
@@ -396,6 +410,62 @@ app.get('/api/v1/auth/me', async (c) => {
     },
     role,
   });
+});
+
+app.delete('/api/v1/account', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const statements = [
+    'DELETE FROM refresh_tokens WHERE user_id = ?',
+    'DELETE FROM user_technique_progress WHERE user_id = ?',
+    'DELETE FROM user_terminology_progress WHERE user_id = ?',
+    'DELETE FROM user_wordquest_progress WHERE user_id = ?',
+    'DELETE FROM user_game_state WHERE user_id = ?',
+    'DELETE FROM user_cards WHERE user_id = ?',
+    'DELETE FROM user_card_decks WHERE user_id = ?',
+    'DELETE FROM user_training_sessions WHERE user_id = ?',
+    'DELETE FROM user_gym_sessions WHERE user_id = ?',
+    'DELETE FROM user_workout_plans WHERE user_id = ?',
+    'DELETE FROM user_gym_exercises WHERE user_id = ?',
+    'DELETE FROM user_gym_equipment WHERE user_id = ?',
+    'DELETE FROM user_muscle_groups WHERE user_id = ?',
+    'DELETE FROM user_equipment_categories WHERE user_id = ?',
+    'DELETE FROM user_feedback WHERE user_id = ?',
+    'DELETE FROM user_settings WHERE user_id = ?',
+    'DELETE FROM user_roles WHERE user_id = ?',
+  ];
+
+  const boundStatements = statements.map((sql) => c.env.DB.prepare(sql).bind(user.id));
+  let transactionStarted = false;
+
+  try {
+    await c.env.DB.exec('BEGIN');
+    transactionStarted = true;
+  } catch (error) {
+    console.warn('Account deletion transaction unavailable, falling back to batch', error);
+  }
+
+  if (!transactionStarted) {
+    await c.env.DB.batch(boundStatements);
+    return c.json({ ok: true });
+  }
+
+  try {
+    for (const statement of boundStatements) {
+      await statement.run();
+    }
+    await c.env.DB.exec('COMMIT');
+  } catch (error) {
+    try {
+      await c.env.DB.exec('ROLLBACK');
+    } catch (rollbackError) {
+      console.warn('Account deletion rollback failed', rollbackError);
+    }
+    throw error;
+  }
+
+  return c.json({ ok: true });
 });
 
 app.get('/api/v1/settings', async (c) => {

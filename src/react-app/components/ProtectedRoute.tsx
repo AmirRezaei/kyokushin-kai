@@ -12,8 +12,13 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({children}) => {
    const {isAuthenticated, login} = useAuth();
    const theme = useTheme();
+   const hasLoggedRef = React.useRef(false);
 
    if (!isAuthenticated) {
+      if (!hasLoggedRef.current) {
+         console.info('[ProtectedRoute] unauthenticated render', { time: new Date().toISOString() });
+         hasLoggedRef.current = true;
+      }
       return (
          <Container maxWidth="sm">
             <Box

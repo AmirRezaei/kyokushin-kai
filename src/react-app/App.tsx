@@ -52,6 +52,7 @@ import Footer from './components/Footer';
 import FeedbackPage from './app/feedback/FeedbackPage';
 import AdminPage from './app/admin/AdminPage';
 import AdminRolesPage from './app/admin/AdminRolesPage';
+import AccountPage from './app/account/AccountPage';
 import { useCatalogQuery } from '@/hooks/useCatalog';
 
 function AppContent() {
@@ -83,7 +84,7 @@ function AppContent() {
       window.removeEventListener('orientationchange', updateOffset);
     };
   }, [appBarHeight]);
-  const { user, isAuthenticated, login, error: authError } = useAuth();
+  const { user, isAuthenticated, login, logout, error: authError } = useAuth();
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const navigate = useNavigate();
   const location = useLocation();
@@ -119,6 +120,7 @@ function AppContent() {
       '/admin': 'Admin',
       '/admin/roles': 'Admin Roles',
       '/admin/feedback': 'Feedback',
+      '/account': 'Account',
       '/about': 'About',
     };
     return pathMap[pathname] || 'Unknown Page';
@@ -134,6 +136,15 @@ function AppContent() {
       showSnackbar(authError, 'error');
     }
   }, [authError, showSnackbar]);
+
+  React.useEffect(() => {
+    const state = (location.state || {}) as { logoutAfterNavigate?: boolean };
+    if (!state.logoutAfterNavigate) {
+      return;
+    }
+    void logout();
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, logout, navigate]);
 
   React.useEffect(() => {
     if (!isCatalogError) {
@@ -197,7 +208,7 @@ function AppContent() {
   };
 
   const handleProfile = () => {
-    console.log('Profile clicked');
+    navigate('/account');
     handleClose();
   };
 
@@ -380,7 +391,7 @@ function AppContent() {
               )}
               {isAuthenticated && (
                 <MenuItem onClick={handleProfile}>
-                  <Typography>User Profile</Typography>
+                  <Typography>Account</Typography>
                 </MenuItem>
               )}
               {isAuthenticated && (
@@ -562,6 +573,14 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <FeedbackPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <AccountPage />
                 </ProtectedRoute>
               }
             />
