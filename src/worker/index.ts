@@ -147,11 +147,6 @@ type QuoteRow = {
   version: number;
 };
 
-type GradeWithCurriculum = GradeRecord & {
-  techniqueIds: string[];
-  kataIds: string[];
-};
-
 const PUBLISH_STATUSES = new Set<PublishStatus>(['draft', 'published', 'inactive']);
 
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -2872,7 +2867,7 @@ function techniqueFromRow(row: TechniqueRow): TechniqueRecord {
   const base: TechniqueRecord = {
     id: row.id,
     kind: row.kind,
-    rank: Number.isFinite(row.rank) ? row.rank : undefined,
+    rank: typeof row.rank === 'number' && Number.isFinite(row.rank) ? row.rank : undefined,
     name: {},
     status: PUBLISH_STATUSES.has(row.status as PublishStatus)
       ? (row.status as PublishStatus)
@@ -3016,7 +3011,10 @@ function gradeFromRow(row: GradeRow): GradeRecord {
     gradingSystemId: row.grading_system_id,
     kind: row.kind,
     number: row.number,
-    rank: Number.isFinite(row.rank) ? row.rank : deriveGradeRank(row.kind, row.number),
+    rank:
+      typeof row.rank === 'number' && Number.isFinite(row.rank)
+        ? row.rank
+        : deriveGradeRank(row.kind, row.number),
     name: {},
     beltColor: row.belt_color,
     sortOrder: row.sort_order,
@@ -3124,7 +3122,7 @@ function kataFromRow(row: KataRow): KataRecord {
   const parsed = parseJsonSafely<KataRecord | null>(row.data_json, null);
   const base: KataRecord = {
     id: row.id,
-    rank: Number.isFinite(row.rank) ? row.rank : undefined,
+    rank: typeof row.rank === 'number' && Number.isFinite(row.rank) ? row.rank : undefined,
     name: {},
     status: PUBLISH_STATUSES.has(row.status as PublishStatus)
       ? (row.status as PublishStatus)

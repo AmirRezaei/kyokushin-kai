@@ -23,7 +23,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 import {useAuth} from '@/components/context/AuthContext';
 import {useSnackbar} from '@/components/context/SnackbarContext';
-import {PublishStatus} from '@/data/model/common';
+import {PublishStatus} from '../../../data/model/common';
 
 type QuoteRecord = {
    id: string;
@@ -199,19 +199,15 @@ const QuoteManagementTab: React.FC = () => {
          return;
       }
 
-      const payload: Partial<QuoteRecord> & {
-         date?: string | null;
-         history?: string | null;
-         reference?: string | null;
-      } = {
+      const payload: Partial<QuoteRecord> = {
          author,
          text,
          meaning,
          status: formState.status,
          tags: parseTags(formState.tags),
-         date: formState.date.trim() || null,
-         history: formState.history.trim() || null,
-         reference: formState.reference.trim() || null,
+         date: formState.date.trim(),
+         history: formState.history.trim(),
+         reference: formState.reference.trim(),
       };
 
       setIsSaving(true);
