@@ -18,12 +18,12 @@ import React, { useMemo, useState } from 'react';
 
 import { SettingsManager } from '@/helper/SettingsManager';
 import type { GradeHistoryEntry } from '@/types/settings';
-import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
 import {
   getFormattedGradeName,
   getBeltColorHex,
   getBeltName,
 } from '../../../data/repo/gradeHelpers';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 import { KYOKUSHIN_SKK_ADULT_RANK_REQUIREMENTS } from './kyokushinRankRequirements';
 
@@ -47,7 +47,7 @@ export const TrainingTracker: React.FC = () => {
 
   const [timelineRange, setTimelineRange] = useState<number>(3000); // Start with 3000 days
 
-  const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+  const { grades } = useCurriculumGrades();
 
   // Milestones
   const BEGINNER_MILESTONE = 1000;

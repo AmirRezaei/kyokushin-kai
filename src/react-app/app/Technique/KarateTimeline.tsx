@@ -40,7 +40,7 @@ import { useSnackbar } from '@/components/context/SnackbarContext';
 import CustomDivider from '@/components/UI/CustomDivider';
 import KarateBelt from '@/components/UI/KarateBelt';
 import { TechniqueKind } from '../../../data/model/technique';
-import { GradeWithContent } from '../../../data/repo/KyokushinRepository';
+import { GradeWithContent } from '@/hooks/useCatalog';
 
 // Map LanguageEnum values to catalog.json field names
 const languageKeyMap: Record<string, string> = {

@@ -52,6 +52,7 @@ import Footer from './components/Footer';
 import FeedbackPage from './app/feedback/FeedbackPage';
 import AdminPage from './app/admin/AdminPage';
 import AdminRolesPage from './app/admin/AdminRolesPage';
+import { useCatalogQuery } from '@/hooks/useCatalog';
 
 function AppContent() {
   const theme = useTheme();
@@ -87,6 +88,8 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showSnackbar } = useSnackbar();
+  const { isError: isCatalogError, error: catalogError } = useCatalogQuery();
+  const lastCatalogErrorRef = useRef<string | null>(null);
 
   // Helper function to convert route path to human-readable page name
   const getPageName = (pathname: string): string => {
@@ -131,6 +134,19 @@ function AppContent() {
       showSnackbar(authError, 'error');
     }
   }, [authError, showSnackbar]);
+
+  React.useEffect(() => {
+    if (!isCatalogError) {
+      lastCatalogErrorRef.current = null;
+      return;
+    }
+    const message =
+      catalogError instanceof Error ? catalogError.message : 'Unable to load catalog data';
+    if (lastCatalogErrorRef.current !== message) {
+      showSnackbar(message, 'error');
+      lastCatalogErrorRef.current = message;
+    }
+  }, [isCatalogError, catalogError, showSnackbar]);
 
   React.useEffect(() => {
     const handleSettingsConflict = () => {

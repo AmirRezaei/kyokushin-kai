@@ -14,7 +14,7 @@ import { Spellcheck } from '@mui/icons-material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/components/context/AuthContext';
 
-import { TechniqueRecord } from '../../../../data/repo/KyokushinRepository';
+import { TechniqueRecord } from '../../../../data/model/technique';
 import {
   getTechniqueCorrectOrder,
   getTechniqueWords,
@@ -28,12 +28,12 @@ import BeltCircular from '@/components/UI/KarateBelt';
 import ScoreUI from '@/components/UI/ScoreUI';
 // import {Grade} from '@/data/Grade'; // Removed
 // import {gradeData} from '@/data/gradeData'; // Removed
-import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
 import { getLevelNumber, getStripeNumber } from '../../../../data/repo/gradeHelpers';
 import { usePreventBodyScroll } from '../../../components/drag/usePreventBodyScroll';
 import { useFullscreen } from '../../../components/context/FullscreenContext';
 import GamePageLayout from '../components/GamePageLayout';
 import LevelSelector from './LevelSelector';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 /**
  * Main Component
@@ -43,7 +43,7 @@ const WordPlayPage: React.FC = () => {
   /**
    * Initialize Techniques starting from grade[1]
    */
-  const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+  const { grades, isLoading, isError, error } = useCurriculumGrades();
   /**
    * Map techniques by grade ID for easy access
    */
@@ -126,7 +126,8 @@ const WordPlayPage: React.FC = () => {
 
   // State for selected level
   const [selectedLevel, setSelectedLevel] = useState<number>(() => {
-    return getLevelNumber(grades.find((g) => g.techniques.length > 0)!) || 1;
+    const firstGrade = grades.find((g) => g.techniques.length > 0);
+    return firstGrade ? getLevelNumber(firstGrade) : 1;
   });
 
   /**
@@ -219,12 +220,31 @@ const WordPlayPage: React.FC = () => {
     [grades, techniqueMap],
   );
 
+  useEffect(() => {
+    if (grades.length === 0) return;
+    if (techniquesToShow.length > 0 && currentTechnique) return;
+
+    const fallbackGrade = grades.find((grade) => grade.techniques.length > 0) ?? grades[0];
+    handleLevelChangeByLevelNumber(getLevelNumber(fallbackGrade));
+  }, [grades, techniquesToShow.length, currentTechnique, handleLevelChangeByLevelNumber]);
+
   const { token } = useAuth();
+
+  useEffect(() => {
+    if (grades.length === 0) return;
+    const hasLevel = grades.some((grade) => getLevelNumber(grade) === selectedLevel);
+    if (!hasLevel) {
+      const fallbackGrade = grades.find((grade) => grade.techniques.length > 0) ?? grades[0];
+      setSelectedLevel(getLevelNumber(fallbackGrade));
+    }
+  }, [grades, selectedLevel]);
 
   /**
    * Load knownTechniqueIds from API or localStorage on mount
    */
   useEffect(() => {
+    if (grades.length === 0) return;
+
     const loadProgress = async () => {
       let loadedIds: string[] = [];
 
@@ -258,16 +278,14 @@ const WordPlayPage: React.FC = () => {
         setKnownTechniqueIds(updatedKnownTechniqueIds);
 
         // Update the selected level based on known techniques
-        const levelNumber = grades.find(
+        const firstIncomplete = grades.find(
           (grade) => !grade.techniques.every((tech) => updatedKnownTechniqueIds.has(tech.id)),
-        )
-          ? getLevelNumber(
-              grades.find(
-                (grade) => !grade.techniques.every((tech) => updatedKnownTechniqueIds.has(tech.id)),
-              )!,
-            )
-          : grades.find((g) => g.techniques.length > 0)
-            ? getLevelNumber(grades.find((g) => g.techniques.length > 0)!)
+        );
+        const fallbackGrade = grades.find((g) => g.techniques.length > 0);
+        const levelNumber = firstIncomplete
+          ? getLevelNumber(firstIncomplete)
+          : fallbackGrade
+            ? getLevelNumber(fallbackGrade)
             : 1;
 
         const knownGradeIds = grades
@@ -612,6 +630,27 @@ const WordPlayPage: React.FC = () => {
     setOpenChallengingTechniquesModal(true);
   };
 
+  if (isError) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Unable to load Word Quest
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error instanceof Error ? error.message : 'Please try again later.'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h5">Loading Word Quest...</Typography>
+      </Box>
+    );
+  }
+
   /**
    * Early Return if No Techniques Available
    */
@@ -649,7 +688,8 @@ const WordPlayPage: React.FC = () => {
         }}
       >
         {Array.from(knownGradeIds).map((id) => {
-          const grade = grades.find((x) => x.id === id)!; // `!` asserts that `grade` will not be null
+          const grade = grades.find((x) => x.id === id);
+          if (!grade) return null;
           const stripes = getStripeNumber(grade);
           return (
             <BeltCircular

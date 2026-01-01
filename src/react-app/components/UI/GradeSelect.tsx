@@ -2,11 +2,11 @@
 // * Path: ./src/components/UI/GradeSelect.tsx
 // HEADER-END
 import {Box, MenuItem, Select, SelectChangeEvent} from '@mui/material';
-import React, { useMemo } from 'react';
+import React from 'react';
 
-import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
 import { getBeltColorHex, getBeltName, getStripeNumber } from '../../../data/repo/gradeHelpers';
 import KarateBelt from '../UI/KarateBelt';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 interface GradeSelectProps {
    selectedGradeId: string;
@@ -14,7 +14,7 @@ interface GradeSelectProps {
 }
 
 const GradeSelect: React.FC<GradeSelectProps> = ({selectedGradeId, handleGradeChange}) => {
-   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+   const { grades } = useCurriculumGrades();
 
    return (
    <Select labelId='grade-select-label' id='grade-select' value={selectedGradeId} onChange={handleGradeChange} label='Grade'>

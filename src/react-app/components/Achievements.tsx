@@ -23,9 +23,9 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import React, {useEffect, useMemo, useState} from 'react';
 
-import { KyokushinRepository, GradeWithContent } from '../../data/repo/KyokushinRepository';
 import { getFormattedGradeName, getLevelNumber } from '../../data/repo/gradeHelpers';
 import { TechniqueRecord } from '../../data/model/technique';
+import { GradeWithContent, useCurriculumGrades } from '@/hooks/useCatalog';
 
 /**
  * Interface for Achievements Props
@@ -231,7 +231,7 @@ const Achievements: React.FC<AchievementsProps> = ({knownTechniqueIds, currentLe
    const [achievedAchievements, setAchievedAchievements] = useState<string[]>([]);
    
    // Initialize data
-   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+   const { grades } = useCurriculumGrades();
 
    /**
     * Handle Toggle Change

@@ -4,7 +4,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import { Box, Button, Stack, Grid, CircularProgress, Typography } from '@mui/material';
 import React, { useState, useEffect } from 'react';
 
-import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
+import { useCatalogMedia, useCurriculumGrades } from '@/hooks/useCatalog';
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
 import { TechniqueRecord } from '../../../data/model/technique';
@@ -20,8 +20,8 @@ const TechniquePage: React.FC = () => {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<FilterType>('all');
 
-  const [grades, setGrades] = useState<GradeWithContent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { grades, isLoading, isError, error } = useCurriculumGrades();
+  const { mediaById } = useCatalogMedia();
 
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -37,12 +37,6 @@ const TechniquePage: React.FC = () => {
 
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
-
-  useEffect(() => {
-    const data = KyokushinRepository.getCurriculumGrades();
-    setGrades(data);
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -99,8 +93,8 @@ const TechniquePage: React.FC = () => {
     ) {
       const mediaUrls = technique.mediaIds
         .map((mediaId) => {
-          const media = KyokushinRepository.getMedia(mediaId);
-          return media?.url;
+          const media = mediaById[mediaId];
+          return media?.uri;
         })
         .filter(Boolean) as string[];
 
@@ -281,7 +275,20 @@ const TechniquePage: React.FC = () => {
       (grade) => grade.kind === 'Dan' || grade.techniques.length > 0 || grade.katas.length > 0,
     );
 
-  if (loading) {
+  if (isError) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Unable to load techniques
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error instanceof Error ? error.message : 'Please try again later.'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
     return (
       <Box
         sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}

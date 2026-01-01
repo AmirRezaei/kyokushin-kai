@@ -20,7 +20,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFullscreen } from '../../../components/context/FullscreenContext';
 
 import { getBeltColorHex } from '../../../../data/repo/gradeHelpers';
-import { KyokushinRepository, GradeWithContent } from '../../../../data/repo/KyokushinRepository';
+import { useAllTechniques, useCurriculumGrades } from '@/hooks/useCatalog';
 
 import DeckSelector from './Deck/DeckSelector';
 import { useDecks } from './Deck/DeckContext';
@@ -228,6 +228,8 @@ const CardCrossword: React.FC = () => {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { decks } = useDecks();
   const { cards } = useCards();
+  const { grades } = useCurriculumGrades();
+  const { techniques } = useAllTechniques();
 
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [gameStarted, setGameStarted] = useState(false);
@@ -500,21 +502,20 @@ const CardCrossword: React.FC = () => {
   const deckColor = useMemo(() => {
     if (selectedDeckId && selectedDeckId.startsWith('deck-')) {
       const gradeId = selectedDeckId.replace('deck-', '');
-      const grades = KyokushinRepository.getCurriculumGrades();
-      const grade = grades.find((g: GradeWithContent) => g.id === gradeId);
+      const grade = grades.find((g) => g.id === gradeId);
       if (grade) {
         return getBeltColorHex(grade.beltColor);
       }
     }
     return null;
-  }, [selectedDeckId]);
+  }, [selectedDeckId, grades]);
 
   // Generate crossword puzzle
   const generatePuzzle = useCallback(() => {
     const selectedDeck = decks.find((d) => d.id === selectedDeckId);
     if (!selectedDeck) return null;
 
-    // Get techniques and katas directly from repository to ensure we use Romaji names
+    // Get techniques and katas from catalog data to ensure we use Romaji names
     let wordList: {
       word: string;
       clue: string;
@@ -531,7 +532,6 @@ const CardCrossword: React.FC = () => {
     if (selectedDeck.id.startsWith('deck-')) {
       // System deck - fetch from curriculum
       const gradeId = selectedDeck.id.replace('deck-', '');
-      const grades = KyokushinRepository.getCurriculumGrades();
       const grade = grades.find((g) => g.id === gradeId);
 
       if (grade) {
@@ -574,8 +574,7 @@ const CardCrossword: React.FC = () => {
     } else {
       // User deck - use cards but extract Romaji from card IDs
       const deckCards = cards.filter((card) => selectedDeck.cardIds.includes(card.id));
-      const allTechniques = KyokushinRepository.getAllTechniques();
-      const grades = KyokushinRepository.getCurriculumGrades();
+      const allTechniques = techniques;
       const allKatas = grades.flatMap((g) => g.katas);
 
       wordList = deckCards
@@ -1337,7 +1336,7 @@ const CardCrossword: React.FC = () => {
       words: updatedWords,
       size: { rows: trimmedGrid.length, cols: trimmedGrid[0].length },
     };
-  }, [selectedDeckId, decks, cards, imagePlaceholder]);
+  }, [selectedDeckId, decks, cards, imagePlaceholder, grades, techniques]);
 
   const startGame = () => {
     const newPuzzle = generatePuzzle();

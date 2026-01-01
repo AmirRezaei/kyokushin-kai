@@ -13,7 +13,7 @@ import React, { useMemo } from 'react';
 
 import KarateBelt from '@/components/UI/KarateBelt';
 import { getBeltColorHex, getStripeNumber } from '../../../../../data/repo/gradeHelpers';
-import { KyokushinRepository } from '../../../../../data/repo/KyokushinRepository';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 import { useDecks } from './DeckContext';
 
@@ -35,6 +35,7 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
   showCounts = false,
 }) => {
   const { decks } = useDecks();
+  const { grades } = useCurriculumGrades();
 
   const { systemDecks, userDecks } = useMemo(() => {
     let availableDecks = decks;
@@ -51,7 +52,6 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
 
   // Pre-fetch grades for system decks to avoid repetitive lookups in render
   const systemDecksWithGrades = useMemo(() => {
-    const grades = KyokushinRepository.getCurriculumGrades();
     const gradeMap = new Map(grades.map((g) => [g.id, g]));
 
     return systemDecks.map((deck) => {
@@ -59,7 +59,7 @@ const DeckSelector: React.FC<DeckSelectorProps> = ({
       const grade = gradeMap.get(gradeId);
       return { deck, grade };
     });
-  }, [systemDecks]);
+  }, [systemDecks, grades]);
 
   const handleChange = (event: SelectChangeEvent) => {
     onDeckChange(event.target.value as string);

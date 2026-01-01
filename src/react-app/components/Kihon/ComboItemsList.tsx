@@ -37,13 +37,15 @@ import {
   getFormattedGradeName,
   getStripeNumber,
 } from '../../../data/repo/gradeHelpers';
+import { TechniqueRecord } from '../../../data/model/technique';
+import { GradeWithContent } from '@/hooks/useCatalog';
 
 import DraggableList from '../UI/DraggableList/DraggableList';
 import DraggableListItem from '../UI/DraggableList/DraggableListItem';
 import DraggableListItemContentAccordion from '../UI/DraggableList/DraggableListItemContentAccordion';
 import KarateBelt from '../UI/KarateBelt';
 import StrikeIcon from '../UI/StrikeIcon';
-import { Combo, ComboItem, DividerItem, techniqueMap, TechniqueRef } from './KihonList';
+import { Combo, ComboItem, DividerItem, TechniqueRef } from './KihonList';
 
 interface ComboItemsListProps {
   // Combos currently filtered by difficulty & tags (for rendering)
@@ -66,6 +68,9 @@ interface ComboItemsListProps {
   // Props to open "Rename Combo" dialog
   setRenameDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setComboIndexToRename: React.Dispatch<React.SetStateAction<number | null>>;
+
+  techniqueMap: Map<string, TechniqueRecord>;
+  grades: GradeWithContent[];
 }
 
 const ComboItemsList: React.FC<ComboItemsListProps> = ({
@@ -80,6 +85,8 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({
   setComboNotesInDialog,
   setRenameDialogOpen,
   setComboIndexToRename,
+  techniqueMap,
+  grades,
 }) => {
   /* ------------------------------------------
       STATE for various local dialogs
@@ -236,7 +243,7 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({
       setTagEditTechniqueIndex(techniqueIndex);
       setTechniqueTagsDialogOpen(true);
     },
-    [allCombos],
+    [allCombos, techniqueMap],
   );
 
   const handleSaveTechniqueTags = useCallback(() => {
@@ -338,8 +345,8 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({
             .map((tr) => {
               const tech = techniqueMap.get(tr.techId);
               if (!tech) return null;
-              const g = FindGradeByTechniqueId([], tech.id);
-              return getFormattedGradeName(g);
+              const g = FindGradeByTechniqueId(grades, tech.id);
+              return g ? getFormattedGradeName(g) : 'Unknown';
             })
             .filter((rank): rank is string => rank !== null);
 
@@ -414,10 +421,10 @@ const ComboItemsList: React.FC<ComboItemsListProps> = ({
                             </DraggableListItem>
                           );
                         }
-                        const g = FindGradeByTechniqueId([], tech.id);
+                        const g = FindGradeByTechniqueId(grades, tech.id);
                         const category = tech.kind;
-                        const beltColorHex = getBeltColorHex(g.beltColor);
-                        const stripes = getStripeNumber(g);
+                        const beltColorHex = getBeltColorHex(g?.beltColor || 'white');
+                        const stripes = g ? getStripeNumber(g) : 0;
 
                         return (
                           // Technique item

@@ -4,21 +4,35 @@
 
 import {Typography} from '@mui/material';
 import Box from '@mui/material/Box';
-import React, {useMemo} from 'react';
+import React from 'react';
 
 import KarateBelt from '@/components/UI/KarateBelt';
-import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
 import { getBeltColorHex, getStripeNumber } from '../../../data/repo/gradeHelpers';
 import { KataRecord } from '../../../data/model/kata';
+import { useCatalogMedia, useCurriculumGrades } from '@/hooks/useCatalog';
 
 const KataPage: React.FC = () => {
-   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+   const { grades, isError, error } = useCurriculumGrades();
+   const { mediaById } = useCatalogMedia();
+
+   if (isError) {
+      return (
+         <Box sx={{ p: 4 }}>
+            <Typography variant='h5' gutterBottom>
+               Unable to load katas
+            </Typography>
+            <Typography variant='body2' color='text.secondary'>
+               {error instanceof Error ? error.message : 'Please try again later.'}
+            </Typography>
+         </Box>
+      );
+   }
 
    const handleKataClick = (kata: KataRecord) => {
       if (kata.mediaIds && kata.mediaIds.length > 0) {
-          const media = KyokushinRepository.getMedia(kata.mediaIds[0]);
-          if (media && media.url) {
-              window.open(media.url, '_blank', 'noopener,noreferrer');
+          const media = mediaById[kata.mediaIds[0]];
+          if (media && media.uri) {
+              window.open(media.uri, '_blank', 'noopener,noreferrer');
           }
       }
    };

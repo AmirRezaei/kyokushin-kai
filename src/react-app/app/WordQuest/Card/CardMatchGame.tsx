@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 
-import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
 import { getBeltColorHex } from '../../../../data/repo/gradeHelpers';
 import {
   getLocalizedTextKey,
@@ -27,6 +26,7 @@ import {
 import { useDecks } from './Deck/DeckContext';
 import DeckSelector from './Deck/DeckSelector';
 import { useCards } from './CardContext';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 // Game Card Interface
 interface GameCard {
@@ -46,6 +46,7 @@ const CardMatchGame: React.FC = () => {
   const { decks } = useDecks();
   const { cards: userCards } = useCards();
   const { selectedLanguages } = useLanguage();
+  const { grades } = useCurriculumGrades();
 
   // Game State
   const [gameState, setGameState] = useState<'selecting' | 'playing' | 'finished'>('selecting');
@@ -83,9 +84,8 @@ const CardMatchGame: React.FC = () => {
     let currentDeckColor: string | null = null;
 
     if (selectedDeckId.startsWith('deck-')) {
-      // System Deck - Using Repository
+      // System Deck - Using catalog data
       // deck-rankID -> extract rankID
-      const grades = KyokushinRepository.getCurriculumGrades();
       const gradeId = selectedDeckId.replace('deck-', '');
       const grade = grades.find((g) => g.id === gradeId);
 
@@ -331,7 +331,7 @@ const CardMatchGame: React.FC = () => {
               variant="contained"
               size="large"
               onClick={startGame}
-              disabled={!selectedDeckId}
+              disabled={!selectedDeckId || (selectedDeckId.startsWith('deck-') && grades.length === 0)}
               sx={{ py: 1.5, fontSize: '1.2rem' }}
             >
               Start Game

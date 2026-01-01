@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/components/context/AuthContext';
 
 import { getLocalStorageItem, setLocalStorageItem } from '@/components/utils/localStorageUtils';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 import { getInitialData } from '../seedData';
 import { Deck, Card } from '../types';
@@ -24,15 +25,17 @@ export const DeckProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isInitialMount = useRef(true);
 
   const { token } = useAuth();
+  const { grades } = useCurriculumGrades();
 
   // Combine native decks with user decks for consumption
   const [nativeDecks, setNativeDecks] = useState<Deck[]>([]);
 
   useEffect(() => {
-    getInitialData().then(({ decks }) => {
+    if (grades.length === 0) return;
+    getInitialData(grades).then(({ decks }) => {
       setNativeDecks(decks);
     });
-  }, []);
+  }, [grades]);
 
   useEffect(() => {
     if (!token) {

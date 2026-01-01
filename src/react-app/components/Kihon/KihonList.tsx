@@ -11,6 +11,7 @@ import {
   ButtonGroup,
   Chip,
   Container,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -23,19 +24,18 @@ import {
   SelectChangeEvent,
   TextField,
   Typography,
-  useTheme,
 } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { FindGradeByTechniqueId } from '@/app/Technique/TechniqueData';
 // import {gradeData} from '@/data/gradeData'; // Removed
-import { KyokushinRepository } from '../../../data/repo/KyokushinRepository';
 import { getBeltColorHex, getStripeNumber } from '../../../data/repo/gradeHelpers';
 import { TechniqueRecord, TechniqueKind } from '../../../data/model/technique';
 import { getLocalStorageItems, setLocalStorageItems } from '../utils/localStorageUtils';
 import ComboItemsList from './ComboItemsList';
 import KarateBelt from '../UI/KarateBelt';
+import { useAllTechniques, useCurriculumGrades } from '@/hooks/useCatalog';
 
 /* -------------------------------------------
    Types and Utility Classes
@@ -50,12 +50,13 @@ export class DividerItem {
   }
 }
 
-export const techniqueMap = new Map<string, TechniqueRecord>();
-// Populate map from Repository
-const allTechs = KyokushinRepository.getAllTechniques();
-for (const t of allTechs) {
-  techniqueMap.set(t.id, t);
-}
+const buildTechniqueMap = (techniques: TechniqueRecord[]): Map<string, TechniqueRecord> => {
+  const map = new Map<string, TechniqueRecord>();
+  for (const t of techniques) {
+    map.set(t.id, t);
+  }
+  return map;
+};
 
 export class TechniqueRef {
   id: string; // instance id
@@ -98,7 +99,10 @@ export class Combo {
   }
 }
 
-function parseCombosFromJSON(data: unknown): Combo[] {
+function parseCombosFromJSON(
+  data: unknown,
+  techniqueMap: Map<string, TechniqueRecord>,
+): Combo[] {
   if (!Array.isArray(data)) return [];
   return data.map((comboObj: any) => {
     const c = new Combo(
@@ -116,7 +120,11 @@ function parseCombosFromJSON(data: unknown): Combo[] {
           if (itemObj.text && itemObj.id) {
             // Divider
             c.items.push(new DividerItem(itemObj.id, itemObj.text));
-          } else if (itemObj.id && !itemObj.text && techniqueMap.has(itemObj.techId)) {
+          } else if (
+            itemObj.id &&
+            !itemObj.text &&
+            (techniqueMap.size === 0 || techniqueMap.has(itemObj.techId))
+          ) {
             // TechniqueRef
             c.items.push(
               new TechniqueRef(
@@ -140,14 +148,16 @@ const capitalizeFirstLetter = (string: string) => string.charAt(0).toUpperCase()
 ------------------------------------------- */
 
 const KihonList: React.FC = React.memo(() => {
-  const theme = useTheme();
+  const { grades, isLoading, isError, error } = useCurriculumGrades();
+  const { techniques } = useAllTechniques();
+  const techniqueMap = useMemo(() => buildTechniqueMap(techniques), [techniques]);
 
   /* 
   -- Global combos state (and local storage) 
   */
   const [savedCombos, setSavedCombos] = useState<Combo[]>(() => {
     const stored = getLocalStorageItems<Combo[]>('savedCombos', []);
-    return parseCombosFromJSON(stored);
+    return parseCombosFromJSON(stored, techniqueMap);
   });
 
   useEffect(() => {
@@ -243,24 +253,27 @@ const KihonList: React.FC = React.memo(() => {
     URL.revokeObjectURL(url);
   }, [savedCombos]);
 
-  const importCombos = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        try {
-          const parsedCombos = JSON.parse(content);
-          const imported = parseCombosFromJSON(parsedCombos);
-          setSavedCombos(imported);
-        } catch (error) {
-          console.error('Failed to import combos:', error);
-        }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
-    }
-  }, []);
+  const importCombos = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          try {
+            const parsedCombos = JSON.parse(content);
+            const imported = parseCombosFromJSON(parsedCombos, techniqueMap);
+            setSavedCombos(imported);
+          } catch (error) {
+            console.error('Failed to import combos:', error);
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      }
+    },
+    [techniqueMap],
+  );
 
   /* 
   -- Creating a new combo from scratch 
@@ -298,7 +311,7 @@ const KihonList: React.FC = React.memo(() => {
   */
   const allTechniques = useMemo(() => {
     return Array.from(techniqueMap.values());
-  }, []);
+  }, [techniqueMap]);
 
   // List of displayable technique kinds
   const displayableTechniqueKinds = [
@@ -322,6 +335,27 @@ const KihonList: React.FC = React.memo(() => {
     setComboTagsInDialog([]);
     setComboNotesInDialog('');
   }, []);
+
+  if (isError) {
+    return (
+      <Container sx={{ py: 6 }}>
+        <Typography variant="h6" gutterBottom>
+          Unable to load techniques
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {error instanceof Error ? error.message : 'Please try again later.'}
+        </Typography>
+      </Container>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress size={32} />
+      </Container>
+    );
+  }
 
   return (
     <Container>
@@ -387,6 +421,8 @@ const KihonList: React.FC = React.memo(() => {
           combos={filteredCombos}
           allCombos={savedCombos}
           setAllCombos={setSavedCombos}
+          techniqueMap={techniqueMap}
+          grades={grades}
           setAddTechniqueDialogOpen={setAddTechniqueDialogOpen}
           setSelectedComboIndexForAdding={setSelectedComboIndexForAdding}
           setComboNameInDialog={setComboNameInDialog}
@@ -483,12 +519,12 @@ const KihonList: React.FC = React.memo(() => {
 
           {/* Technique selection by type */}
           {displayableTechniqueKinds.map((type) => {
-            const techniquesForType = allTechniques.filter((t) => t.kind === type);
-            const selectedForType = newTechniques
-              .filter((id) => {
-                const tech = techniqueMap.get(id);
-                return tech?.kind === type;
-              })
+        const techniquesForType = allTechniques.filter((t) => t.kind === type);
+        const selectedForType = newTechniques
+          .filter((id) => {
+            const tech = techniqueMap.get(id);
+            return tech?.kind === type;
+          })
               .map((id) => techniqueMap.get(id)?.name.romaji || '');
 
             return (
@@ -522,10 +558,10 @@ const KihonList: React.FC = React.memo(() => {
                   renderValue={(selected) => (selected as string[]).join(', ')}
                 >
                   {techniquesForType.map((technique) => {
-                    const g = FindGradeByTechniqueId([], technique.id); // Pass empty array as it's ignored now
+                    const g = FindGradeByTechniqueId(grades, technique.id);
                     const isSelected = selectedForType.includes(technique.name.romaji || '');
-                    const beltColorHex = getBeltColorHex(g.beltColor);
-                    const stripes = getStripeNumber(g);
+                    const beltColorHex = getBeltColorHex(g?.beltColor || 'white');
+                    const stripes = g ? getStripeNumber(g) : 0;
 
                     return (
                       <MenuItem key={technique.id} value={technique.name.romaji}>

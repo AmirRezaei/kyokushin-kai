@@ -1,6 +1,6 @@
-import { KyokushinRepository } from '../../../../data/repo/KyokushinRepository';
 import { getFormattedGradeName } from '../../../../data/repo/gradeHelpers';
 import { Deck, Card } from './types';
+import { GradeWithContent } from '@/hooks/useCatalog';
 
 // Deterministic ID generation based on prefixes to ensure consistency across contexts
 // We use the IDs from gradeData which are sequential counter strings ("1", "2", ...)
@@ -8,11 +8,11 @@ import { Deck, Card } from './types';
 // Better to make them look like UUIDs or just unique strings.
 // Since we are seeding, we can just use "deck-grade-ID" and "card-tech-ID".
 
-export const getInitialData = async (): Promise<{ decks: Deck[]; cards: Card[] }> => {
+export const getInitialData = async (
+  grades: GradeWithContent[],
+): Promise<{ decks: Deck[]; cards: Card[] }> => {
   const decks: Deck[] = [];
   const cards: Card[] = [];
-
-  const grades = await KyokushinRepository.getCurriculumGrades();
 
   grades.forEach((grade) => {
     // Create Deck

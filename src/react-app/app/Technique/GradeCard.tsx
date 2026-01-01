@@ -18,11 +18,11 @@ import {
 } from '@mui/material';
 import React, { useState } from 'react';
 
-import { GradeWithContent } from '../../../data/repo/KyokushinRepository';
 import { getBeltColorHex } from '../../../data/repo/gradeHelpers';
 import { TechniqueRecord } from '../../../data/model/technique';
 import { KataRecord } from '../../../data/model/kata';
 import { LocalizedText } from '../../../data/model/common';
+import { GradeWithContent } from '@/hooks/useCatalog';
 import {
   useLanguage,
   LanguageEnum,

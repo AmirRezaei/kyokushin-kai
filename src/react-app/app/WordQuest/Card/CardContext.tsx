@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/components/context/AuthContext';
 
 import { getLocalStorageItem, setLocalStorageItem } from '@/components/utils/localStorageUtils';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 import { getInitialData } from './seedData';
 import { Card } from './types';
@@ -22,6 +23,7 @@ export const CardProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cards, setCards] = useState<Card[]>([]);
   const isInitialMount = useRef(true);
   const { token } = useAuth();
+  const { grades } = useCurriculumGrades();
 
   useEffect(() => {
     if (!token) {
@@ -152,8 +154,9 @@ export const CardProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [nativeCards, setNativeCards] = useState<Card[]>([]);
 
   useEffect(() => {
-    getInitialData().then(({ cards }) => setNativeCards(cards));
-  }, []);
+    if (grades.length === 0) return;
+    getInitialData(grades).then(({ cards }) => setNativeCards(cards));
+  }, [grades]);
 
   const allCards = React.useMemo(() => [...nativeCards, ...cards], [nativeCards, cards]);
 

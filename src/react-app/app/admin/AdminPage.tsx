@@ -31,6 +31,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { TechniqueKind, TechniqueRecord } from '../../../data/model/technique';
 import { PublishStatus } from '../../../data/model/common';
 import { BeltColor, GradeKind, GradeRecord } from '../../../data/model/grade';
@@ -122,6 +123,10 @@ const defaultKataFormState: KataFormState = {
 const AdminPage: React.FC = () => {
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const queryClient = useQueryClient();
+  const invalidateCatalog = React.useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: ['catalog'] });
+  }, [queryClient]);
   const [techniques, setTechniques] = useState<TechniqueRecord[]>([]);
   const [grades, setGrades] = useState<AdminGrade[]>([]);
   const [katas, setKatas] = useState<KataRecord[]>([]);
@@ -556,6 +561,7 @@ const AdminPage: React.FC = () => {
       resetForm();
       await loadTechniques();
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to save technique', 'error');
@@ -580,6 +586,7 @@ const AdminPage: React.FC = () => {
       }
       await loadTechniques();
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to delete technique', 'error');
@@ -666,6 +673,7 @@ const AdminPage: React.FC = () => {
       showSnackbar(gradeEditingId ? 'Grade updated' : 'Grade created', 'success');
       resetGradeForm();
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to save grade', 'error');
@@ -689,6 +697,7 @@ const AdminPage: React.FC = () => {
         resetGradeForm();
       }
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to delete grade', 'error');
@@ -766,6 +775,7 @@ const AdminPage: React.FC = () => {
       resetKataForm();
       await loadKatas();
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to save kata', 'error');
@@ -790,6 +800,7 @@ const AdminPage: React.FC = () => {
       }
       await loadKatas();
       await loadGrades();
+      await invalidateCatalog();
     } catch (error) {
       console.error(error);
       showSnackbar('Failed to delete kata', 'error');

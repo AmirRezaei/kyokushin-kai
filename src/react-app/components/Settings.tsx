@@ -26,6 +26,7 @@ import {
    ListItemText,
    MenuItem,
    Paper,
+   CircularProgress,
    Select,
    TextField,
    Typography,
@@ -36,8 +37,8 @@ import React, {useCallback, useMemo, useState} from 'react';
 
 // import {gradeData} from '@/data/gradeData'; // Removed
 // import {Grade} from '@/data/Grade'; // Removed
-import { KyokushinRepository } from '../../data/repo/KyokushinRepository';
 import { getBeltColorHex, getFormattedGradeName, getStripeNumber } from '../../data/repo/gradeHelpers';
+import { useCurriculumGrades } from '@/hooks/useCatalog';
 
 
 import {SettingsManager} from '@/helper/SettingsManager';
@@ -61,7 +62,7 @@ const Settings: React.FC = () => {
 
 
    // Initialize data
-   const grades = useMemo(() => KyokushinRepository.getCurriculumGrades(), []);
+   const { grades, isLoading, isError, error } = useCurriculumGrades();
 
 
    // Derived current grade
@@ -231,6 +232,21 @@ const Settings: React.FC = () => {
                        </Typography>
                    )}
                </List>
+               {isLoading && (
+                  <Box display='flex' alignItems='center' gap={1} mt={2}>
+                     <CircularProgress size={20} />
+                     <Typography variant='body2' color='text.secondary'>
+                        Loading grades...
+                     </Typography>
+                  </Box>
+               )}
+               {isError && (
+                  <Box display='flex' alignItems='center' gap={1} mt={2}>
+                     <Typography variant='body2' color='error'>
+                        {error instanceof Error ? error.message : 'Unable to load grades.'}
+                     </Typography>
+                  </Box>
+               )}
             </Grid2>
          </Grid2>
 

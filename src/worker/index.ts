@@ -1036,6 +1036,73 @@ app.delete('/api/v1/katas/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// --- Catalog Endpoint ---
+
+app.get('/api/v1/catalog', async (c) => {
+  const user = await requireUser(c);
+  const role = user
+    ? await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL))
+    : 'user';
+
+  const techniquesQuery =
+    role === 'admin'
+      ? `SELECT id, data_json, kind, status, rank, created_at, updated_at, version FROM techniques`
+      : `SELECT id, data_json, kind, status, rank, created_at, updated_at, version
+         FROM techniques
+         WHERE status = 'published'`;
+  const katasQuery =
+    role === 'admin'
+      ? `SELECT id, data_json, status, rank, created_at, updated_at, version FROM katas`
+      : `SELECT id, data_json, status, rank, created_at, updated_at, version
+         FROM katas
+         WHERE status = 'published'`;
+  const gradesQuery =
+    role === 'admin'
+      ? `SELECT id, data_json, grading_system_id, kind, number, rank, belt_color, sort_order, status, created_at, updated_at, version
+         FROM grades`
+      : `SELECT id, data_json, grading_system_id, kind, number, rank, belt_color, sort_order, status, created_at, updated_at, version
+         FROM grades
+         WHERE status = 'published'`;
+
+  const [{ results: techniqueRows }, { results: kataRows }, { results: gradeRows }] =
+    await Promise.all([
+      c.env.DB.prepare(techniquesQuery).all<TechniqueRow>(),
+      c.env.DB.prepare(katasQuery).all<KataRow>(),
+      c.env.DB.prepare(gradesQuery).all<GradeRow>(),
+    ]);
+
+  const techniques = (techniqueRows || []).map((row) => techniqueFromRow(row));
+  const katas = (kataRows || []).map((row) => kataFromRow(row));
+  const grades = (gradeRows || []).map((row) => gradeFromRow(row));
+
+  const techniqueMap = Object.fromEntries(techniques.map((technique) => [technique.id, technique]));
+  const kataMap = Object.fromEntries(katas.map((kata) => [kata.id, kata]));
+  const gradeMap = Object.fromEntries(grades.map((grade) => [grade.id, grade]));
+
+  const curriculumMap = await loadCurriculumMap(c.env.DB);
+  const curriculum: Record<string, { techIds: string[]; kataIds: string[] }> = {};
+
+  for (const grade of grades) {
+    const assignments = curriculumMap.get(grade.id) || { techniqueIds: [], kataIds: [] };
+    const techIds = assignments.techniqueIds.filter((id) => Boolean(techniqueMap[id]));
+    const kataIds = assignments.kataIds.filter((id) => Boolean(kataMap[id]));
+    curriculum[grade.id] = { techIds, kataIds };
+  }
+
+  return c.json({
+    store: {
+      terms: {},
+      techniques: techniqueMap,
+      katas: kataMap,
+      gradingSystems: {},
+      grades: gradeMap,
+      media: {},
+      sources: {},
+    },
+    curriculum,
+  });
+});
+
 // --- Quote Endpoints ---
 
 app.get('/api/v1/quotes', async (c) => {

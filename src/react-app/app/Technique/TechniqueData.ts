@@ -2,7 +2,7 @@
 // * Path: ./src/app/Technique/TechniqueData.ts
 // HEADER-END
 
-import { KyokushinRepository, GradeWithContent } from '../../../data/repo/KyokushinRepository';
+import { GradeWithContent } from '@/hooks/useCatalog';
 import { getLevelNumber } from '../../../data/repo/gradeHelpers';
 import { TechniqueKind } from '../../../data/model/technique';
 
@@ -42,7 +42,9 @@ export const specialTechniqueTagsByCategory: Record<string, string[]> = {
 
 // Helpers depending on Repository
 
-export const GetTechniqueByType = (): Partial<Record<TechniqueKind, CommonData[]>> => {
+export const GetTechniqueByType = (
+  grades: GradeWithContent[],
+): Partial<Record<TechniqueKind, CommonData[]>> => {
   const categories: Partial<Record<TechniqueKind, CommonData[]>> = {
     [TechniqueKind.Stand]: [],
     [TechniqueKind.Strike]: [],
@@ -51,8 +53,6 @@ export const GetTechniqueByType = (): Partial<Record<TechniqueKind, CommonData[]
     [TechniqueKind.Breathing]: [],
     [TechniqueKind.Fighting]: [],
   };
-
-  const grades = KyokushinRepository.getCurriculumGrades();
 
   grades.forEach((grade) => {
     const levelNumber = getLevelNumber(grade);
@@ -96,12 +96,12 @@ export const GetTechniqueByType = (): Partial<Record<TechniqueKind, CommonData[]
   return categories;
 };
 
-export function FindGradeByTechniqueId(grades: any[], id: string): GradeWithContent {
-  // Ignore passed 'grades' arg, use repo
-  const grade = KyokushinRepository.getGradeForTechnique(id);
+export function FindGradeByTechniqueId(
+  grades: GradeWithContent[],
+  id: string,
+): GradeWithContent | undefined {
+  const grade = grades.find((entry) => entry.techniques.some((tech) => tech.id === id));
   if (grade) return grade;
 
-  // Fallback to first grade if not found matches old behavior
-  const allGrades = KyokushinRepository.getCurriculumGrades();
-  return allGrades[0];
+  return grades[0];
 }

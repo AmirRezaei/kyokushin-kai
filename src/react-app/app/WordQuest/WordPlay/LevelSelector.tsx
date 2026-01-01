@@ -3,9 +3,9 @@ import React from 'react';
 
 import KarateBelt from '@/components/UI/KarateBelt';
 // import {Grade} from '@/data/Grade'; // Removed
-import { GradeWithContent } from '../../../../data/repo/KyokushinRepository';
 import { getFormattedGradeName, getBeltName, getLevelNumber, getStripeNumber } from '../../../../data/repo/gradeHelpers';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { GradeWithContent } from '@/hooks/useCatalog';
 
 interface LevelSelectorProps {
    grades: GradeWithContent[];
