@@ -98,6 +98,7 @@
     "cf-typegen": "wrangler types",
     "check": "tsc && vite build && wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
+    "secrets:put": "bun scripts/put-all-secrets.ts",
     "db:create": "wrangler d1 migrations create DB",
     "db:dev:migrate": "wrangler d1 migrations apply DB --local",
     "db:prod:migrate": "wrangler d1 migrations apply DB --remote",
