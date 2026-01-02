@@ -57,6 +57,7 @@ type OAuthTransactionRow = {
   state: string;
   pkce_verifier: string;
   mode: 'login' | 'link';
+  user_id: string | null;
   return_to: string;
   created_at: number;
   expires_at: number;
@@ -67,7 +68,18 @@ type PendingLinkRow = {
   code: string;
   provider: string;
   provider_user_id: string;
+  expected_user_id?: string | null;
   return_to: string;
+  expires_at: number;
+  consumed_at: number | null;
+};
+
+type OAuthLoginCodeRow = {
+  code: string;
+  provider: string;
+  user_id: string;
+  return_to: string;
+  created_at: number;
   expires_at: number;
   consumed_at: number | null;
 };
@@ -210,6 +222,9 @@ type QuoteRow = {
 const PUBLISH_STATUSES = new Set<PublishStatus>(['draft', 'published', 'inactive']);
 
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+const googleIssuers = ['https://accounts.google.com', 'accounts.google.com'];
+const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+const REFRESH_COOKIE_NAME = '__Host-kk_refresh';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -274,11 +289,10 @@ app.post('/api/v1/auth/login', async (c) => {
    * - Multiple refresh tokens can exist per user (no automatic cleanup)
    *
    * Known Issues:
-   * - No rate limiting (add Cloudflare rate limiting rules)
    * - No old token cleanup (consider adding on login)
    *
    * @body {idToken: string} - Google ID token from OAuth flow
-   * @returns {accessToken: JWT, refreshToken, expiresIn, user}
+   * @returns {accessToken: JWT, expiresIn, user} (refresh token via httpOnly cookie)
    */
   let payload: { idToken: string; returnTo?: string };
   try {
@@ -286,6 +300,10 @@ app.post('/api/v1/auth/login', async (c) => {
     if (!payload.idToken) throw new Error('Missing idToken');
   } catch {
     return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  if (!(await enforceRateLimit(c, 'auth_login', 10, 60))) {
+    return c.json({ error: 'Too many requests' }, 429);
   }
 
   const clientId = c.env.GOOGLE_CLIENT_ID;
@@ -297,10 +315,14 @@ app.post('/api/v1/auth/login', async (c) => {
     // Verify Google ID token
     const { payload: googlePayload } = await jwtVerify(payload.idToken, jwks, {
       audience: clientId,
+      issuer: googleIssuers,
     });
 
     if (!googlePayload.sub || !googlePayload.email) {
       throw new Error('Missing email or sub claim');
+    }
+    if (googlePayload.email_verified === false) {
+      throw new Error('Email not verified');
     }
 
     const providerUserId = String(googlePayload.sub);
@@ -358,15 +380,20 @@ app.post('/api/v1/auth/login', async (c) => {
       } else {
         const pendingCode = crypto.randomUUID();
         const now = Math.floor(Date.now() / 1000);
-        const returnTo = payload.returnTo || '/';
+        const requestedReturnTo = payload.returnTo || '/';
+        const returnTo = isValidReturnTo(requestedReturnTo) ? requestedReturnTo : '/';
 
         await c.env.DB.prepare(
-          `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-           VALUES (?, 'google', ?, ?, ?)
+          `INSERT INTO pending_links (code, provider, provider_user_id, expected_user_id, return_to, expires_at)
+           VALUES (?, 'google', ?, ?, ?, ?)
            ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
-           DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+           DO UPDATE SET
+             code = excluded.code,
+             expected_user_id = excluded.expected_user_id,
+             return_to = excluded.return_to,
+             expires_at = excluded.expires_at`,
         )
-          .bind(pendingCode, providerUserId, returnTo, now + 600)
+          .bind(pendingCode, providerUserId, existingByEmail.user_id, returnTo, now + 600)
           .run();
 
         return c.json(
@@ -405,7 +432,7 @@ app.post('/api/v1/auth/login', async (c) => {
     // Generate refresh token (30 days)
     const refreshToken = generateRefreshToken();
     const tokenHash = await hashToken(refreshToken);
-    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+    const expiresAt = Math.floor(Date.now() / 1000) + REFRESH_TOKEN_TTL_SECONDS;
 
     // Store in database
     await c.env.DB.prepare(
@@ -448,9 +475,9 @@ app.post('/api/v1/auth/login', async (c) => {
       }
     }
 
+    c.header('Set-Cookie', buildRefreshCookie(refreshToken));
     return c.json({
       accessToken,
-      refreshToken,
       expiresIn: 3600, // 1 hour
       user: {
         id: userId,
@@ -480,22 +507,31 @@ app.post('/api/v1/auth/refresh', async (c) => {
    * 4. Updates last_used_at timestamp
    *
    * Security:
-   * - No token rotation (same refresh token reused)
-   * - No rate limiting
+   * - Refresh token rotation (single-use)
+   * - Rate limited
    *
-   * @body {refreshToken: string}
+   * @body {refreshToken?: string} (legacy; prefer httpOnly cookie)
    * @returns {accessToken, expiresIn}
    */
-  let payload: { refreshToken: string };
-  try {
-    payload = await c.req.json();
-    if (!payload.refreshToken) throw new Error('Missing refreshToken');
-  } catch {
-    return c.json({ error: 'Invalid request' }, 400);
+  let refreshToken = getCookieValue(c.req.header('Cookie'), REFRESH_COOKIE_NAME);
+  if (!refreshToken) {
+    try {
+      const payload = (await c.req.json()) as { refreshToken?: string };
+      refreshToken = payload.refreshToken ?? null;
+    } catch {
+      refreshToken = null;
+    }
+  }
+  if (!refreshToken) {
+    return c.json({ error: 'Missing refresh token' }, 400);
+  }
+
+  if (!(await enforceRateLimit(c, 'auth_refresh', 30, 60))) {
+    return c.json({ error: 'Too many requests' }, 429);
   }
 
   try {
-    const tokenHash = await hashToken(payload.refreshToken);
+    const tokenHash = await hashToken(refreshToken);
     const now = Math.floor(Date.now() / 1000);
 
     // Find and validate refresh token + get user email
@@ -513,12 +549,26 @@ app.post('/api/v1/auth/refresh', async (c) => {
       return c.json({ error: 'Invalid or expired refresh token' }, 401);
     }
 
-    //Update last_used_at
-    await c.env.DB.prepare(
-      `UPDATE refresh_tokens SET last_used_at = strftime('%s', 'now') WHERE token_hash = ?`,
-    )
-      .bind(tokenHash)
-      .run();
+    const newRefreshToken = generateRefreshToken();
+    const newTokenHash = await hashToken(newRefreshToken);
+    const expiresAt = now + REFRESH_TOKEN_TTL_SECONDS;
+
+    await c.env.DB.batch([
+      c.env.DB.prepare(`DELETE FROM refresh_tokens WHERE token_hash = ?`).bind(tokenHash),
+      c.env.DB
+        .prepare(
+          `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          row.userId,
+          newTokenHash,
+          expiresAt,
+          now,
+          row.provider,
+        ),
+    ]);
 
     // Issue new custom JWT token (1 hour expiry)
     const accessToken = await createJWT(
@@ -565,6 +615,7 @@ app.post('/api/v1/auth/refresh', async (c) => {
       }
     }
 
+    c.header('Set-Cookie', buildRefreshCookie(newRefreshToken));
     return c.json({
       accessToken,
       expiresIn: 3600,
@@ -591,22 +642,28 @@ app.post('/api/v1/auth/logout', async (c) => {
    * - Fails gracefully if token not found
    * - Client also clears localStorage
    *
-   * @body {refreshToken: string}
+   * @body {refreshToken?: string} (legacy; prefer httpOnly cookie)
    * @returns {ok: boolean}
    */
-  let payload: { refreshToken: string };
-  try {
-    payload = await c.req.json();
-    if (!payload.refreshToken) throw new Error('Missing refreshToken');
-  } catch {
-    return c.json({ error: 'Invalid request' }, 400);
+  let refreshToken = getCookieValue(c.req.header('Cookie'), REFRESH_COOKIE_NAME);
+  if (!refreshToken) {
+    try {
+      const payload = (await c.req.json()) as { refreshToken?: string };
+      refreshToken = payload.refreshToken ?? null;
+    } catch {
+      refreshToken = null;
+    }
   }
 
   try {
-    const tokenHash = await hashToken(payload.refreshToken);
-
-    // Delete refresh token
-    await c.env.DB.prepare(`DELETE FROM refresh_tokens WHERE token_hash = ?`).bind(tokenHash).run();
+    if (refreshToken) {
+      const tokenHash = await hashToken(refreshToken);
+      // Delete refresh token
+      await c.env.DB.prepare(`DELETE FROM refresh_tokens WHERE token_hash = ?`)
+        .bind(tokenHash)
+        .run();
+    }
+    c.header('Set-Cookie', clearRefreshCookie());
 
     return c.json({ ok: true });
   } catch (error) {
@@ -750,13 +807,21 @@ app.post('/api/v1/auth/link/google', async (c) => {
     return c.json({ error: 'Invalid request' }, 400);
   }
 
+  if (!(await enforceRateLimit(c, 'auth_link_google', 10, 60))) {
+    return c.json({ error: 'Too many requests' }, 429);
+  }
+
   try {
     const { payload: googlePayload } = await jwtVerify(payload.token, jwks, {
       audience: c.env.GOOGLE_CLIENT_ID,
+      issuer: googleIssuers,
     });
 
     if (!googlePayload || !googlePayload.sub || !googlePayload.email) {
       return c.json({ error: 'Invalid Google token' }, 401);
+    }
+    if (googlePayload.email_verified === false) {
+      return c.json({ error: 'Google email not verified' }, 401);
     }
 
     const providerUserId = googlePayload.sub;
@@ -812,7 +877,7 @@ app.post('/api/v1/auth/link/google', async (c) => {
 
       const refreshToken = generateRefreshToken();
       const tokenHash = await hashToken(refreshToken);
-      const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+      const expiresAt = Math.floor(Date.now() / 1000) + REFRESH_TOKEN_TTL_SECONDS;
 
       await c.env.DB.prepare(
         `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
@@ -829,12 +894,12 @@ app.post('/api/v1/auth/link/google', async (c) => {
         'google',
       );
 
+      c.header('Set-Cookie', buildRefreshCookie(refreshToken));
       return c.json({
         ok: true,
         merged: true,
         login: {
           accessToken,
-          refreshToken,
           expiresIn: 3600,
           user: {
             id: mergeResult.user.id,
@@ -907,6 +972,70 @@ async function verifyCookieSimple(signedValue: string, secret: string) {
   return expected === signedValue ? value : null;
 }
 
+function getCookieValue(cookieHeader: string | null, name: string): string | null {
+  if (!cookieHeader) return null;
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [key, ...rest] = cookie.trim().split('=');
+    if (key === name) {
+      return rest.join('=');
+    }
+  }
+  return null;
+}
+
+function buildRefreshCookie(token: string, maxAgeSeconds: number = REFRESH_TOKEN_TTL_SECONDS) {
+  return `${REFRESH_COOKIE_NAME}=${token}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+}
+
+function clearRefreshCookie() {
+  return `${REFRESH_COOKIE_NAME}=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+function getClientIp(c: Context<{ Bindings: Bindings }>) {
+  const cfIp = c.req.header('CF-Connecting-IP');
+  if (cfIp) return cfIp;
+  const xff = c.req.header('X-Forwarded-For');
+  if (xff) return xff.split(',')[0].trim();
+  return c.req.header('X-Real-IP');
+}
+
+async function enforceRateLimit(
+  c: Context<{ Bindings: Bindings }>,
+  action: string,
+  limit: number,
+  windowSeconds: number,
+) {
+  const ip = getClientIp(c);
+  if (!ip) return true;
+
+  const key = `${action}:${ip}`;
+  const now = Math.floor(Date.now() / 1000);
+  const row = await c.env.DB.prepare(
+    `SELECT count, reset_at FROM rate_limits WHERE key = ? LIMIT 1`,
+  )
+    .bind(key)
+    .first<{ count: number; reset_at: number }>();
+
+  if (!row || row.reset_at < now) {
+    await c.env.DB.prepare(
+      `INSERT INTO rate_limits (key, count, reset_at)
+       VALUES (?, 1, ?)
+       ON CONFLICT(key) DO UPDATE SET count = 1, reset_at = excluded.reset_at`,
+    )
+      .bind(key, now + windowSeconds)
+      .run();
+    return true;
+  }
+
+  const nextCount = row.count + 1;
+  await c.env.DB.prepare(`UPDATE rate_limits SET count = ? WHERE key = ?`)
+    .bind(nextCount, key)
+    .run();
+
+  return nextCount <= limit;
+}
+
 // Helper: App Secret Proof
 async function calculateAppSecretProof(accessToken: string, appSecret: string) {
   const encoder = new TextEncoder();
@@ -924,31 +1053,56 @@ async function calculateAppSecretProof(accessToken: string, appSecret: string) {
     .join('');
 }
 
+function isValidReturnTo(value: string) {
+  return value.startsWith('/') && !value.includes('//') && !value.includes('://');
+}
+
+function buildFacebookAuthUrl(
+  c: Context<{ Bindings: Bindings }>,
+  state: string,
+  challenge: string,
+) {
+  const params = new URLSearchParams({
+    client_id: c.env.FACEBOOK_APP_ID,
+    redirect_uri: c.env.FACEBOOK_REDIRECT_URI,
+    response_type: 'code',
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    scope: 'public_profile,email',
+  });
+
+  return `https://www.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
+}
+
+async function createFacebookLoginCode(
+  db: D1Database,
+  userId: string,
+  returnTo: string,
+): Promise<string> {
+  const code = crypto.randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+  await db
+    .prepare(
+      `INSERT INTO oauth_login_codes (code, provider, user_id, return_to, created_at, expires_at)
+       VALUES (?, 'facebook', ?, ?, ?, ?)`,
+    )
+    .bind(code, userId, returnTo, now, now + 600)
+    .run();
+  return code;
+}
+
 app.get('/api/v1/auth/facebook/start', async (c) => {
   const mode = c.req.query('mode');
   const returnTo = c.req.query('returnTo') || '/';
 
-  if (mode !== 'login' && mode !== 'link') {
-    return c.json({ error: 'Invalid mode' }, 400);
+  if (mode && mode !== 'login') {
+    return c.json({ error: 'Use POST for link mode' }, 405);
   }
 
   // Validate returnTo (relative only)
-  if (!returnTo.startsWith('/') || returnTo.includes('//') || returnTo.includes('://')) {
+  if (!isValidReturnTo(returnTo)) {
     return c.json({ error: 'Invalid returnTo' }, 400);
-  }
-
-  if (mode === 'link') {
-    let user = await requireUser(c);
-    if (!user) {
-      const token = c.req.query('token');
-      if (token) {
-        const payload = await verifyJWT(token, c.env.JWT_SECRET);
-        if (payload) {
-          user = { id: payload.sub, email: payload.email } as any;
-        }
-      }
-    }
-    if (!user) return unauthorized(c);
   }
 
   const { verifier, challenge } = await generatePKCE();
@@ -958,14 +1112,15 @@ app.get('/api/v1/auth/facebook/start', async (c) => {
 
   // Store transaction
   await c.env.DB.prepare(
-    `INSERT INTO oauth_transactions (id, provider, state, pkce_verifier, mode, return_to, created_at, expires_at)
-     VALUES (?, 'facebook', ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO oauth_transactions (id, provider, state, pkce_verifier, mode, user_id, return_to, created_at, expires_at)
+     VALUES (?, 'facebook', ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       txId,
       state,
       verifier,
-      mode,
+      'login',
+      null,
       returnTo,
       now,
       now + 600, // 10 mins
@@ -978,19 +1133,53 @@ app.get('/api/v1/auth/facebook/start', async (c) => {
     `__Host-fb_oauth_tx=${cookieVal}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`,
   );
 
-  const params = new URLSearchParams({
-    client_id: c.env.FACEBOOK_APP_ID,
-    redirect_uri: c.env.FACEBOOK_REDIRECT_URI,
-    response_type: 'code',
-    state: state,
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
-    scope: 'public_profile,email',
-  });
+  const authUrl = buildFacebookAuthUrl(c, state, challenge);
 
-  return c.redirect(
-    `https://www.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/dialog/oauth?${params.toString()}`,
+  return c.redirect(authUrl);
+});
+
+app.post('/api/v1/auth/facebook/start', async (c) => {
+  let payload: { mode?: string; returnTo?: string };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const mode = payload.mode ?? 'link';
+  const returnTo = payload.returnTo || '/';
+
+  if (mode !== 'link') {
+    return c.json({ error: 'Invalid mode' }, 400);
+  }
+
+  if (!isValidReturnTo(returnTo)) {
+    return c.json({ error: 'Invalid returnTo' }, 400);
+  }
+
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { verifier, challenge } = await generatePKCE();
+  const state = crypto.randomUUID();
+  const txId = crypto.randomUUID();
+  const now = Math.floor(Date.now() / 1000);
+
+  await c.env.DB.prepare(
+    `INSERT INTO oauth_transactions (id, provider, state, pkce_verifier, mode, user_id, return_to, created_at, expires_at)
+     VALUES (?, 'facebook', ?, ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(txId, state, verifier, mode, user.id, returnTo, now, now + 600)
+    .run();
+
+  const cookieVal = await signCookie(txId, c.env.AUTH_COOKIE_SECRET);
+  c.header(
+    'Set-Cookie',
+    `__Host-fb_oauth_tx=${cookieVal}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`,
   );
+
+  const authUrl = buildFacebookAuthUrl(c, state, challenge);
+  return c.json({ authUrl });
 });
 
 app.get('/api/v1/auth/facebook/callback', async (c) => {
@@ -1070,29 +1259,16 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   const userAccessToken = tokenData.access_token;
 
   // Validate Token (debug_token)
-  const appSecretProof = await calculateAppSecretProof(userAccessToken, c.env.FACEBOOK_APP_SECRET);
-  // We need an app access token or just use the app id|secret syntax if supported, strict mode says use app token or just let debug_token handle it?
+  // We need an app access token or just use the app id|secret syntax if supported.
   // Docs say: input_token={token-to-inspect} & access_token={app-token-or-admin-token}
-  // We can use client_credentials to get app token first, or use "AppID|AppSecret" as access_token
   const appAccessToken = `${c.env.FACEBOOK_APP_ID}|${c.env.FACEBOOK_APP_SECRET}`;
+  const appSecretProof = await calculateAppSecretProof(appAccessToken, c.env.FACEBOOK_APP_SECRET);
 
   const debugParams = new URLSearchParams({
     input_token: userAccessToken,
     access_token: appAccessToken,
-    appsecret_proof: appSecretProof, // Proof for the input_token? No, proof is for the caller. Caller is app. So proof of appAccessToken?
-    // "If you are using an app access token, the proof must be generated using the app access token."
-    // Let's generate proof for the app token then.
+    appsecret_proof: appSecretProof,
   });
-  // Actually, if using AppID|AppSecret as access_token, we might not need proof or proof is based on that.
-  // Let's proceed with generating proof for the access_token we are using to make the call.
-  // If access_token is AppID|AppSecret, maybe we don't need proof?
-  // Let's try without proof first if using AppID|AppSecret, or just hash it.
-
-  // Re-reading docs: "The appsecret_proof is a sha256 hash of your access token, using the app secret as the key."
-  // If we use AppID|AppSecret, that IS the access token.
-
-  // Let's use the user access token itself to query /me, that validates it belongs to us implicitly if we use proof?
-  // No, debug_token is safer.
 
   const debugResp = await fetch(
     `https://graph.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/debug_token?${debugParams}`,
@@ -1142,29 +1318,39 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         );
         const meData = (await meResp.json()) as { email?: string; id: string };
         const fbEmail = meData.email;
+        if (!fbEmail) {
+          return c.json({ error: 'Facebook email required' }, 400);
+        }
 
         let collision = false;
+        let expectedUserId: string | null = null;
         if (fbEmail) {
           const existingUser = await c.env.DB.prepare(
             `SELECT user_id FROM user_settings WHERE email = ?`,
           )
             .bind(fbEmail)
-            .first();
+            .first<{ user_id: string }>();
           if (existingUser) {
             collision = true;
+            expectedUserId = existingUser.user_id;
           }
         }
 
         const pendingCode = crypto.randomUUID();
         await c.env.DB.prepare(
-          `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-                 VALUES (?, 'facebook', ?, ?, ?)
+          `INSERT INTO pending_links (code, provider, provider_user_id, expected_user_id, return_to, expires_at)
+                 VALUES (?, 'facebook', ?, ?, ?, ?)
                  ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
-                 DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+                 DO UPDATE SET
+                   code = excluded.code,
+                   expected_user_id = excluded.expected_user_id,
+                   return_to = excluded.return_to,
+                   expires_at = excluded.expires_at`,
         )
           .bind(
             pendingCode,
             fbUserId,
+            expectedUserId,
             tx.return_to,
             Math.floor(Date.now() / 1000) + 600, // 10 mins
           )
@@ -1186,6 +1372,9 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         email: string;
         picture?: { data: { url: string } };
       };
+      if (!fbProfile.email) {
+        return c.json({ error: 'Facebook email required' }, 400);
+      }
 
       // Update user settings with latest info
       const latestName = fbProfile.name || user.display_name;
@@ -1201,58 +1390,8 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       user.display_name = latestName;
       user.image_url = latestImage;
 
-      // Issue tokens (reuse login logic - refactor?)
-      // Copy-paste simplified for now
-      const refreshToken = generateRefreshToken();
-      const tokenHash = await hashToken(refreshToken);
-      const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
-
-      await c.env.DB.prepare(
-        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
-             VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
-      )
-        .bind(crypto.randomUUID(), user.user_id, tokenHash, expiresAt, 'facebook')
-        .run();
-
-      const accessToken = await createJWT(
-        user.user_id,
-        user.email,
-        c.env.JWT_SECRET,
-        3600,
-        'facebook',
-      );
-
-      const { results: providerResults } = await c.env.DB.prepare(
-        `SELECT provider FROM identities WHERE user_id = ?`,
-      )
-        .bind(user.user_id)
-        .all<{ provider: string }>();
-
-      const providers = providerResults.map((row) => row.provider).filter(Boolean);
-      if (!providers.includes('facebook')) {
-        providers.push('facebook');
-      }
-
-      const role = await getUserRole(
-        c.env.DB,
-        { id: user.user_id, email: user.email },
-        normalizeEmail(c.env.ADMIN_EMAIL),
-      );
-
-      const params = new URLSearchParams();
-      params.set('accessToken', accessToken);
-      params.set('refreshToken', refreshToken);
-      params.set('expiresIn', '3600');
-      params.set('userId', user.user_id);
-      params.set('email', user.email);
-      if (user.display_name) params.set('name', user.display_name);
-      if (user.image_url) params.set('imageUrl', user.image_url);
-      params.set('role', role);
-      if (providers.length) params.set('providers', providers.join(','));
-      params.set('returnTo', tx.return_to || '/');
-
-      const hashReturn = `/#/link/facebook?${params.toString()}`;
-      return c.redirect(hashReturn);
+      const loginCode = await createFacebookLoginCode(c.env.DB, user.user_id, tx.return_to);
+      return c.redirect(`/#/link/facebook?loginCode=${loginCode}`);
     } else {
       // Identity not found. Check for potential account linking via email collision
       // We need user email to check if they already exist
@@ -1271,17 +1410,22 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       };
 
       const fbEmail = fbProfile.email;
+      if (!fbEmail) {
+        return c.json({ error: 'Facebook email required' }, 400);
+      }
       console.log('FB Collision Check:', fbEmail);
 
       let collision = false;
+      let expectedUserId: string | null = null;
       if (fbEmail) {
         const existingUser = await c.env.DB.prepare(
           `SELECT user_id FROM user_settings WHERE email = ?`,
         )
           .bind(fbEmail)
-          .first();
+          .first<{ user_id: string }>();
         if (existingUser) {
           collision = true;
+          expectedUserId = existingUser.user_id;
         }
       }
 
@@ -1297,7 +1441,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         // Let's use fbUserId to ensure stability and identical reconstruction if they delete/re-join?
         // Yes, using provider ID as user ID is fine if we namespace or if we trust it's unique enough (it is).
 
-        const role = await upsertUserRole(
+        await upsertUserRole(
           c.env.DB,
           {
             id: fbUserId,
@@ -1338,46 +1482,25 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
           .bind(crypto.randomUUID(), fbUserId, fbUserId, now, now)
           .run();
 
-        // 4. Generate Tokens & Login
-        const refreshToken = generateRefreshToken();
-        const tokenHash = await hashToken(refreshToken);
-        const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
-
-        await c.env.DB.prepare(
-          `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
-           VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
-        )
-          .bind(crypto.randomUUID(), fbUserId, tokenHash, expiresAt, 'facebook')
-          .run();
-
-        const accessToken = await createJWT(fbUserId, fbEmail, c.env.JWT_SECRET, 3600, 'facebook');
-
-        const params = new URLSearchParams();
-        params.set('accessToken', accessToken);
-        params.set('refreshToken', refreshToken);
-        params.set('expiresIn', '3600');
-        params.set('userId', fbUserId);
-        if (fbEmail) params.set('email', fbEmail);
-        if (displayName) params.set('name', displayName);
-        if (imageUrl) params.set('imageUrl', imageUrl);
-        params.set('role', role);
-        params.set('providers', 'facebook');
-        params.set('returnTo', tx.return_to || '/');
-
-        const hashReturn = `/#/link/facebook?${params.toString()}`;
-        return c.redirect(hashReturn);
+        const loginCode = await createFacebookLoginCode(c.env.DB, fbUserId, tx.return_to);
+        return c.redirect(`/#/link/facebook?loginCode=${loginCode}`);
       } else {
         // --- COLLISION DETECTED (Existing Logic) ---
         const pendingCode = crypto.randomUUID();
         await c.env.DB.prepare(
-          `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-               VALUES (?, 'facebook', ?, ?, ?)
+          `INSERT INTO pending_links (code, provider, provider_user_id, expected_user_id, return_to, expires_at)
+               VALUES (?, 'facebook', ?, ?, ?, ?)
                ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
-               DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+               DO UPDATE SET
+                 code = excluded.code,
+                 expected_user_id = excluded.expected_user_id,
+                 return_to = excluded.return_to,
+                 expires_at = excluded.expires_at`,
         )
           .bind(
             pendingCode,
             fbUserId,
+            expectedUserId,
             tx.return_to,
             Math.floor(Date.now() / 1000) + 600, // 10 mins
           )
@@ -1389,83 +1512,26 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       }
     }
   } else if (tx.mode === 'link') {
-    // Check if logged in in the session?
-    // We can't easily check 'Authorization' header in a full page redirect flow unless we passed it.
-    // But we checked it at 'start'.
-    // Check if we lost session? We might have.
-    // But 'link' mode implies we are adding to existing.
-    // We need to know WHO is checking this.
-
-    // Issue: We don't have the user session here in the callback (cookie or header missing usually).
-    // We can rely on the fact that we verified user at 'start', and 'tx' is secure.
-    // But we don't know WHICH user initiated it from the tx alone, unless we stored user_id in tx?
-    // We did not store user_id in tx. THIS IS A GAP IN THE PLAN.
-
-    // FIX: We should have stored user_id in oauth_transactions if mode=link.
-    // However, plan says: "Redirect to tx.return_to".
-    // And then the frontend calls "consume".
-
-    // Wait, if mode=link:
-    // "Link identity" step in plan says: "If linked to another user -> 409".
-    // But we are in the callback. We might not know who the current user is.
-
-    // Re-reading plan for Mode=link:
-    // "Redirect to tx.return_to (re-validate relative-only before redirect)."
-    // It actually DOES NOT say we link it HERE.
-    // It says: "Link identity: ...".
-    // This implies we DO logic here.
-
-    // If I can't look up the user, I can't link.
-    // So I must assume I need to store user_id in tx or pending_links?
-
-    // Actually, look at Mode=login branch in plan:
-    // "Redirect to frontend: /link/facebook?code=..."
-
-    // For Mode=link, checking plan again:
-    // "If (facebook, provider_user_id) already linked to same user -> success"
-    // "If linked to another user -> return 409"
-    // "Else insert into identities"
-
-    // To do this, I need `current_user`.
-    // Since useing Oauth redirect, we might lose headers.
-    // But if we used cookies for session, we'd have it.
-    // We use JWT in headers. So we definitely lost it.
-
-    // Solution: modify `oauth_transactions` to store `user_id` (nullable).
-    // Or, do what `login` does: Redirect to a frontend route `link/facebook/callback` with a code, and let frontend call `consume`.
-    // But the plan says `consume` is for `pending_links`.
-
-    // Let's look at `POST /auth/link/facebook/consume`.
-    // It takes `{ code }`. It fetches `pending_links`.
-
-    // So for `link` mode, we should ALSO create a `pending_link`?
-    // Plan says: "Mode=link ... Link identity ... Redirect to tx.return_to".
-    // Takes for granted we have session.
-
-    // If I cannot verify session, I cannot link safely.
-    // Use `pending_links` for `link` mode too!
-    // So:
-    // 1. Check if FB ID is already taken.
-    //    If taken by diff user? We don't know "current user" yet.
-    //    If taken by ANY user?
-    //      If taken, we can just say "Taken".
-    //      But maybe it's the SAME user.
-
-    // Let's defer ALL linking logic to `consume` endpoint which is authenticated.
-    // So `callback` just creates a `pending_link` and redirects to a frontend handler.
-    // The frontend handler will call `consume`.
+    if (!tx.user_id) {
+      return c.json({ error: 'Link session missing user' }, 400);
+    }
+    // Link mode uses the stored user_id to bind the pending link to the initiator.
 
     const pendingCode = crypto.randomUUID();
 
     // We don't abort here, we let consume handle 409 if it mismatches.
 
     await c.env.DB.prepare(
-      `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-         VALUES (?, 'facebook', ?, ?, ?)
+      `INSERT INTO pending_links (code, provider, provider_user_id, expected_user_id, return_to, expires_at)
+         VALUES (?, 'facebook', ?, ?, ?, ?)
          ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
-         DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+         DO UPDATE SET
+           code = excluded.code,
+           expected_user_id = excluded.expected_user_id,
+           return_to = excluded.return_to,
+           expires_at = excluded.expires_at`,
     )
-      .bind(pendingCode, fbUserId, tx.return_to, now + 600)
+      .bind(pendingCode, fbUserId, tx.user_id, tx.return_to, now + 600)
       .run();
 
     // Redirect to a specific route for linking?
@@ -1506,6 +1572,9 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
   if (!link) return c.json({ error: 'Invalid code' }, 404);
   if (link.expires_at < now) return c.json({ error: 'Code expired' }, 400);
   if (link.consumed_at) return c.json({ error: 'Code already consumed' }, 400);
+  if (link.expected_user_id && link.expected_user_id !== user.id) {
+    return c.json({ error: 'Link does not belong to this user' }, 403);
+  }
 
   const { results: userIdentities } = await c.env.DB.prepare(
     `SELECT provider FROM identities WHERE user_id = ?`,
@@ -1553,6 +1622,107 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
   return c.json({ ok: true, returnTo: link.return_to });
 });
 
+app.post('/api/v1/auth/facebook/consume', async (c) => {
+  let payload: { code: string };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+  if (!payload.code) {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  if (!(await enforceRateLimit(c, 'auth_link_facebook', 10, 60))) {
+    return c.json({ error: 'Too many requests' }, 429);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const loginCode = await c.env.DB.prepare(
+    `SELECT * FROM oauth_login_codes WHERE code = ? AND provider = 'facebook'`,
+  )
+    .bind(payload.code)
+    .first<OAuthLoginCodeRow>();
+
+  if (!loginCode) return c.json({ error: 'Invalid code' }, 404);
+  if (loginCode.expires_at < now) return c.json({ error: 'Code expired' }, 400);
+  if (loginCode.consumed_at) return c.json({ error: 'Code already consumed' }, 400);
+
+  const { meta } = await c.env.DB.prepare(
+    `UPDATE oauth_login_codes
+       SET consumed_at = ?
+       WHERE code = ? AND consumed_at IS NULL AND expires_at >= ?`,
+  )
+    .bind(now, payload.code, now)
+    .run();
+
+  if (meta.changes === 0) {
+    return c.json({ error: 'Code already consumed' }, 400);
+  }
+
+  const userRow = await c.env.DB.prepare(
+    `SELECT user_id as userId, email, display_name as displayName, image_url as imageUrl
+     FROM user_settings WHERE user_id = ? LIMIT 1`,
+  )
+    .bind(loginCode.user_id)
+    .first<{ userId: string; email: string; displayName?: string | null; imageUrl?: string | null }>();
+
+  if (!userRow) {
+    return c.json({ error: 'User not found' }, 400);
+  }
+
+  const refreshToken = generateRefreshToken();
+  const tokenHash = await hashToken(refreshToken);
+  const expiresAt = Math.floor(Date.now() / 1000) + REFRESH_TOKEN_TTL_SECONDS;
+
+  await c.env.DB.prepare(
+    `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+     VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
+  )
+      .bind(crypto.randomUUID(), userRow.userId, tokenHash, expiresAt, 'facebook')
+      .run();
+
+  const accessToken = await createJWT(
+    userRow.userId,
+    userRow.email,
+    c.env.JWT_SECRET,
+    3600,
+    'facebook',
+  );
+
+  const { results: providerResults } = await c.env.DB.prepare(
+    `SELECT provider FROM identities WHERE user_id = ?`,
+  )
+    .bind(userRow.userId)
+    .all<{ provider: string }>();
+
+  const providers = providerResults.map((row) => row.provider).filter(Boolean);
+  if (!providers.includes('facebook')) {
+    providers.push('facebook');
+  }
+
+  const role = await getUserRole(
+    c.env.DB,
+    { id: userRow.userId, email: userRow.email },
+    normalizeEmail(c.env.ADMIN_EMAIL),
+  );
+
+  c.header('Set-Cookie', buildRefreshCookie(refreshToken));
+  return c.json({
+    accessToken,
+    expiresIn: 3600,
+    returnTo: loginCode.return_to,
+    user: {
+      id: userRow.userId,
+      email: userRow.email,
+      name: userRow.displayName ?? userRow.email,
+      imageUrl: userRow.imageUrl ?? undefined,
+      role,
+      providers,
+    },
+  });
+});
+
 app.post('/api/v1/auth/link/google/consume', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
@@ -1565,6 +1735,10 @@ app.post('/api/v1/auth/link/google/consume', async (c) => {
   }
   if (!payload.code) {
     return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  if (!(await enforceRateLimit(c, 'auth_facebook_consume', 10, 60))) {
+    return c.json({ error: 'Too many requests' }, 429);
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -3859,6 +4033,7 @@ async function requireUser(c: Context<{ Bindings: Bindings }>) {
   try {
     const { payload } = await jwtVerify(token, jwks, {
       audience: clientId,
+      issuer: googleIssuers,
     });
 
     if (!payload.sub || !payload.email) {
@@ -5334,5 +5509,7 @@ export default {
     const now = Math.floor(Date.now() / 1000);
     await env.DB.prepare(`DELETE FROM oauth_transactions WHERE expires_at < ?`).bind(now).run();
     await env.DB.prepare(`DELETE FROM pending_links WHERE expires_at < ?`).bind(now).run();
+    await env.DB.prepare(`DELETE FROM oauth_login_codes WHERE expires_at < ?`).bind(now).run();
+    await env.DB.prepare(`DELETE FROM rate_limits WHERE reset_at < ?`).bind(now).run();
   },
 };

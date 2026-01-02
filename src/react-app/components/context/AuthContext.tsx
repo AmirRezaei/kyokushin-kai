@@ -15,7 +15,6 @@ interface User {
   email: string;
   imageUrl?: string;
   token: string;
-  refreshToken?: string;
   expiresAt?: number; // Unix timestamp in seconds
   role: 'admin' | 'user';
   providers?: string[];
@@ -52,11 +51,16 @@ const readStoredUser = (): User | null => {
     return null;
   }
   try {
-    const parsed = JSON.parse(storedUser) as User;
-    return {
-      ...parsed,
+    const parsed = JSON.parse(storedUser) as User & { refreshToken?: string };
+    const { refreshToken, ...rest } = parsed;
+    const normalized = {
+      ...rest,
       providers: normalizeProviders(parsed.providers),
     };
+    if (refreshToken) {
+      localStorage.setItem('user', JSON.stringify(normalized));
+    }
+    return normalized;
   } catch (parseError) {
     console.warn('Failed to parse stored user session', parseError);
     return null;
@@ -141,7 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Backend now issues new custom JWT tokens on each refresh.
    *
    * Flow:
-   * 1. Call /auth/refresh with current refresh token
+   * 1. Call /auth/refresh (uses httpOnly refresh cookie)
    * 2. Receive new JWT access token (1 hour expiry)
    * 3. Update user state with new token and expiry
    * 4. Save to localStorage
@@ -162,16 +166,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * @returns Promise<boolean> - true if refresh succeeded, false if failed (triggers logout)
    */
   const refreshAccessToken = React.useCallback(async (): Promise<boolean> => {
-    if (!user?.refreshToken) {
-      console.warn('No refresh token available');
+    if (!user) {
+      console.warn('No active user session');
       return false;
     }
 
     try {
       const res = await fetch('/api/v1/auth/refresh', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: user.refreshToken }),
+        credentials: 'same-origin',
       });
 
       if (!res.ok) {
@@ -258,26 +261,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check for stored user data
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser) as User;
-        if (parsedUser?.token) {
-          const hydratedUser = {
-            ...parsedUser,
-            role: parsedUser.role ?? 'user',
-          };
-          setUser(hydratedUser);
-          localStorage.setItem('user', JSON.stringify(hydratedUser));
-          void syncUserSettings(parsedUser.token);
-          void refreshUserProfile(parsedUser.token);
-        } else {
-          localStorage.removeItem('user');
-        }
-      } catch (parseError) {
-        console.warn('Failed to parse stored user session', parseError);
-        localStorage.removeItem('user');
-      }
+    const storedUser = readStoredUser();
+    if (storedUser?.token) {
+      const hydratedUser = {
+        ...storedUser,
+        role: storedUser.role ?? 'user',
+      };
+      setUser(hydratedUser);
+      localStorage.setItem('user', JSON.stringify(hydratedUser));
+      void syncUserSettings(hydratedUser.token);
+      void refreshUserProfile(hydratedUser.token);
+    } else if (storedUser) {
+      localStorage.removeItem('user');
     }
     setIsLoading(false);
   }, [refreshUserProfile]);
@@ -324,7 +319,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       const data = (await res.json().catch(() => ({}))) as {
         accessToken: string;
-        refreshToken: string;
         expiresIn: number;
         mergeRequired?: boolean;
         collision?: boolean;
@@ -362,7 +356,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: data.user.email,
         imageUrl: data.user.picture,
         token: data.accessToken,
-        refreshToken: data.refreshToken,
         expiresAt,
         role: data.user.role ?? 'user',
         providers: data.user.providers,
@@ -429,7 +422,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Logout: Invalidate tokens both client and server-side
    *
    * Flow:
-   * 1. Call /auth/logout to delete refresh token from database
+   * 1. Call /auth/logout to delete refresh token from database (cookie-based)
    * 2. Clear refresh timer
    * 3. Clear user state and localStorage
    *
@@ -440,17 +433,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const logout = async () => {
     // Call backend to invalidate refresh token
-    if (user?.refreshToken) {
-      try {
-        await fetch('/api/v1/auth/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: user.refreshToken }),
-        });
-      } catch (error) {
-        console.error('Logout endpoint error:', error);
-        // Continue with client-side logout even if backend fails
-      }
+    try {
+      await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+    } catch (error) {
+      console.error('Logout endpoint error:', error);
+      // Continue with client-side logout even if backend fails
     }
 
     // Clear refresh timer

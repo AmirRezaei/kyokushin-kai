@@ -16,6 +16,14 @@ export default function FacebookCallbackPage() {
   const emailParam = searchParams.get('email');
 
   useEffect(() => {
+    const normalizeReturnTo = (value: string | null | undefined) => {
+      const fallback = '/';
+      if (!value) return fallback;
+      if (value.startsWith('/#')) return value.replace('/#', '');
+      if (!value.startsWith('/')) return `/${value}`;
+      return value;
+    };
+
     async function consumeCodeEncoded(code: string) {
       try {
         const token = localStorage.getItem('user')
@@ -46,7 +54,7 @@ export default function FacebookCallbackPage() {
         await refreshProfile(token || undefined);
         showSnackbar('Facebook account linked successfully!', 'success');
         if (data.returnTo) {
-          navigate(data.returnTo);
+          navigate(normalizeReturnTo(data.returnTo));
         } else {
           navigate('/');
         }
@@ -57,63 +65,68 @@ export default function FacebookCallbackPage() {
       }
     }
 
+    async function consumeLoginCode(code: string) {
+      try {
+        const res = await fetch('/api/v1/auth/facebook/consume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+
+        const data = (await res.json().catch(() => ({}))) as {
+          accessToken: string;
+          expiresIn?: number;
+          returnTo?: string;
+          user: {
+            id: string;
+            email: string;
+            name?: string;
+            imageUrl?: string;
+            role?: 'admin' | 'user';
+            providers?: string[];
+          };
+          error?: string;
+        };
+
+        if (!res.ok) {
+          showSnackbar(data.error || 'Facebook login failed', 'error');
+          navigate('/login');
+          return;
+        }
+
+        const expiresAt = Math.floor(Date.now() / 1000) + (data.expiresIn ?? 3600);
+
+        applyUserSession({
+          id: data.user.id,
+          name: data.user.name ?? data.user.email,
+          email: data.user.email,
+          imageUrl: data.user.imageUrl,
+          token: data.accessToken,
+          expiresAt,
+          role: data.user.role === 'admin' ? 'admin' : 'user',
+          providers: data.user.providers,
+        });
+
+        processed.current = true;
+        void refreshProfile(data.accessToken);
+        navigate(normalizeReturnTo(data.returnTo), { replace: true });
+      } catch (err) {
+        console.error(err);
+        showSnackbar('An error occurred.', 'error');
+        navigate('/login');
+      }
+    }
+
     if (processed.current) return;
 
-    const code = searchParams.get('code');
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-
-    const normalizeReturnTo = (value: string | null) => {
-      const fallback = '/';
-      if (!value) return fallback;
-      if (value.startsWith('/#')) return value.replace('/#', '');
-      if (!value.startsWith('/')) return `/${value}`;
-      return value;
-    };
-
-    const parseProviders = (value: string | null) => {
-      if (!value) return undefined;
-      const providers = value
-        .split(',')
-        .map((provider) => provider.trim())
-        .filter(Boolean);
-      return providers.length ? providers : undefined;
-    };
-
-    if (accessToken && refreshToken) {
-      const userId = searchParams.get('userId');
-      const email = searchParams.get('email');
-      if (!userId || !email) {
-        showSnackbar('Invalid callback request', 'error');
-        navigate('/login');
-        return;
-      }
-
-      const name = searchParams.get('name') || '';
-      const imageUrl = searchParams.get('imageUrl') || undefined;
-      const roleParam = searchParams.get('role');
-      const expiresInParam = Number(searchParams.get('expiresIn') || '3600');
-      const expiresIn = Number.isFinite(expiresInParam) ? expiresInParam : 3600;
-      const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
-      const providers = parseProviders(searchParams.get('providers'));
-
-      applyUserSession({
-        id: userId,
-        name: name || email,
-        email,
-        imageUrl,
-        token: accessToken,
-        refreshToken,
-        expiresAt,
-        role: roleParam === 'admin' ? 'admin' : 'user',
-        providers,
-      });
-
+    const loginCode = searchParams.get('loginCode');
+    if (loginCode) {
       processed.current = true;
-      void refreshProfile(accessToken);
-      navigate(normalizeReturnTo(searchParams.get('returnTo')), { replace: true });
+      void consumeLoginCode(loginCode);
       return;
     }
+
+    const code = searchParams.get('code');
 
     if (!code) {
       showSnackbar('Invalid callback request', 'error');
@@ -132,17 +145,7 @@ export default function FacebookCallbackPage() {
 
     processed.current = true;
     consumeCodeEncoded(code);
-  }, [
-    searchParams,
-    navigate,
-    showSnackbar,
-    user,
-    location.pathname,
-    location.search,
-    collision,
-    refreshProfile,
-    applyUserSession,
-  ]);
+  }, [searchParams, navigate, showSnackbar, user, collision, refreshProfile, applyUserSession]);
 
   if (collision && !user) {
     const currentPath = location.pathname + location.search;

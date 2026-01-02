@@ -28,7 +28,6 @@ interface GoogleCredentialResponse {
 
 interface MergeLoginPayload {
   accessToken: string;
-  refreshToken: string;
   expiresIn?: number;
   user: {
     id: string;
@@ -76,7 +75,6 @@ const AccountPage: React.FC = () => {
       email: login.user.email,
       imageUrl: login.user.imageUrl || login.user.picture || '',
       token: login.accessToken,
-      refreshToken: login.refreshToken,
       expiresAt,
       role: login.user.role ?? 'user',
       providers: login.user.providers,
@@ -193,9 +191,29 @@ const AccountPage: React.FC = () => {
                     }
                   }
                 } else {
-                  const returnTo = encodeURIComponent('/account');
-                  const encodedToken = encodeURIComponent(token);
-                  window.location.href = `/api/v1/auth/facebook/start?mode=link&token=${encodedToken}&returnTo=${returnTo}`;
+                  const returnTo = '/account';
+                  try {
+                    const res = await fetch('/api/v1/auth/facebook/start', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                      },
+                      credentials: 'same-origin',
+                      body: JSON.stringify({ mode: 'link', returnTo }),
+                    });
+                    const data = (await res.json().catch(() => ({}))) as {
+                      authUrl?: string;
+                      error?: string;
+                    };
+                    if (!res.ok || !data.authUrl) {
+                      throw new Error(data.error || 'Failed to start Facebook link');
+                    }
+                    window.location.href = data.authUrl;
+                  } catch (error) {
+                    console.error('Failed to start Facebook link flow', error);
+                    alert('Unable to start Facebook linking. Please try again.');
+                  }
                 }
               }}
               sx={{

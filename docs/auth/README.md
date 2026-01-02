@@ -11,14 +11,16 @@ Authentication supports Google + Facebook OAuth with custom JWT access tokens an
 ## Core Tokens
 
 - Access token (custom JWT, 1h)
-- Refresh token (30d, stored hashed in D1)
+- Refresh token (30d, stored hashed in D1, issued via httpOnly cookie; refresh/logout use cookie)
 
 ## Tables
 
 - `identities` (provider links)
 - `refresh_tokens` (session refresh)
 - `oauth_transactions` (Facebook PKCE login/link)
+- `oauth_login_codes` (Facebook login handoff)
 - `pending_links` (collision/link handoff)
+- `rate_limits` (auth throttling)
 - `user_settings`, `user_roles`
 
 ## Key Endpoints
@@ -33,15 +35,17 @@ Google:
 - `DELETE /api/v1/auth/link/google`
 
 Facebook:
-- `GET /api/v1/auth/facebook/start?mode=login|link&returnTo=/path`
+- `GET /api/v1/auth/facebook/start?mode=login&returnTo=/path`
+- `POST /api/v1/auth/facebook/start` (link mode; requires Authorization header)
 - `GET /api/v1/auth/facebook/callback`
+- `POST /api/v1/auth/facebook/consume`
 - `POST /api/v1/auth/link/facebook/consume`
 - `DELETE /api/v1/auth/link/facebook`
 
 ## Login Flow (Google)
 
 1. Client gets Google ID token.
-2. `POST /api/v1/auth/login` verifies token and issues JWT + refresh token.
+2. `POST /api/v1/auth/login` verifies token, issues JWT, and sets refresh cookie.
 3. On email collision, backend returns `409` with `{ mergeRequired, code, email }`.
 4. Client routes to `/#/link/google?code=...&collision=true&email=...`.
 5. User signs in with Facebook to prove ownership, then consumes the link.
@@ -50,14 +54,14 @@ Facebook:
 
 1. Client hits `/api/v1/auth/facebook/start?mode=login&returnTo=/...`.
 2. Facebook returns to `/api/v1/auth/facebook/callback`.
-3. Worker issues tokens and redirects to `/#/link/facebook?...` with:
-   `accessToken`, `refreshToken`, `expiresIn`, `userId`, `email`, `role`, `providers`, `returnTo`.
-4. `FacebookCallbackPage` stores the session and navigates to `returnTo`.
+3. Worker redirects to `/#/link/facebook?loginCode=...`.
+4. `FacebookCallbackPage` calls `POST /api/v1/auth/facebook/consume` with `{ code }`.
+5. Worker returns tokens + returnTo; client stores the session and navigates to `returnTo`.
 
 ## Linking Flow
 
 - Google link: use Google Identity token, `POST /api/v1/auth/link/google`.
-- Facebook link: `/api/v1/auth/facebook/start?mode=link&returnTo=/account`,
+- Facebook link: `POST /api/v1/auth/facebook/start` with `{ mode: "link", returnTo: "/account" }`,
   then `POST /api/v1/auth/link/facebook/consume`.
 - Collisions create `pending_links` and redirect to `/#/link/google` or `/#/link/facebook`
   to complete the link after the user signs in with the existing provider.

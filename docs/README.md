@@ -63,7 +63,7 @@ Full details: `docs/auth/README.md`.
 ## Database Notes
 
 - Auth tables: `user_settings`, `user_roles`, `identities`, `refresh_tokens`,
-  `oauth_transactions`, `pending_links`.
+  `oauth_transactions`, `oauth_login_codes`, `pending_links`, `rate_limits`.
 - Migrations: `src/worker/migrations/*.sql`.
 - Commands: `bun run db:dev:migrate`, `bun run db:prod:migrate`.
 

@@ -54,6 +54,7 @@ Purpose: store `state` + `pkce_verifier` server-side. Cookie stores only opaque 
 - `state TEXT NOT NULL`
 - `pkce_verifier TEXT NOT NULL`
 - `mode TEXT NOT NULL` -- 'login' | 'link'
+- `user_id TEXT NULL` -- set for link mode
 - `return_to TEXT NOT NULL`
 - `created_at INTEGER NOT NULL`
 - `expires_at INTEGER NOT NULL`
@@ -67,6 +68,7 @@ Purpose: store `state` + `pkce_verifier` server-side. Cookie stores only opaque 
 - `code TEXT PRIMARY KEY`
 - `provider TEXT NOT NULL` -- 'facebook'
 - `provider_user_id TEXT NOT NULL`
+- `expected_user_id TEXT NULL` -- bind consume to initiating user
 - `return_to TEXT NOT NULL`
 - `expires_at INTEGER NOT NULL`
 - `consumed_at INTEGER NULL`
@@ -78,6 +80,18 @@ Purpose: store `state` + `pkce_verifier` server-side. Cookie stores only opaque 
   - `CREATE UNIQUE INDEX uq_pending_links_active_identity ON pending_links(provider, provider_user_id) WHERE consumed_at IS NULL;`
 
 - If partial indexes are not feasible in your environment, enforce the same rule transactionally in code.
+
+### Table: `oauth_login_codes` (ephemeral; TTL ~ 10 minutes)
+
+- `code TEXT PRIMARY KEY`
+- `provider TEXT NOT NULL` -- 'facebook'
+- `user_id TEXT NOT NULL`
+- `return_to TEXT NOT NULL`
+- `created_at INTEGER NOT NULL`
+- `expires_at INTEGER NOT NULL`
+- `consumed_at INTEGER NULL`
+  Indexes:
+- `CREATE INDEX idx_oauth_login_codes_expires ON oauth_login_codes(expires_at);`
 
 ## D1 atomicity requirement
 
@@ -117,11 +131,11 @@ Prefer a `__Host-` cookie prefix for strongest host-only semantics, following co
 
 ## Backend routes (Workers)
 
-### 1) `GET /auth/facebook/start?mode=login|link&returnTo=/path`
+### 1) `GET /auth/facebook/start?mode=login&returnTo=/path`
 
 - Validate `mode ∈ {login, link}`.
 - Validate `returnTo` (relative-only). Default `/`.
-- If `mode=link`: require authenticated app session; if not logged in, redirect to login UI.
+- For link mode, use `POST /auth/facebook/start` (see below) with Authorization header.
 - Generate: `state`, `code_verifier`, `code_challenge` (S256).
 - Insert `oauth_transactions` with TTL ~10 minutes.
 - Set cookie `__Host-fb_oauth_tx=<tx_id>` (signed/encrypted).
@@ -135,7 +149,17 @@ Prefer a `__Host-` cookie prefix for strongest host-only semantics, following co
   - `code_challenge_method=S256`
   - `scope` minimal (do not request email; for identity you only need basic profile)
 
-### 2) `GET /auth/facebook/callback`
+### 2) `POST /auth/facebook/start` (link mode)
+
+- Body: `{ mode: "link", returnTo: "/path" }`
+- Requires authenticated app session (Authorization header).
+- Validate `returnTo` (relative-only). Default `/`.
+- Generate: `state`, `code_verifier`, `code_challenge` (S256).
+- Insert `oauth_transactions` with `user_id` and TTL ~10 minutes.
+- Set cookie `__Host-fb_oauth_tx=<tx_id>` (signed/encrypted).
+- Return `{ authUrl }` and redirect the browser to that URL.
+
+### 3) `GET /auth/facebook/callback`
 
 - If callback includes `error`, `error_description`, or `error_reason`:
   - clear `__Host-fb_oauth_tx`
@@ -195,16 +219,19 @@ Prefer a `__Host-` cookie prefix for strongest host-only semantics, following co
 **Mode = `login`**
 
 - Look up `identities` by `(provider='facebook', provider_user_id)`:
-  - If found → create/refresh app session for that user; clear tx cookie; redirect to `tx.return_to`.
-  - If not found → do **not** create a user:
-    - Create `pending_links` with one-time random `code`, store `provider_user_id`, store `return_to`, TTL ~10 minutes.
-    - Enforce “single active pending link per identity” via unique index or transactional enforcement.
-    - Redirect to frontend: `/link/facebook?code=<code>`
-    - Do not trust any client-provided `returnTo`; use DB `return_to` later.
+  - If found or a new user is created, mint a short-lived `oauth_login_codes` entry and redirect to `/link/facebook?loginCode=<code>`.
+  - If a collision requires ownership proof, create `pending_links` with one-time random `code`, store `provider_user_id`, `expected_user_id`, and `return_to`, TTL ~10 minutes.
+  - Do not trust any client-provided `returnTo`; use DB `return_to` later.
 
 Use `env.DB.batch()` if you want “consume tx + create pending link” to be atomic (rollback if insert fails due to uniqueness). ([Cloudflare Docs][7])
 
-### 3) `POST /auth/link/facebook/consume`
+### 4) `POST /auth/facebook/consume`
+
+- Body: `{ code: string }`
+- Validate code in `oauth_login_codes` (exists, not expired, not consumed).
+- Issue app tokens, return `{ accessToken, expiresIn, user, returnTo }` and set refresh cookie.
+
+### 5) `POST /auth/link/facebook/consume`
 
 - Requires authenticated app session (ownership proof); else 401.
 - CSRF protections:
@@ -213,6 +240,7 @@ Use `env.DB.batch()` if you want “consume tx + create pending link” to be at
 
 - Body: `{ code: string }`
 - Fetch `pending_links` by code; validate exists, not expired, `consumed_at IS NULL`.
+- If `expected_user_id` exists and mismatches current user → 403.
 - Attempt to link identity for current user:
   - If identity already linked to another user → 409.
   - If already linked to same user → idempotent success (still consume the pending link).
@@ -224,7 +252,7 @@ Use `env.DB.batch()` if you want “consume tx + create pending link” to be at
 ## Frontend (React) changes
 
 - Login page: “Continue with Facebook” → navigate to `/auth/facebook/start?mode=login&returnTo=/app`
-- Settings/security (authenticated): “Link Facebook” → `/auth/facebook/start?mode=link&returnTo=/settings/security`
+- Settings/security (authenticated): “Link Facebook” → `POST /auth/facebook/start` with `{ mode: "link", returnTo: "/settings/security" }`
 - Route `/link/facebook`:
   - Read `code` from query.
   - If user not logged in: start existing Google sign-in and return back to this route preserving `code`.
