@@ -481,10 +481,10 @@ app.get('/api/v1/auth/me', async (c) => {
     .all<{ provider: string }>();
 
   const providers = results.map((r) => r.provider);
-  // Backwards compatibility: if list is empty, assume google if email is present?
-  // Or just rely on what we found.
-  // Actually, we should probably auto-insert 'google' into identities during login if missing?
-  // For now, let's just return what we have.
+  // Ensure google is always present as it is the base provider for all accounts currently
+  if (!providers.includes('google')) {
+    providers.push('google');
+  }
 
   return c.json({
     user: {
