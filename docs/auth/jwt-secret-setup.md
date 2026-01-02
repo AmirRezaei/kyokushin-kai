@@ -93,9 +93,9 @@ bun wrangler secret put JWT_SECRET
 **Error: "Token verification failed"**
 
 - `JWT_SECRET` mismatch between token creation and verification
-- Clear localStorage and re-login
+- Clear site data (including cached user profile) and re-login
 
 **Still getting 401 after 1 hour**
 
-- Old Google ID token still in localStorage
-- Clear browser storage and re-login to get JWT tokens
+- Stale cached profile or legacy tokens still stored
+- Clear browser storage and re-login to refresh tokens

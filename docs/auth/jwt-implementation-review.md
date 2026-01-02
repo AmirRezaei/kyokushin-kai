@@ -1,5 +1,8 @@
 # Custom JWT Implementation - Final Review
 
+Update: localStorage token storage removed; refresh token rotation + rate limiting added; refreshAccessToken
+now uses functional state updates.
+
 ## 🔒 Security Review
 
 ### ✅ FIXED Issues
@@ -17,19 +20,17 @@
 4. **Backward Compatibility**: Falls back to Google tokens gracefully
 5. **Proper Validation**: Both JWT and Google tokens validated before use
 
-### ⚠️ Remaining Security Concerns
+### ✅ Resolved Security Concerns
 
 1. **localStorage XSS Risk** (Medium)
-
-   - Tokens stored in localStorage vulnerable to XSS
-   - **Mitigation**: Use httpOnly cookies (future enhancement)
-   - **Acceptable**: For current dev/small-scale deployment
+   - Tokens are no longer stored in localStorage.
+   - Refresh tokens use httpOnly cookies; client caches only profile data.
 
 2. **No Token Rotation** (Low)
-   - Same refresh token reused for 30 days
-   - **Mitigation**: Rotate on each refresh (future enhancement)
+   - Refresh tokens rotate on every refresh; old tokens invalidated.
+
 3. **No Rate Limiting** (Medium)
-   - Auth endpoints lack rate limitingRecommendation\*\*: Add Cloudflare rate limiting rules
+   - Auth endpoints are rate limited in the worker.
 
 ---
 
@@ -115,36 +116,14 @@
 3. **Timer Cleanup**: Proper useEffect cleanup
 4. **Type Safety**: TypeScript interfaces for API responses
 
-#### ⚠️ Issues Found
+#### ⚠️ Remaining Issues
 
-1. **Stale Closure Bug** (Medium) **NEEDS FIX**
-
-   ```typescript
-   // Current: Captures 'user' from closure
-   const refreshAccessToken = useCallback(async () => {
-     if (!user?.refreshToken) return false;
-     // ...
-   }, [user]); // user might be stale!
-   ```
-
-   **Fix**:
-
-   ```typescript
-   const refreshAccessToken = useCallback(async () => {
-     setUser((currentUser) => {
-       if (!currentUser?.refreshToken) return currentUser;
-       // Use currentUser here
-       return currentUser;
-     });
-   }, []); // No dependencies!
-   ```
-
-2. **No Retry Logic**
+1. **No Retry Logic**
 
    - Single network failure logs out user
    - **Recommendation**: Retry 1-2 times before logout
 
-3. **Race Condition Risk** (Low)
+2. **Race Condition Risk** (Low)
    - Multiple API calls during refresh may fail
    - **Recommendation**: Queue requests during refresh
 
@@ -195,15 +174,12 @@ None remaining after fixes
 
 ### Medium
 
-1. **Stale Closure**: refreshAccessToken may use outdated user state
-2. **No Rate Limiting**: Vulnerable to brute force
-3. **XSS Risk**: localStorage token storage
+None remaining after fixes
 
 ### Low
 
-1. **No Token Rotation**: Security best practice
-2. **No Multi-Device Management**: Can't see/revoke sessions
-3. **No Retry Logic**: Network failures = logout
+1. **No Multi-Device Management**: Can't see/revoke sessions
+2. **No Retry Logic**: Network failures = logout
 
 ---
 
@@ -211,22 +187,22 @@ None remaining after fixes
 
 ### Immediate (Before Production)
 
-1. **FIX: Stale closure in refreshAccessToken**
-2. **ADD: Rate limiting (Cloudflare Rules)**
-3. **ADD: Basic logging for auth events**
+1. **DONE: Stale closure in refreshAccessToken**
+2. **DONE: Rate limiting in the worker**
+3. **TODO: Basic logging for auth events**
 
 ### Short Term
 
-4. **ADD: Retry logic (1-2 retry attempts)**
-5. **ADD: Token rotation on refresh**
-6. **ADD: Request queuing during refresh**
+4. **DONE: Token rotation on refresh**
+5. **TODO: Retry logic (1-2 retry attempts)**
+6. **TODO: Request queuing during refresh**
 
 ### Long Term
 
-7. **MIGRATE: httpOnly cookies instead of localStorage**
-8. **ADD: Session management UI**
-9. **ADD: Device tracking**
-10. **ADD: Automated tests**
+7. **DONE: httpOnly refresh cookies instead of localStorage**
+8. **TODO: Session management UI**
+9. **TODO: Device tracking**
+10. **TODO: Automated tests**
 
 ---
 
@@ -238,7 +214,7 @@ None remaining after fixes
 - ✅ JWT helpers: JSDoc comments
 - ✅ requireUser: Documented
 - ⚠️ Frontend: Comments exist but could be clearer
-- ❌ Stale closure: Warning comment exists but no fix
+- ✅ Stale closure: Fixed in AuthContext
 
 ### Needs Update
 
@@ -262,9 +238,6 @@ None remaining after fixes
 
 **Weaknesses**:
 
-- ⚠️ Stale closure bug needs fix
-- ⚠️ No rate limiting
-- ⚠️ localStorage XSS risk
 - ⚠️ No retry logic
 
 **Verdict**: **Production-ready with recommended fixes**
@@ -280,8 +253,8 @@ The implementation follows OAuth 2.0 best practices and solves the original prob
 - [x] Secrets properly managed (.dev.vars)
 - [x] Error handling in place
 - [x] TypeScript types defined
-- [ ] Rate limiting added
-- [ ] Stale closure fixed
+- [x] Rate limiting added
+- [x] Stale closure fixed
 - [ ] Logging implemented
 - [ ] Retry logic added
 - [ ] Production JWT_SECRET generated

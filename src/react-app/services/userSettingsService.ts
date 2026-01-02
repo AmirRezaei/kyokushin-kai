@@ -263,9 +263,19 @@ const getStoredUserToken = (): string | null => {
   }
 
   try {
-    const parsed = JSON.parse(storedUser) as { token?: string };
-    return parsed.token ?? null;
+    const parsed = JSON.parse(storedUser) as {
+      token?: string;
+      refreshToken?: string;
+      expiresAt?: number;
+    };
+    if (parsed.token || parsed.refreshToken || parsed.expiresAt) {
+      const { token: _token, refreshToken: _refreshToken, expiresAt: _expiresAt, ...rest } =
+        parsed as Record<string, unknown>;
+      window.localStorage.setItem('user', JSON.stringify(rest));
+    }
   } catch {
     return null;
   }
+
+  return null;
 };

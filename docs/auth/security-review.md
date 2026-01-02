@@ -1,5 +1,8 @@
 # Refresh Token Implementation - Security & Design Review
 
+Update: Items 1, 2, 3, 4, and 6 have been addressed (custom JWT refresh, functional refreshAccessToken,
+httpOnly refresh cookie + rotation, and rate limiting). Remaining items are kept for reference.
+
 ## 🚨 CRITICAL ISSUES
 
 ### 1. **The Refresh Endpoint Doesn't Actually Refresh the Access Token**
@@ -9,6 +12,8 @@
 **Location**: `src/worker/index.ts` lines 157-166
 
 **Impact**: HIGH - The entire refresh mechanism is **non-functional**. Users will still get 401 errors after 1 hour.
+
+**Status**: Fixed - /auth/refresh now issues custom JWTs.
 
 **Why?**: Google ID tokens cannot be refreshed server-side without Google's refresh token (which we don't have).
 
@@ -28,6 +33,8 @@
 
 **Impact**: MEDIUM - Race condition if token refreshes while user state is updating
 
+**Status**: Fixed - refreshAccessToken uses functional state updates.
+
 **Fix**: Use `setUser` functional update or `useRef` for latest user
 
 ---
@@ -39,6 +46,8 @@
 **Problem**: Refresh tokens stored in localStorage are vulnerable to XSS attacks
 
 **Impact**: MEDIUM - If attacker injects script, they can steal 30-day tokens
+
+**Status**: Fixed - refresh tokens use httpOnly cookies; client no longer stores tokens in localStorage.
 
 **Mitigation**:
 
@@ -55,6 +64,8 @@
 **Impact**: LOW-MEDIUM - Stolen token remains valid until expiry
 
 **Best Practice**: Issue new refresh token on each refresh, invalidate old one
+
+**Status**: Fixed - refresh token rotation implemented.
 
 ---
 
@@ -75,6 +86,8 @@
 **Problem**: Auth endpoints lack rate limiting
 
 **Impact**: MEDIUM - Vulnerable to brute force attacks
+
+**Status**: Fixed - auth endpoints rate limited.
 
 **Fix**: Add rate limiting middleware (e.g., 5 login attempts per minute)
 

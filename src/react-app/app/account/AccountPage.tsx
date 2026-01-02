@@ -181,6 +181,7 @@ const AccountPage: React.FC = () => {
                     const res = await fetch('/api/v1/auth/link/facebook', {
                       method: 'DELETE',
                       headers: { Authorization: `Bearer ${token}` },
+                      credentials: 'include',
                     });
                     if (res.ok) {
                       await refreshProfile();
@@ -199,7 +200,7 @@ const AccountPage: React.FC = () => {
                         'Content-Type': 'application/json',
                         Authorization: `Bearer ${token}`,
                       },
-                      credentials: 'same-origin',
+                      credentials: 'include',
                       body: JSON.stringify({ mode: 'link', returnTo }),
                     });
                     const data = (await res.json().catch(() => ({}))) as {
@@ -249,6 +250,7 @@ const AccountPage: React.FC = () => {
                     const res = await fetch('/api/v1/auth/link/google', {
                       method: 'DELETE',
                       headers: { Authorization: `Bearer ${token}` },
+                      credentials: 'include',
                     });
                     if (res.ok) {
                       await refreshProfile();
@@ -276,6 +278,7 @@ const AccountPage: React.FC = () => {
                             'Content-Type': 'application/json',
                             Authorization: `Bearer ${token}`,
                           },
+                          credentials: 'include',
                           body: JSON.stringify({ token: response.credential }),
                         });
                         const data = await res.json().catch(() => ({}));
@@ -301,6 +304,7 @@ const AccountPage: React.FC = () => {
                                 'Content-Type': 'application/json',
                                 Authorization: `Bearer ${token}`,
                               },
+                              credentials: 'include',
                               body: JSON.stringify({
                                 token: response.credential,
                                 merge: true,

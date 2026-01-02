@@ -20,6 +20,8 @@ interface User {
   providers?: string[];
 }
 
+type StoredUserProfile = Omit<User, 'token' | 'expiresAt'>;
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -42,7 +44,19 @@ const normalizeProviders = (providers?: string[] | null): string[] | undefined =
   return providers;
 };
 
-const readStoredUser = (): User | null => {
+const persistUserProfile = (session: User | null) => {
+  if (typeof localStorage === 'undefined') {
+    return;
+  }
+  if (!session) {
+    localStorage.removeItem('user');
+    return;
+  }
+  const { token, expiresAt, ...profile } = session;
+  localStorage.setItem('user', JSON.stringify(profile));
+};
+
+const readStoredUserProfile = (): StoredUserProfile | null => {
   if (typeof localStorage === 'undefined') {
     return null;
   }
@@ -51,13 +65,20 @@ const readStoredUser = (): User | null => {
     return null;
   }
   try {
-    const parsed = JSON.parse(storedUser) as User & { refreshToken?: string };
-    const { refreshToken, ...rest } = parsed;
-    const normalized = {
-      ...rest,
+    const parsed = JSON.parse(storedUser) as Partial<User> & { refreshToken?: string };
+    if (!parsed.id || !parsed.email) {
+      localStorage.removeItem('user');
+      return null;
+    }
+    const normalized: StoredUserProfile = {
+      id: parsed.id,
+      email: parsed.email,
+      name: parsed.name ?? '',
+      imageUrl: parsed.imageUrl,
+      role: parsed.role ?? 'user',
       providers: normalizeProviders(parsed.providers),
     };
-    if (refreshToken) {
+    if (parsed.token || parsed.expiresAt || parsed.refreshToken) {
       localStorage.setItem('user', JSON.stringify(normalized));
     }
     return normalized;
@@ -100,20 +121,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       if (!res.ok) return;
 
-      const data = (await res.json()) as { role?: 'admin' | 'user'; providers?: string[] };
-      if (!data?.role) return;
+      const data = (await res.json()) as {
+        user?: { id?: string; email?: string; name?: string; picture?: string };
+        role?: 'admin' | 'user';
+        providers?: string[];
+      };
+      if (!data?.user?.id || !data.user.email) return;
 
       setUser((current) => {
-        const baseUser = current ?? readStoredUser();
-        if (!baseUser) return current;
+        const baseProfile = current ?? readStoredUserProfile();
         const incomingProviders = Array.isArray(data.providers) ? data.providers : undefined;
-        const nextProviders = incomingProviders ?? baseUser.providers;
-        const updated = {
-          ...baseUser,
-          role: data.role ?? baseUser.role,
-          providers: normalizeProviders(nextProviders),
+        const updated: User = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name ?? baseProfile?.name ?? '',
+          imageUrl: data.user.picture ?? baseProfile?.imageUrl,
+          token,
+          expiresAt: current?.expiresAt,
+          role: data.role ?? baseProfile?.role ?? current?.role ?? 'user',
+          providers: normalizeProviders(
+            incomingProviders ?? baseProfile?.providers ?? current?.providers,
+          ),
         };
-        localStorage.setItem('user', JSON.stringify(updated));
+        persistUserProfile(updated);
         return updated;
       });
     } catch (profileError) {
@@ -148,16 +178,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * 1. Call /auth/refresh (uses httpOnly refresh cookie)
    * 2. Receive new JWT access token (1 hour expiry)
    * 3. Update user state with new token and expiry
-   * 4. Save to localStorage
+   * 4. Cache profile without tokens
    * 5. Reschedule next refresh for 55 minutes from now
-   *
-   * ⚠️ KNOWN ISSUE - Stale Closure:
-   * This function captures 'user' from the parent scope, which may become outdated
-   * if user state changes between function definition and execution.
-   *
-   * Recommended Fix:
-   * Use functional setState: setUser(currentUser => {...})
-   * instead of: setUser({...user, ...})
    *
    * Other Limitations:
    * - No retry logic: single failure logs user out (poor UX for network hiccups)
@@ -166,7 +188,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * @returns Promise<boolean> - true if refresh succeeded, false if failed (triggers logout)
    */
   const refreshAccessToken = React.useCallback(async (): Promise<boolean> => {
-    if (!user) {
+    const storedProfile = readStoredUserProfile();
+    if (!user && !storedProfile) {
       console.warn('No active user session');
       return false;
     }
@@ -174,7 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const res = await fetch('/api/v1/auth/refresh', {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -189,23 +212,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
 
-      // Update user with new access token and expiry
-      const updatedUser = {
-        ...user,
-        token: data.accessToken,
-        expiresAt,
-        role: data.role ?? user.role,
-        providers: data.providers ?? user.providers,
-      };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      let nextUser: User | null = null;
+      setUser((current) => {
+        const baseProfile = current ?? storedProfile;
+        if (!baseProfile) {
+          return null;
+        }
+        nextUser = {
+          ...baseProfile,
+          token: data.accessToken,
+          expiresAt,
+          role: data.role ?? baseProfile.role ?? 'user',
+          providers: normalizeProviders(data.providers ?? baseProfile.providers),
+        };
+        return nextUser;
+      });
 
+      if (!nextUser) {
+        persistUserProfile(null);
+        return false;
+      }
+
+      persistUserProfile(nextUser);
       return true;
     } catch (error) {
       console.error('Token refresh failed:', error);
       // Force logout on refresh failure
       setUser(null);
-      localStorage.removeItem('user');
+      persistUserProfile(null);
       return false;
     }
   }, [user]);
@@ -260,22 +294,102 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [scheduleTokenRefresh]);
 
   useEffect(() => {
-    // Check for stored user data
-    const storedUser = readStoredUser();
-    if (storedUser?.token) {
-      const hydratedUser = {
-        ...storedUser,
-        role: storedUser.role ?? 'user',
-      };
-      setUser(hydratedUser);
-      localStorage.setItem('user', JSON.stringify(hydratedUser));
-      void syncUserSettings(hydratedUser.token);
-      void refreshUserProfile(hydratedUser.token);
-    } else if (storedUser) {
-      localStorage.removeItem('user');
-    }
-    setIsLoading(false);
-  }, [refreshUserProfile]);
+    let isMounted = true;
+
+    const bootstrapSession = async () => {
+      const storedProfile = readStoredUserProfile();
+
+      try {
+        const res = await fetch('/api/v1/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (!res.ok) {
+          if (isMounted) {
+            setUser(null);
+            persistUserProfile(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const data = (await res.json()) as {
+          accessToken: string;
+          expiresIn: number;
+          role?: 'admin' | 'user';
+          providers?: string[];
+        };
+
+        const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
+        let profileData:
+          | {
+              user?: { id?: string; email?: string; name?: string; picture?: string };
+              role?: 'admin' | 'user';
+              providers?: string[];
+            }
+          | null = null;
+
+        try {
+          const profileRes = await fetch('/api/v1/auth/me', {
+            headers: { Authorization: `Bearer ${data.accessToken}` },
+          });
+          if (profileRes.ok) {
+            profileData = (await profileRes.json()) as {
+              user?: { id?: string; email?: string; name?: string; picture?: string };
+              role?: 'admin' | 'user';
+              providers?: string[];
+            };
+          }
+        } catch (profileError) {
+          console.warn('Unable to refresh user profile', profileError);
+        }
+
+        const profileFromMe = profileData?.user;
+        const profileUser = profileFromMe ?? storedProfile;
+        if (!profileUser?.id || !profileUser.email) {
+          if (isMounted) {
+            setUser(null);
+            persistUserProfile(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        const nextUser: User = {
+          id: profileUser.id,
+          email: profileUser.email,
+          name: profileFromMe?.name ?? storedProfile?.name ?? '',
+          imageUrl: profileFromMe?.picture ?? storedProfile?.imageUrl,
+          token: data.accessToken,
+          expiresAt,
+          role: profileData?.role ?? data.role ?? storedProfile?.role ?? 'user',
+          providers: normalizeProviders(
+            profileData?.providers ?? data.providers ?? storedProfile?.providers,
+          ),
+        };
+
+        if (isMounted) {
+          setUser(nextUser);
+          persistUserProfile(nextUser);
+          void syncUserSettings(nextUser.token);
+          setIsLoading(false);
+        }
+      } catch (bootstrapError) {
+        console.warn('Failed to bootstrap session', bootstrapError);
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void bootstrapSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -315,6 +429,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const res = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ idToken: response.credential }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -362,7 +477,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      persistUserProfile(userData);
       void syncUserSettings(userData.token);
     } catch (error) {
       console.error('Error during authentication:', error);
@@ -424,7 +539,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Flow:
    * 1. Call /auth/logout to delete refresh token from database (cookie-based)
    * 2. Clear refresh timer
-   * 3. Clear user state and localStorage
+   * 3. Clear user state and cached profile
    *
    * Security:
    * - Prevents further token refresh attempts
@@ -436,7 +551,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await fetch('/api/v1/auth/logout', {
         method: 'POST',
-        credentials: 'same-origin',
+        credentials: 'include',
       });
     } catch (error) {
       console.error('Logout endpoint error:', error);
@@ -450,7 +565,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     setUser(null);
-    localStorage.removeItem('user');
+    persistUserProfile(null);
     setError(null);
   };
 
@@ -461,7 +576,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       providers: normalizeProviders(session.providers),
     };
     setUser(normalized);
-    localStorage.setItem('user', JSON.stringify(normalized));
+    persistUserProfile(normalized);
     void syncUserSettings(normalized.token);
   }, []);
 
@@ -473,8 +588,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     refreshProfile: async (overrideToken?: string) => {
-      const storedUser = readStoredUser();
-      const tokenToUse = overrideToken ?? user?.token ?? storedUser?.token;
+      const tokenToUse = overrideToken ?? user?.token;
       if (tokenToUse) {
         await refreshUserProfile(tokenToUse);
       }

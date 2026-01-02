@@ -9,7 +9,7 @@ export default function FacebookCallbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showSnackbar } = useSnackbar();
-  const { user, refreshProfile, applyUserSession } = useAuth();
+  const { user, refreshProfile, applyUserSession, isLoading } = useAuth();
   const processed = useRef(false);
 
   const collision = searchParams.get('collision') === 'true';
@@ -26,9 +26,7 @@ export default function FacebookCallbackPage() {
 
     async function consumeCodeEncoded(code: string) {
       try {
-        const token = localStorage.getItem('user')
-          ? JSON.parse(localStorage.getItem('user')!).token
-          : null;
+        const token = user?.token ?? null;
 
         const res = await fetch('/api/v1/auth/link/facebook/consume', {
           method: 'POST',
@@ -36,6 +34,7 @@ export default function FacebookCallbackPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
+          credentials: 'include',
           body: JSON.stringify({ code }),
         });
 
@@ -70,6 +69,7 @@ export default function FacebookCallbackPage() {
         const res = await fetch('/api/v1/auth/facebook/consume', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ code }),
         });
 
@@ -120,6 +120,9 @@ export default function FacebookCallbackPage() {
     if (processed.current) return;
 
     const loginCode = searchParams.get('loginCode');
+    if (isLoading && !loginCode) {
+      return;
+    }
     if (loginCode) {
       processed.current = true;
       void consumeLoginCode(loginCode);
@@ -145,7 +148,16 @@ export default function FacebookCallbackPage() {
 
     processed.current = true;
     consumeCodeEncoded(code);
-  }, [searchParams, navigate, showSnackbar, user, collision, refreshProfile, applyUserSession]);
+  }, [
+    searchParams,
+    navigate,
+    showSnackbar,
+    user,
+    collision,
+    refreshProfile,
+    applyUserSession,
+    isLoading,
+  ]);
 
   if (collision && !user) {
     const currentPath = location.pathname + location.search;

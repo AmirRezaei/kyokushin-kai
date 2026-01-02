@@ -238,13 +238,15 @@ app.use(
   cors({
     origin: (origin, c) => {
       const allowed = parseAllowedOrigins(c.env.ALLOWED_ORIGINS);
-      if (!allowed.length) return '*';
+      const requestOrigin = origin ?? new URL(c.req.url).origin;
+      if (!allowed.length) return requestOrigin;
       if (!origin) return allowed[0];
       return allowed.includes(origin) ? origin : allowed[0];
     },
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
+    credentials: true,
   }),
 );
 
@@ -676,6 +678,12 @@ app.get('/api/v1/auth/me', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
 
+  const profile = await c.env.DB.prepare(
+    `SELECT display_name as name, image_url as picture FROM user_settings WHERE user_id = ? LIMIT 1`,
+  )
+    .bind(user.id)
+    .first<{ name?: string | null; picture?: string | null }>();
+
   const role = await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL));
 
   const { results } = await c.env.DB.prepare(
@@ -711,6 +719,8 @@ app.get('/api/v1/auth/me', async (c) => {
     user: {
       id: user.id,
       email: user.email,
+      name: profile?.name ?? user.name ?? undefined,
+      picture: profile?.picture ?? user.picture ?? undefined,
     },
     role,
     providers,

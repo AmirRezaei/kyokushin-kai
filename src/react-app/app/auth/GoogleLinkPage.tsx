@@ -9,7 +9,7 @@ export default function GoogleLinkPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, isLoading } = useAuth();
   const { showSnackbar } = useSnackbar();
   const processed = useRef(false);
 
@@ -25,6 +25,7 @@ export default function GoogleLinkPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
+          credentials: 'include',
           body: JSON.stringify({ code }),
         });
 
@@ -54,7 +55,7 @@ export default function GoogleLinkPage() {
       }
     }
 
-    if (processed.current) return;
+    if (processed.current || isLoading) return;
 
     const code = searchParams.get('code');
     if (!code) {
@@ -63,9 +64,7 @@ export default function GoogleLinkPage() {
       return;
     }
 
-    const token = localStorage.getItem('user')
-      ? JSON.parse(localStorage.getItem('user')!).token
-      : null;
+    const token = user?.token ?? null;
 
     if (!token || !user) {
       if (collision) {
@@ -78,7 +77,7 @@ export default function GoogleLinkPage() {
 
     processed.current = true;
     consumeCode(code, token);
-  }, [searchParams, navigate, showSnackbar, user, collision, refreshProfile]);
+  }, [searchParams, navigate, showSnackbar, user, collision, refreshProfile, isLoading]);
 
   if (collision && !user) {
     const currentPath = location.pathname + location.search;
