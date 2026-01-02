@@ -487,7 +487,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         size: 'large',
         text: 'signin_with',
         shape: 'rectangular',
-        logo_alignment: 'left',
         width: 320,
       });
       return true;
