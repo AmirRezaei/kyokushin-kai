@@ -1,43 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Box, Button, Typography, Paper, Container } from '@mui/material';
 import { Facebook } from '@mui/icons-material';
 import { useAuth } from './context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export default function LoginPage() {
-  const { login, isAuthenticated, renderGoogleButton } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/';
   const error = searchParams.get('error');
   const providerHint = searchParams.get('provider'); // 'google' | 'facebook'
-  const googleButtonRef = useRef<HTMLDivElement>(null);
-  const [googleButtonReady, setGoogleButtonReady] = useState(false);
+  const showGoogleOption = providerHint !== 'facebook';
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate(returnUrl);
     }
   }, [isAuthenticated, navigate, returnUrl]);
-
-  useEffect(() => {
-    if (providerHint === 'facebook') {
-      return;
-    }
-    const node = googleButtonRef.current;
-    if (!node) {
-      return;
-    }
-    let cancelled = false;
-    renderGoogleButton(node).then((ready) => {
-      if (!cancelled) {
-        setGoogleButtonReady(ready);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [providerHint, renderGoogleButton]);
 
   const handleGoogleLogin = () => {
     login();
@@ -71,33 +51,21 @@ export default function LoginPage() {
         )}
 
         <Box sx={{ mt: 3, width: '100%' }}>
-          {(!providerHint || providerHint === 'google') && (
-            <>
-              <Box
-                ref={googleButtonRef}
-                sx={{
-                  mb: 2,
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              />
-              {!googleButtonReady && (
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  onClick={handleGoogleLogin}
-                  sx={{ mb: 2 }}
-                  startIcon={
-                    <img
-                      src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
-                      alt="Google"
-                    />
-                  }
-                >
-                  Sign in with Google
-                </Button>
-              )}
-            </>
+          {showGoogleOption && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleGoogleLogin}
+              sx={{ mb: 2 }}
+              startIcon={
+                <img
+                  src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                  alt="Google"
+                />
+              }
+            >
+              Sign in with Google
+            </Button>
           )}
 
           {(!providerHint || providerHint === 'facebook') && (

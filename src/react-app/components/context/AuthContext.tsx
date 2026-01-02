@@ -478,12 +478,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: handleCredentialResponse,
+        auto_select: false,
       });
 
       container.innerHTML = '';
       window.google.accounts.id.renderButton(container, {
         theme: 'outline',
         size: 'large',
+        text: 'signin_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
         width: 320,
       });
       return true;
