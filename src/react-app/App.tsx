@@ -7,12 +7,21 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  ListItemIcon,
   Toolbar,
   Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
-import { AccountCircle, BugReport, Fullscreen, FullscreenExit } from '@mui/icons-material';
+import {
+  AccountCircle,
+  Fullscreen,
+  FullscreenExit,
+  Settings,
+  BugReport,
+  Logout,
+  Language,
+} from '@mui/icons-material';
 import React, { useEffect, useRef, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { SnackbarProvider, useSnackbar } from './components/context/SnackbarContext';
@@ -136,6 +145,7 @@ function AppContent() {
   const handleReportIssue = () => {
     const pageName = getPageName(location.pathname);
     navigate(`/feedback?type=bug&page=${encodeURIComponent(pageName)}`);
+    handleClose();
   };
 
   React.useEffect(() => {
@@ -203,6 +213,11 @@ function AppContent() {
   const handleClose = () => {
     setAnchorEl(null);
   };
+
+  // Close menu when authentication state changes
+  React.useEffect(() => {
+    handleClose();
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     navigate('/logout');
@@ -328,97 +343,105 @@ function AppContent() {
             }}
           >
             <DarkModeToggle />
-            <LanguageSelector />
 
-            {/* Fullscreen Toggle */}
-            <IconButton
-              size="large"
-              aria-label="toggle fullscreen"
-              onClick={toggleFullscreen}
-              color="inherit"
-              sx={{ mr: 1 }}
-            >
-              {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
-            </IconButton>
+            {/* User Account Menu or Sign In Button */}
+            {isAuthenticated ? (
+              <>
+                <IconButton
+                  size="large"
+                  aria-label="account of current user"
+                  aria-controls="menu-appbar"
+                  aria-haspopup="true"
+                  onClick={handleMenu}
+                  color="inherit"
+                >
+                  {user?.imageUrl ? <Avatar src={user.imageUrl} /> : <AccountCircle />}
+                </IconButton>
+                <Menu
+                  id="menu-appbar"
+                  anchorEl={anchorEl}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  keepMounted
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                  }}
+                  open={open}
+                  onClose={handleClose}
+                >
+                  {user && (
+                    <MenuItem disabled>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {user.name}
+                      </Typography>
+                    </MenuItem>
+                  )}
+                  <MenuItem onClick={handleProfile}>
+                    <ListItemIcon>
+                      <AccountCircle fontSize="small" />
+                    </ListItemIcon>
+                    <Typography>Account</Typography>
+                  </MenuItem>
+                  <MenuItem onClick={handleSettings}>
+                    <ListItemIcon>
+                      <Settings fontSize="small" />
+                    </ListItemIcon>
+                    <Typography>Settings</Typography>
+                  </MenuItem>
 
-            {/* Report Issue Button */}
-            <Tooltip title="Report Bug or Feature">
+                  <MenuItem onClick={toggleFullscreen}>
+                    <ListItemIcon>
+                      {isFullscreen ? (
+                        <FullscreenExit fontSize="small" />
+                      ) : (
+                        <Fullscreen fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <Typography>Fullscreen</Typography>
+                  </MenuItem>
+                  <MenuItem
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      minWidth: 250,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <ListItemIcon>
+                        <Language fontSize="small" />
+                      </ListItemIcon>
+                      <Typography>Language</Typography>
+                    </Box>
+                    <LanguageSelector />
+                  </MenuItem>
+                  <MenuItem onClick={handleReportIssue}>
+                    <ListItemIcon>
+                      <BugReport fontSize="small" />
+                    </ListItemIcon>
+                    <Typography>Report Issue</Typography>
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                      <Logout fontSize="small" />
+                    </ListItemIcon>
+                    <Typography>Logout</Typography>
+                  </MenuItem>
+                </Menu>
+              </>
+            ) : (
               <IconButton
                 size="large"
-                aria-label="report bug or feature"
-                onClick={handleReportIssue}
+                aria-label="sign in"
+                onClick={() => navigate('/login')}
                 color="inherit"
-                sx={{ mr: 1 }}
               >
-                <BugReport />
-              </IconButton>
-            </Tooltip>
-
-            {/* User Account Menu */}
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              {isAuthenticated && user?.imageUrl ? (
-                <Avatar src={user.imageUrl} />
-              ) : (
                 <AccountCircle />
-              )}
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              open={open}
-              onClose={handleClose}
-            >
-              {isAuthenticated && user && (
-                <MenuItem disabled>
-                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    {user.name}
-                  </Typography>
-                </MenuItem>
-              )}
-              {isAuthenticated && (
-                <MenuItem onClick={handleProfile}>
-                  <Typography>Account</Typography>
-                </MenuItem>
-              )}
-              {isAuthenticated && (
-                <MenuItem onClick={handleSettings}>
-                  <Typography>Settings</Typography>
-                </MenuItem>
-              )}
-              {isAuthenticated && (
-                <MenuItem onClick={handleLogout}>
-                  <Typography>Logout</Typography>
-                </MenuItem>
-              )}
-              {!isAuthenticated && (
-                <MenuItem
-                  onClick={() => {
-                    navigate('/login');
-                    handleClose();
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography>Sign In</Typography>
-                  </Box>
-                </MenuItem>
-              )}
-            </Menu>
+              </IconButton>
+            )}
           </Box>
         </Toolbar>
       </AppBar>
