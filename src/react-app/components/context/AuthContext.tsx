@@ -28,10 +28,38 @@ interface AuthContextType {
   error: string | null;
   login: () => Promise<void>;
   logout: () => void;
+  refreshProfile: (overrideToken?: string) => Promise<void>;
   token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const normalizeProviders = (providers?: string[] | null): string[] | undefined => {
+  if (!providers) {
+    return ['google'];
+  }
+  return providers;
+};
+
+const readStoredUser = (): User | null => {
+  if (typeof localStorage === 'undefined') {
+    return null;
+  }
+  const storedUser = localStorage.getItem('user');
+  if (!storedUser) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(storedUser) as User;
+    return {
+      ...parsed,
+      providers: normalizeProviders(parsed.providers),
+    };
+  } catch (parseError) {
+    console.warn('Failed to parse stored user session', parseError);
+    return null;
+  }
+};
 
 const syncUserSettings = async (token: string) => {
   if (!isSettingsSyncAvailable() || !token) {
@@ -70,11 +98,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!data?.role) return;
 
       setUser((current) => {
-        if (!current) return current;
+        const baseUser = current ?? readStoredUser();
+        if (!baseUser) return current;
+        const incomingProviders = Array.isArray(data.providers) ? data.providers : undefined;
+        const nextProviders = incomingProviders ?? baseUser.providers;
         const updated = {
-          ...current,
-          role: data.role ?? current.role,
-          providers: data.providers,
+          ...baseUser,
+          role: data.role ?? baseUser.role,
+          providers: normalizeProviders(nextProviders),
         };
         localStorage.setItem('user', JSON.stringify(updated));
         return updated;
@@ -149,6 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         accessToken: string;
         expiresIn: number;
         role?: 'admin' | 'user';
+        providers?: string[];
       };
       const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
 
@@ -158,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         token: data.accessToken,
         expiresAt,
         role: data.role ?? user.role,
+        providers: data.providers ?? user.providers,
       };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -302,6 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name?: string;
           picture?: string;
           role?: 'admin' | 'user';
+          providers?: string[];
         };
       };
 
@@ -316,6 +350,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshToken: data.refreshToken,
         expiresAt,
         role: data.user.role ?? 'user',
+        providers: data.user.providers,
       };
 
       setUser(userData);
@@ -417,6 +452,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     login,
     logout,
+    refreshProfile: async (overrideToken?: string) => {
+      const storedUser = readStoredUser();
+      const tokenToUse = overrideToken ?? user?.token ?? storedUser?.token;
+      if (tokenToUse) {
+        await refreshUserProfile(tokenToUse);
+      }
+    },
     token: user?.token || null,
   };
 

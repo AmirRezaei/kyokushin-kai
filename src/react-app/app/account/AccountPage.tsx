@@ -14,14 +14,42 @@ import {
   Typography,
 } from '@mui/material';
 import { Facebook } from '@mui/icons-material';
+import { getClientConfigSnapshot } from '../../config/clientConfig';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
 
+interface GoogleCredentialResponse {
+  credential: string;
+  select_by?: string;
+}
+
+interface MergeLoginPayload {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    imageUrl?: string;
+    picture?: string;
+    role?: 'admin' | 'user';
+    providers?: string[];
+  };
+}
+
+interface PromptNotification {
+  isNotDisplayed: () => boolean;
+  isSkippedMoment: () => boolean;
+  getNotDisplayedReason: () => string;
+  getSkippedReason: () => string;
+}
+
 const AccountPage: React.FC = () => {
-  const { user, logout, login, token } = useAuth();
+  const { user, logout, login, token, refreshProfile } = useAuth();
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -35,6 +63,27 @@ const AccountPage: React.FC = () => {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+
+  const linkedProviders = user?.providers ?? [];
+  const isFacebookLinked = linkedProviders.includes('facebook');
+  const isGoogleLinked = linkedProviders.includes('google');
+  const isLastProvider = linkedProviders.length <= 1;
+  const applyMergedLogin = (login: MergeLoginPayload) => {
+    const expiresAt = Math.floor(Date.now() / 1000) + (login.expiresIn ?? 3600);
+    const userData = {
+      id: login.user.id,
+      name: login.user.name || login.user.email,
+      email: login.user.email,
+      imageUrl: login.user.imageUrl || login.user.picture || '',
+      token: login.accessToken,
+      refreshToken: login.refreshToken,
+      expiresAt,
+      role: login.user.role ?? 'user',
+      providers: login.user.providers,
+    };
+    localStorage.setItem('user', JSON.stringify(userData));
+    window.location.href = '/#/account';
+  };
 
   const expiresAtLabel = user?.expiresAt
     ? new Date(user.expiresAt * 1000).toLocaleString()
@@ -88,8 +137,8 @@ const AccountPage: React.FC = () => {
                 size="small"
                 variant="outlined"
               />
-              {user?.providers && user.providers.length > 0 ? (
-                user.providers.map((p) => (
+              {linkedProviders.length > 0 ? (
+                linkedProviders.map((p) => (
                   <Chip
                     key={p}
                     label={p.charAt(0).toUpperCase() + p.slice(1)}
@@ -98,8 +147,7 @@ const AccountPage: React.FC = () => {
                   />
                 ))
               ) : (
-                // Fallback if no providers found (e.g. legacy or just signed up via google before migration)
-                <Chip label="Google" size="small" variant="outlined" />
+                <Chip label="None" size="small" variant="outlined" />
               )}
             </Stack>
           </Box>
@@ -118,24 +166,50 @@ const AccountPage: React.FC = () => {
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" color="text.secondary">
-            Linked Accounts
+            Linked Accounts {JSON.stringify(user?.providers)}
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 1 }}>
             <Button
               variant="outlined"
               startIcon={<Facebook />}
-              disabled={!!(user?.providers && user.providers.includes('facebook'))}
-              onClick={() => {
-                window.location.href = '/api/v1/auth/facebook/start?mode=link';
+              disabled={isFacebookLinked && isLastProvider}
+              onClick={async () => {
+                if (!token) {
+                  showSnackbar('Please sign in again to manage linked accounts.', 'warning');
+                  return;
+                }
+                if (isFacebookLinked) {
+                  if (confirm('Are you sure you want to unlink your Facebook account?')) {
+                    const res = await fetch('/api/v1/auth/link/facebook', {
+                      method: 'DELETE',
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      await refreshProfile();
+                      alert('Facebook account unlinked successfully.');
+                    } else {
+                      const err = await res.json();
+                      alert(err.error || 'Failed to unlink account');
+                    }
+                  }
+                } else {
+                  const returnTo = encodeURIComponent('/account');
+                  const encodedToken = encodeURIComponent(token);
+                  window.location.href = `/api/v1/auth/facebook/start?mode=link&token=${encodedToken}&returnTo=${returnTo}`;
+                }
               }}
               sx={{
-                color: user?.providers?.includes('facebook') ? undefined : '#1877F2',
-                borderColor: user?.providers?.includes('facebook') ? undefined : '#1877F2',
+                color: isFacebookLinked ? 'error.main' : '#1877F2',
+                borderColor: isFacebookLinked ? 'error.main' : '#1877F2',
+                '&:hover': {
+                  borderColor: isFacebookLinked ? 'error.dark' : '#165EAB',
+                  backgroundColor: isFacebookLinked
+                    ? 'rgba(211, 47, 47, 0.04)'
+                    : 'rgba(24, 119, 242, 0.04)',
+                },
               }}
             >
-              {user?.providers && user.providers.includes('facebook')
-                ? 'Facebook Linked'
-                : 'Link Facebook'}
+              {isFacebookLinked ? 'Unlink Facebook' : 'Link Facebook'}
             </Button>
             <Button
               variant="outlined"
@@ -146,11 +220,112 @@ const AccountPage: React.FC = () => {
                   style={{ width: 20, height: 20 }}
                 />
               }
-              disabled={!user?.providers || user.providers.includes('google')}
+              disabled={isGoogleLinked && isLastProvider}
+              onClick={async () => {
+                if (!token) {
+                  showSnackbar('Please sign in again to manage linked accounts.', 'warning');
+                  return;
+                }
+                if (isGoogleLinked) {
+                  if (confirm('Are you sure you want to unlink your Google account?')) {
+                    const res = await fetch('/api/v1/auth/link/google', {
+                      method: 'DELETE',
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                      await refreshProfile();
+                      alert('Google account unlinked successfully.');
+                    } else {
+                      const err = await res.json();
+                      alert(err.error || 'Failed to unlink account');
+                    }
+                  }
+                } else {
+                  // Link Google Logic
+                  const clientId = getClientConfigSnapshot().googleClientId;
+                  if (!clientId || !window.google?.accounts?.id) {
+                    alert('Google authentication is not ready. Please refresh the page.');
+                    return;
+                  }
+
+                  window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: async (response: GoogleCredentialResponse) => {
+                      if (response.credential) {
+                        const res = await fetch('/api/v1/auth/link/google', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({ token: response.credential }),
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok) {
+                          if (data?.merged && data?.login) {
+                            applyMergedLogin(data.login as MergeLoginPayload);
+                            return;
+                          }
+                          await refreshProfile();
+                          alert('Google account linked successfully!');
+                          return;
+                        }
+
+                        if (res.status === 409) {
+                          if (
+                            confirm(
+                              'This Google account is already linked to another user. Merge accounts?',
+                            )
+                          ) {
+                            const mergeRes = await fetch('/api/v1/auth/link/google', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({
+                                token: response.credential,
+                                merge: true,
+                              }),
+                            });
+                            const mergeData = await mergeRes.json().catch(() => ({}));
+                            if (mergeRes.ok && mergeData?.login) {
+                              applyMergedLogin(mergeData.login as MergeLoginPayload);
+                              return;
+                            }
+                            alert(mergeData.error || 'Failed to merge accounts');
+                          }
+                          return;
+                        }
+
+                        alert(data.error || 'Failed to link account');
+                      }
+                    },
+                  });
+
+                  window.google.accounts.id.prompt((notification: PromptNotification) => {
+                    if (notification.isNotDisplayed()) {
+                      console.warn(
+                        'Google prompt not displayed:',
+                        notification.getNotDisplayedReason(),
+                      );
+                      alert('Unable to show Google Sign-In prompt. It might be suppressed.');
+                    }
+                  });
+                }
+              }}
+              sx={{
+                color: isGoogleLinked ? 'error.main' : undefined,
+                borderColor: isGoogleLinked ? 'error.main' : undefined,
+                '&:hover': {
+                  borderColor: isGoogleLinked ? 'error.dark' : undefined,
+                  backgroundColor: isGoogleLinked
+                    ? 'rgba(211, 47, 47, 0.04)'
+                    : undefined,
+                },
+              }}
             >
-              {!user?.providers || user.providers.includes('google')
-                ? 'Google Linked'
-                : 'Link Google'}
+              {isGoogleLinked ? 'Unlink Google' : 'Link Google'}
             </Button>
           </Stack>
         </Box>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box, Button, Typography, Paper, Divider, Container } from '@mui/material';
+import { Box, Button, Typography, Paper, Container } from '@mui/material';
 import { Facebook } from '@mui/icons-material';
 import { useAuth } from './context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/';
   const error = searchParams.get('error');
+  const providerHint = searchParams.get('provider'); // 'google' | 'facebook'
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -49,41 +50,39 @@ export default function LoginPage() {
         )}
 
         <Box sx={{ mt: 3, width: '100%' }}>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleGoogleLogin}
-            sx={{ mb: 2 }}
-            startIcon={
-              <img
-                src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
-                alt="Google"
-              />
-            }
-          >
-            Sign in with Google
-          </Button>
+          {(!providerHint || providerHint === 'google') && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={handleGoogleLogin}
+              sx={{ mb: 2 }}
+              startIcon={
+                <img
+                  src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                  alt="Google"
+                />
+              }
+            >
+              Sign in with Google
+            </Button>
+          )}
 
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleFacebookLogin}
-            startIcon={<Facebook />}
-            sx={{
-              mb: 2,
-              backgroundColor: '#1877F2',
-              color: 'white',
-              '&:hover': { backgroundColor: '#165EAB' },
-            }}
-          >
-            Continue with Facebook
-          </Button>
-
-          <Divider sx={{ my: 2 }}>OR</Divider>
-
-          <Typography variant="caption" color="textSecondary" align="center" display="block">
-            More options coming soon.
-          </Typography>
+          {(!providerHint || providerHint === 'facebook') && (
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleFacebookLogin}
+              startIcon={<Facebook />}
+              sx={{
+                mb: 2,
+                backgroundColor: '#1877F2',
+                color: 'white',
+                '&:hover': { backgroundColor: '#165EAB' },
+              }}
+            >
+              Continue with Facebook
+            </Button>
+          )}
         </Box>
       </Paper>
     </Container>

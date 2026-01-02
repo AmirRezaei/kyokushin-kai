@@ -85,6 +85,7 @@ type UserProfile = {
   email: string;
   name?: string;
   picture?: string;
+  provider?: string;
 };
 
 type UserRole = 'admin' | 'user';
@@ -302,10 +303,42 @@ app.post('/api/v1/auth/login', async (c) => {
       throw new Error('Missing email or sub claim');
     }
 
-    const userId = String(googlePayload.sub);
+    const providerUserId = String(googlePayload.sub);
     const email = String(googlePayload.email);
     const name = googlePayload.name ? String(googlePayload.name) : undefined;
     const picture = googlePayload.picture ? String(googlePayload.picture) : undefined;
+    let userId = providerUserId;
+
+    const existingIdentity = await c.env.DB.prepare(
+      `SELECT user_id FROM identities WHERE provider = 'google' AND provider_user_id = ?`,
+    )
+      .bind(providerUserId)
+      .first<{ user_id: string }>();
+
+    if (existingIdentity && existingIdentity.user_id !== providerUserId) {
+      const providerSettings = await c.env.DB.prepare(
+        `SELECT user_id FROM user_settings WHERE user_id = ? LIMIT 1`,
+      )
+        .bind(providerUserId)
+        .first<{ user_id: string }>();
+
+      if (!providerSettings) {
+        const existingSettings = await c.env.DB.prepare(
+          `SELECT user_id FROM user_settings WHERE user_id = ? LIMIT 1`,
+        )
+          .bind(existingIdentity.user_id)
+          .first<{ user_id: string }>();
+        if (existingSettings) {
+          userId = existingIdentity.user_id;
+        } else {
+          await c.env.DB.prepare(
+            `DELETE FROM identities WHERE provider = 'google' AND provider_user_id = ?`,
+          )
+            .bind(providerUserId)
+            .run();
+        }
+      }
+    }
     const role = await upsertUserRole(
       c.env.DB,
       { id: userId, email, name, picture },
@@ -333,14 +366,44 @@ app.post('/api/v1/auth/login', async (c) => {
 
     // Store in database
     await c.env.DB.prepare(
-      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at)
-       VALUES (?, ?, ?, ?, strftime('%s', 'now'))`,
+      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+       VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
     )
-      .bind(crypto.randomUUID(), userId, tokenHash, expiresAt)
+      .bind(crypto.randomUUID(), userId, tokenHash, expiresAt, 'google')
       .run();
 
     // Create custom JWT token (1 hour expiry)
-    const accessToken = await createJWT(userId, email, c.env.JWT_SECRET, 3600);
+    const accessToken = await createJWT(userId, email, c.env.JWT_SECRET, 3600, 'google');
+
+    // Ensure Google identity exists
+    // Ensure Google identity exists
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare(
+      `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+       VALUES (?, ?, 'google', ?, ?, ?)
+       ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+    )
+      .bind(crypto.randomUUID(), userId, providerUserId, now, now)
+      .run();
+
+    // Fetch providers
+    const { results: providerResults } = await c.env.DB.prepare(
+      `SELECT provider FROM identities WHERE user_id = ?`,
+    )
+      .bind(userId)
+      .all<{ provider: string }>();
+
+    const providers = providerResults.map((r) => r.provider);
+    if (!providers.includes('google')) {
+      const recheck = await c.env.DB.prepare(
+        `SELECT 1 FROM identities WHERE user_id = ? AND provider = 'google' LIMIT 1`,
+      )
+        .bind(userId)
+        .first();
+      if (recheck) {
+        providers.push('google');
+      }
+    }
 
     return c.json({
       accessToken,
@@ -352,6 +415,7 @@ app.post('/api/v1/auth/login', async (c) => {
         name,
         picture,
         role,
+        providers,
       },
     });
   } catch (error) {
@@ -393,14 +457,14 @@ app.post('/api/v1/auth/refresh', async (c) => {
 
     // Find and validate refresh token + get user email
     const row = await c.env.DB.prepare(
-      `SELECT rt.user_id as userId, rt.expires_at as expiresAt, us.email as email
+      `SELECT rt.user_id as userId, rt.expires_at as expiresAt, rt.provider as provider, us.email as email
        FROM refresh_tokens rt
        JOIN user_settings us ON rt.user_id = us.user_id
        WHERE rt.token_hash = ? AND rt.expires_at > ?
        LIMIT 1`,
     )
       .bind(tokenHash, now)
-      .first<{ userId: string; expiresAt: number; email: string }>();
+      .first<{ userId: string; expiresAt: number; email: string; provider: string | null }>();
 
     if (!row) {
       return c.json({ error: 'Invalid or expired refresh token' }, 401);
@@ -414,17 +478,55 @@ app.post('/api/v1/auth/refresh', async (c) => {
       .run();
 
     // Issue new custom JWT token (1 hour expiry)
-    const accessToken = await createJWT(row.userId, row.email, c.env.JWT_SECRET, 3600);
+    const accessToken = await createJWT(
+      row.userId,
+      row.email,
+      c.env.JWT_SECRET,
+      3600,
+      row.provider ?? undefined,
+    );
     const role = await getUserRole(
       c.env.DB,
       { id: row.userId, email: row.email },
       normalizeEmail(c.env.ADMIN_EMAIL),
     );
 
+    const { results: providerResults } = await c.env.DB.prepare(
+      `SELECT provider, provider_user_id FROM identities WHERE user_id = ?`,
+    )
+      .bind(row.userId)
+      .all<{ provider: string; provider_user_id: string }>();
+
+    const providers = providerResults.map((r) => r.provider);
+    const hasGoogle = providers.includes('google');
+    const shouldBackfillGoogle =
+      !hasGoogle &&
+      providerResults.length === 0 &&
+      (row.provider === 'google' || !row.provider);
+    if (shouldBackfillGoogle) {
+      const nowTimestamp = Math.floor(Date.now() / 1000);
+      await c.env.DB.prepare(
+        `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+         VALUES (?, ?, 'google', ?, ?, ?)
+         ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+      )
+        .bind(crypto.randomUUID(), row.userId, row.userId, nowTimestamp, nowTimestamp)
+        .run();
+      const recheck = await c.env.DB.prepare(
+        `SELECT 1 FROM identities WHERE user_id = ? AND provider = 'google' LIMIT 1`,
+      )
+        .bind(row.userId)
+        .first();
+      if (recheck) {
+        providers.push('google');
+      }
+    }
+
     return c.json({
       accessToken,
       expiresIn: 3600,
       role,
+      providers,
     });
   } catch (error) {
     console.error('Refresh error:', error);
@@ -476,14 +578,33 @@ app.get('/api/v1/auth/me', async (c) => {
 
   const role = await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL));
 
-  const { results } = await c.env.DB.prepare(`SELECT provider FROM identities WHERE user_id = ?`)
+  const { results } = await c.env.DB.prepare(
+    `SELECT provider, provider_user_id FROM identities WHERE user_id = ?`,
+  )
     .bind(user.id)
-    .all<{ provider: string }>();
+    .all<{ provider: string; provider_user_id: string }>();
 
   const providers = results.map((r) => r.provider);
-  // Ensure google is always present as it is the base provider for all accounts currently
-  if (!providers.includes('google')) {
-    providers.push('google');
+  const hasGoogle = providers.includes('google');
+  const shouldBackfillGoogle =
+    !hasGoogle && results.length === 0 && (!user.provider || user.provider === 'google');
+  if (shouldBackfillGoogle) {
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare(
+      `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+       VALUES (?, ?, 'google', ?, ?, ?)
+       ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+    )
+      .bind(crypto.randomUUID(), user.id, user.id, now, now)
+      .run();
+    const recheck = await c.env.DB.prepare(
+      `SELECT 1 FROM identities WHERE user_id = ? AND provider = 'google' LIMIT 1`,
+    )
+      .bind(user.id)
+      .first();
+    if (recheck) {
+      providers.push('google');
+    }
   }
 
   return c.json({
@@ -494,6 +615,210 @@ app.get('/api/v1/auth/me', async (c) => {
     role,
     providers,
   });
+});
+
+app.delete('/api/v1/auth/link/:provider', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const provider = c.req.param('provider');
+
+  const { results: identityRows } = await c.env.DB.prepare(
+    `SELECT provider, provider_user_id FROM identities WHERE user_id = ?`,
+  )
+    .bind(user.id)
+    .all<{ provider: string; provider_user_id: string }>();
+
+  let hasProvider = identityRows.some((row) => row.provider === provider);
+  if (!hasProvider && provider === 'google') {
+    const hasFacebookPrimary = identityRows.some(
+      (row) => row.provider === 'facebook' && row.provider_user_id === user.id,
+    );
+    const shouldBackfillGoogle =
+      (!user.provider || user.provider === 'google') && !hasFacebookPrimary;
+    if (shouldBackfillGoogle) {
+      const now = Math.floor(Date.now() / 1000);
+      await c.env.DB.prepare(
+        `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+         VALUES (?, ?, 'google', ?, ?, ?)
+         ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+      )
+        .bind(crypto.randomUUID(), user.id, user.id, now, now)
+        .run();
+      const recheck = await c.env.DB.prepare(
+        `SELECT 1 FROM identities WHERE user_id = ? AND provider = 'google' LIMIT 1`,
+      )
+        .bind(user.id)
+        .first();
+      hasProvider = Boolean(recheck);
+    }
+  }
+
+  if (!hasProvider) {
+    if (provider === 'google') {
+      const existingGoogle = await c.env.DB.prepare(
+        `SELECT user_id FROM identities WHERE provider = 'google' AND provider_user_id = ? LIMIT 1`,
+      )
+        .bind(user.id)
+        .first<{ user_id: string }>();
+      if (existingGoogle && existingGoogle.user_id !== user.id) {
+        return c.json(
+          {
+            error:
+              'Google account is linked to another user. Use Link Google to merge accounts.',
+            mergeRequired: true,
+          },
+          409,
+        );
+      }
+    }
+    return c.json({ error: 'Provider not linked' }, 404);
+  }
+
+  // Count total providers
+  const { count } = (await c.env.DB.prepare(
+    `SELECT COUNT(*) as count FROM identities WHERE user_id = ?`,
+  )
+    .bind(user.id)
+    .first<{ count: number }>()) || { count: 0 };
+
+  if (count <= 1) {
+    return c.json({ error: 'Cannot unlink the last provider' }, 400);
+  }
+
+  await c.env.DB.prepare(`DELETE FROM identities WHERE user_id = ? AND provider = ?`)
+    .bind(user.id, provider)
+    .run();
+
+  return c.json({ ok: true });
+});
+
+app.post('/api/v1/auth/link/google', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { token: string; merge?: boolean };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+  if (!payload.token) {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  try {
+    const { payload: googlePayload } = await jwtVerify(payload.token, jwks, {
+      audience: c.env.GOOGLE_CLIENT_ID,
+    });
+
+    if (!googlePayload || !googlePayload.sub || !googlePayload.email) {
+      return c.json({ error: 'Invalid Google token' }, 401);
+    }
+
+    const providerUserId = googlePayload.sub;
+
+    // Check if linked to another user
+    const existing = await c.env.DB.prepare(
+      `SELECT user_id FROM identities WHERE provider = 'google' AND provider_user_id = ?`,
+    )
+      .bind(providerUserId)
+      .first<{ user_id: string }>();
+
+    if (existing) {
+      const providerUserId = String(googlePayload.sub);
+      const isSameUser = existing.user_id === user.id;
+      const isProviderUser = user.id === providerUserId;
+
+      if (isSameUser && isProviderUser) {
+        return c.json({ ok: true }); // Already linked and aligned
+      }
+      if (!payload.merge) {
+        return c.json(
+          { error: 'This Google account is already linked to another user.', mergeRequired: true },
+          409,
+        );
+      }
+
+      let mergeSourceUserId = user.id;
+      let mergeTargetUserId = existing.user_id;
+
+      if (isProviderUser) {
+        mergeSourceUserId = existing.user_id;
+        mergeTargetUserId = user.id;
+      } else if (existing.user_id === providerUserId) {
+        mergeSourceUserId = user.id;
+        mergeTargetUserId = existing.user_id;
+      } else if (isSameUser && user.id !== providerUserId) {
+        mergeSourceUserId = user.id;
+        mergeTargetUserId = providerUserId;
+      }
+
+      const mergeResult = await mergeUserAccounts(
+        c.env.DB,
+        mergeSourceUserId,
+        mergeTargetUserId,
+        {
+          email: String(googlePayload.email),
+          name: googlePayload.name ? String(googlePayload.name) : undefined,
+          picture: googlePayload.picture ? String(googlePayload.picture) : undefined,
+          providerUserId,
+        },
+        normalizeEmail(c.env.ADMIN_EMAIL),
+      );
+
+      const refreshToken = generateRefreshToken();
+      const tokenHash = await hashToken(refreshToken);
+      const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+
+      await c.env.DB.prepare(
+        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+         VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
+      )
+        .bind(crypto.randomUUID(), mergeResult.user.id, tokenHash, expiresAt, 'google')
+        .run();
+
+      const accessToken = await createJWT(
+        mergeResult.user.id,
+        mergeResult.user.email,
+        c.env.JWT_SECRET,
+        3600,
+        'google',
+      );
+
+      return c.json({
+        ok: true,
+        merged: true,
+        login: {
+          accessToken,
+          refreshToken,
+          expiresIn: 3600,
+          user: {
+            id: mergeResult.user.id,
+            email: mergeResult.user.email,
+            name: mergeResult.user.name,
+            imageUrl: mergeResult.user.imageUrl,
+            role: mergeResult.role,
+            providers: mergeResult.providers,
+          },
+        },
+      });
+    }
+
+    // Link account
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare(
+      `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at) 
+       VALUES (?, ?, 'google', ?, ?, ?)`,
+    )
+      .bind(crypto.randomUUID(), user.id, providerUserId, now, now)
+      .run();
+
+    return c.json({ ok: true });
+  } catch (error) {
+    console.error('Link Google error:', error);
+    return c.json({ error: 'Failed to link Google account' }, 500);
+  }
 });
 
 // --- Facebook OAuth ---
@@ -569,9 +894,17 @@ app.get('/api/v1/auth/facebook/start', async (c) => {
     return c.json({ error: 'Invalid returnTo' }, 400);
   }
 
-  // If link mode, require auth
   if (mode === 'link') {
-    const user = await requireUser(c);
+    let user = await requireUser(c);
+    if (!user) {
+      const token = c.req.query('token');
+      if (token) {
+        const payload = await verifyJWT(token, c.env.JWT_SECRET);
+        if (payload) {
+          user = { id: payload.sub, email: payload.email } as any;
+        }
+      }
+    }
     if (!user) return unauthorized(c);
   }
 
@@ -832,13 +1165,19 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
 
       await c.env.DB.prepare(
-        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at)
-             VALUES (?, ?, ?, ?, strftime('%s', 'now'))`,
+        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+             VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
       )
-        .bind(crypto.randomUUID(), user.user_id, tokenHash, expiresAt)
+        .bind(crypto.randomUUID(), user.user_id, tokenHash, expiresAt, 'facebook')
         .run();
 
-      const accessToken = await createJWT(user.user_id, user.email, c.env.JWT_SECRET, 3600);
+      const accessToken = await createJWT(
+        user.user_id,
+        user.email,
+        c.env.JWT_SECRET,
+        3600,
+        'facebook',
+      );
 
       // Return HTML that stores token and redirects
       // Or redirect to frontend with token in fragment/query?
@@ -884,12 +1223,22 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
     } else {
       // Identity not found. Check for potential account linking via email collision
       // We need user email to check if they already exist
-      const meResp = await fetch(
-        `https://graph.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/me?fields=email&access_token=${userAccessToken}&appsecret_proof=${await calculateAppSecretProof(userAccessToken, c.env.FACEBOOK_APP_SECRET)}`,
+      // Identity not found. Check for potential account linking via email collision
+      // We need user email to check if they already exist
+
+      // Fetch FULL profile first, as we might need it for creation
+      const fbProfileResp = await fetch(
+        `https://graph.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/me?fields=id,name,email,picture.type(large)&access_token=${userAccessToken}&appsecret_proof=${await calculateAppSecretProof(userAccessToken, c.env.FACEBOOK_APP_SECRET)}`,
       );
-      const meData = (await meResp.json()) as { email?: string; id: string };
-      console.log('FB Collision Check Data:', JSON.stringify(meData));
-      const fbEmail = meData.email;
+      const fbProfile = (await fbProfileResp.json()) as {
+        id: string;
+        name: string;
+        email: string;
+        picture?: { data: { url: string } };
+      };
+
+      const fbEmail = fbProfile.email;
+      console.log('FB Collision Check:', fbEmail);
 
       let collision = false;
       if (fbEmail) {
@@ -903,25 +1252,128 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         }
       }
 
-      const pendingCode = crypto.randomUUID();
-      await c.env.DB.prepare(
-        `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-             VALUES (?, 'facebook', ?, ?, ?)
-             ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
-             DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
-      )
-        .bind(
-          pendingCode,
-          fbUserId,
-          tx.return_to,
-          Math.floor(Date.now() / 1000) + 600, // 10 mins
-        )
-        .run();
+      if (!collision) {
+        // --- CREATE NEW USER FLOW ---
+        // 1. Create Role (User)
+        // newUserId removed as we use fbUserId directly
+        // Actually, better to use UUID for new users, but sticking to provided ID is okay if unique.
+        // Google uses sub. Let's use fbUserId (which is id).
 
-      // Redirect to frontend linking page
-      // HashRouter support: /#/link/facebook
-      const hashReturn = `/#/link/facebook?code=${pendingCode}${collision ? `&collision=true&email=${encodeURIComponent(fbEmail || '')}` : ''}`;
-      return c.redirect(hashReturn);
+        // Wait, legacy google users utilize sub as ID.
+        // New users should ideally use UUID?
+        // Let's use fbUserId to ensure stability and identical reconstruction if they delete/re-join?
+        // Yes, using provider ID as user ID is fine if we namespace or if we trust it's unique enough (it is).
+
+        const role = await upsertUserRole(
+          c.env.DB,
+          {
+            id: fbUserId,
+            email: fbEmail,
+            name: fbProfile.name,
+            picture: fbProfile.picture?.data?.url,
+          },
+          normalizeEmail(c.env.ADMIN_EMAIL),
+        );
+
+        // 2. Create Settings
+        const settingsPayload = JSON.stringify(sanitizeSettings({}));
+        const settingsTimestamp = new Date().toISOString();
+        const displayName = fbProfile.name;
+        const imageUrl = fbProfile.picture?.data?.url;
+
+        await c.env.DB.prepare(
+          `INSERT INTO user_settings (user_id, email, display_name, image_url, settings_json, version, updated_at)
+           VALUES (?, ?, ?, ?, ?, 1, ?)
+           ON CONFLICT(user_id) DO UPDATE SET
+             email = excluded.email,
+             display_name = excluded.display_name,
+             image_url = excluded.image_url,
+             updated_at = excluded.updated_at`,
+        )
+          // If user was "deleted", user_settings row is gone. So INSERT works.
+          // If row exists (collision check failed?), ON CONFLICT updates it.
+          .bind(fbUserId, fbEmail, displayName, imageUrl, settingsPayload, settingsTimestamp)
+          .run();
+
+        // 3. Create Identity
+        const now = Math.floor(Date.now() / 1000);
+        await c.env.DB.prepare(
+          `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+           VALUES (?, ?, 'facebook', ?, ?, ?)
+           ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+        )
+          .bind(crypto.randomUUID(), fbUserId, fbUserId, now, now)
+          .run();
+
+        // 4. Generate Tokens & Login
+        const refreshToken = generateRefreshToken();
+        const tokenHash = await hashToken(refreshToken);
+        const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days
+
+        await c.env.DB.prepare(
+          `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+           VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
+        )
+          .bind(crypto.randomUUID(), fbUserId, tokenHash, expiresAt, 'facebook')
+          .run();
+
+        const accessToken = await createJWT(fbUserId, fbEmail, c.env.JWT_SECRET, 3600, 'facebook');
+
+        // 5. Return Login HTML
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <body>
+            <script>
+              const now = Math.floor(Date.now() / 1000);
+              const userData = {
+                id: "${fbUserId}",
+                name: "${displayName || fbEmail}",
+                email: "${fbEmail}",
+                imageUrl: "${imageUrl || ''}",
+                token: "${accessToken}",
+                refreshToken: "${refreshToken}",
+                expiresAt: now + 3600,
+                role: "${role}",
+                providers: ['facebook']
+              };
+              localStorage.setItem('user', JSON.stringify(userData));
+              
+              const returnUrl = "${tx.return_to}".startsWith('/') ? "${tx.return_to}" : "/" + "${tx.return_to}";
+               // Check if returnUrl already has hash
+              if (returnUrl.startsWith('/#')) {
+                  window.location.href = returnUrl;
+              } else {
+                  // Assume root if / and convert to /#/
+                  const cleanPath = returnUrl.startsWith('/') ? returnUrl.substring(1) : returnUrl;
+                  window.location.href = "/#/" + cleanPath;
+              }
+            </script>
+            </body>
+            </html>
+          `;
+        return c.html(html);
+      } else {
+        // --- COLLISION DETECTED (Existing Logic) ---
+        const pendingCode = crypto.randomUUID();
+        await c.env.DB.prepare(
+          `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
+               VALUES (?, 'facebook', ?, ?, ?)
+               ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
+               DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+        )
+          .bind(
+            pendingCode,
+            fbUserId,
+            tx.return_to,
+            Math.floor(Date.now() / 1000) + 600, // 10 mins
+          )
+          .run();
+
+        // Redirect to frontend linking page with collision param
+        const hashReturn = `/#/link/facebook?code=${pendingCode}&collision=true&email=${encodeURIComponent(fbEmail || '')}`;
+        return c.redirect(hashReturn);
+      }
     }
   } else if (tx.mode === 'link') {
     // Check if logged in in the session?
@@ -996,7 +1448,9 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
 
     await c.env.DB.prepare(
       `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
-         VALUES (?, 'facebook', ?, ?, ?)`,
+         VALUES (?, 'facebook', ?, ?, ?)
+         ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
+         DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
     )
       .bind(pendingCode, fbUserId, tx.return_to, now + 600)
       .run();
@@ -1007,7 +1461,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
     // "If logged in: POST /auth/link/facebook/consume"
 
     // So yes, we can reuse it!
-    return c.redirect(`/link/facebook?code=${pendingCode}`);
+    return c.redirect(`/#/link/facebook?code=${pendingCode}`);
   }
 
   return c.json({ error: 'Invalid mode' }, 500);
@@ -1021,6 +1475,9 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
   try {
     payload = await c.req.json();
   } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+  if (!payload.code) {
     return c.json({ error: 'Invalid request' }, 400);
   }
 
@@ -1037,6 +1494,22 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
   if (link.expires_at < now) return c.json({ error: 'Code expired' }, 400);
   if (link.consumed_at) return c.json({ error: 'Code already consumed' }, 400);
 
+  const { results: userIdentities } = await c.env.DB.prepare(
+    `SELECT provider FROM identities WHERE user_id = ?`,
+  )
+    .bind(user.id)
+    .all<{ provider: string }>();
+  const hasGoogleIdentity = userIdentities.some((identity) => identity.provider === 'google');
+  if (!hasGoogleIdentity && user.id !== link.provider_user_id) {
+    await c.env.DB.prepare(
+      `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+       VALUES (?, ?, 'google', ?, ?, ?)
+       ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+    )
+      .bind(crypto.randomUUID(), user.id, user.id, now, now)
+      .run();
+  }
+
   // Check collision
   const existing = await c.env.DB.prepare(
     `SELECT * FROM identities WHERE provider = 'facebook' AND provider_user_id = ?`,
@@ -1044,27 +1517,27 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
     .bind(link.provider_user_id)
     .first<IdentityRow>();
 
-  if (existing) {
-    if (existing.user_id !== user.id) {
-      return c.json({ error: 'Identity already linked to another account' }, 409);
-    }
-    // If same user, generic success (idempotent)
-  } else {
-    // Create Identity
+  if (existing && existing.user_id !== user.id) {
+    await c.env.DB.prepare(`UPDATE pending_links SET consumed_at = ? WHERE code = ?`)
+      .bind(now, payload.code)
+      .run();
+    return c.json({ error: 'Identity already linked to another account' }, 409);
+  }
+
+  if (!existing) {
     await c.env.DB.prepare(
       `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
-             VALUES (?, ?, 'facebook', ?, ?, ?)`,
+       VALUES (?, ?, 'facebook', ?, ?, ?)`,
     )
       .bind(crypto.randomUUID(), user.id, link.provider_user_id, now, now)
       .run();
   }
 
-  // Mark consumed
   await c.env.DB.prepare(`UPDATE pending_links SET consumed_at = ? WHERE code = ?`)
     .bind(now, payload.code)
     .run();
 
-  return c.json({ returnTo: link.return_to });
+  return c.json({ ok: true, returnTo: link.return_to });
 });
 
 app.delete('/api/v1/account', async (c) => {
@@ -3304,6 +3777,7 @@ async function requireUser(c: Context<{ Bindings: Bindings }>) {
       return {
         id: customPayload.sub,
         email: customPayload.email,
+        provider: customPayload.provider,
       };
     }
   }
@@ -3329,6 +3803,7 @@ async function requireUser(c: Context<{ Bindings: Bindings }>) {
       email: String(payload.email),
       name: payload.name ? String(payload.name) : undefined,
       picture: payload.picture ? String(payload.picture) : undefined,
+      provider: 'google',
     };
 
     return profile;
@@ -4186,6 +4661,334 @@ async function replaceKataAssignments(db: D1Database, kataId: string, gradeId?: 
 
 // --- Auth Utility Functions ---
 
+type MergeProfile = {
+  email: string;
+  name?: string;
+  picture?: string;
+  providerUserId: string;
+};
+
+type MergeResult = {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    imageUrl?: string;
+  };
+  role: UserRole;
+  providers: string[];
+};
+
+async function tableExists(db: D1Database, tableName: string): Promise<boolean> {
+  const row = await db
+    .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`)
+    .bind(tableName)
+    .first<{ name: string }>();
+  return Boolean(row?.name);
+}
+
+async function mergeUserTableRows(
+  db: D1Database,
+  tableName: string,
+  sourceUserId: string,
+  targetUserId: string,
+): Promise<void> {
+  if (!(await tableExists(db, tableName))) {
+    return;
+  }
+
+  const { results } = await db.prepare(`PRAGMA table_info(${tableName})`).all<{ name: string }>();
+  const columnNames = results?.map((column) => column.name).filter(Boolean) ?? [];
+  if (!columnNames.includes('user_id')) {
+    return;
+  }
+
+  const insertColumns = columnNames.join(', ');
+  const selectColumns = columnNames
+    .map((column) => (column === 'user_id' ? '?' : column))
+    .join(', ');
+
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO ${tableName} (${insertColumns})
+       SELECT ${selectColumns} FROM ${tableName} WHERE user_id = ?`,
+    )
+    .bind(targetUserId, sourceUserId)
+    .run();
+
+  await db.prepare(`DELETE FROM ${tableName} WHERE user_id = ?`).bind(sourceUserId).run();
+}
+
+async function mergeUserAccounts(
+  db: D1Database,
+  sourceUserId: string,
+  targetUserId: string,
+  profile: MergeProfile,
+  adminEmail: string,
+): Promise<MergeResult> {
+  if (sourceUserId === targetUserId) {
+    throw new Error('Cannot merge identical users');
+  }
+
+  const nowIso = new Date().toISOString();
+  const nowUnix = Math.floor(Date.now() / 1000);
+  let transactionStarted = false;
+
+  try {
+    await db.exec('BEGIN');
+    transactionStarted = true;
+  } catch (error) {
+    console.warn('Account merge transaction unavailable, falling back to sequential', error);
+  }
+
+  const finalize = async (error?: unknown) => {
+    if (!transactionStarted) {
+      if (error) {
+        throw error;
+      }
+      return;
+    }
+    if (!error) {
+      await db.exec('COMMIT');
+      return;
+    }
+    try {
+      await db.exec('ROLLBACK');
+    } catch (rollbackError) {
+      console.warn('Account merge rollback failed', rollbackError);
+    }
+    throw error;
+  };
+
+  try {
+    const sourceSettings = await db
+      .prepare(
+        `SELECT user_id, email, display_name, image_url, settings_json, version
+         FROM user_settings WHERE user_id = ?`,
+      )
+      .bind(sourceUserId)
+      .first<{
+        user_id: string;
+        email: string;
+        display_name?: string;
+        image_url?: string;
+        settings_json: string;
+        version: number;
+      }>();
+
+    const targetSettings = await db
+      .prepare(
+        `SELECT user_id, email, display_name, image_url, settings_json, version
+         FROM user_settings WHERE user_id = ?`,
+      )
+      .bind(targetUserId)
+      .first<{
+        user_id: string;
+        email: string;
+        display_name?: string;
+        image_url?: string;
+        settings_json: string;
+        version: number;
+      }>();
+
+    const resolvedEmail = targetSettings?.email || profile.email || sourceSettings?.email || '';
+    const resolvedName =
+      targetSettings?.display_name ||
+      sourceSettings?.display_name ||
+      profile.name ||
+      resolvedEmail;
+    const resolvedImage =
+      targetSettings?.image_url || sourceSettings?.image_url || profile.picture || undefined;
+
+    if (!targetSettings) {
+      const settingsJson =
+        sourceSettings?.settings_json || JSON.stringify(sanitizeSettings({}));
+      const settingsVersion = sourceSettings?.version ?? 1;
+      await db
+        .prepare(
+          `INSERT INTO user_settings (user_id, email, display_name, image_url, settings_json, version, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          targetUserId,
+          resolvedEmail,
+          resolvedName || null,
+          resolvedImage || null,
+          settingsJson,
+          settingsVersion,
+          nowIso,
+        )
+        .run();
+    } else {
+      const updates: string[] = [];
+      const values: Array<string | null> = [];
+
+      if (!targetSettings.display_name && resolvedName) {
+        updates.push('display_name = ?');
+        values.push(resolvedName);
+      }
+      if (!targetSettings.image_url && resolvedImage) {
+        updates.push('image_url = ?');
+        values.push(resolvedImage);
+      }
+
+      if (updates.length > 0) {
+        updates.push('updated_at = ?');
+        values.push(nowIso);
+        values.push(targetUserId);
+        await db
+          .prepare(`UPDATE user_settings SET ${updates.join(', ')} WHERE user_id = ?`)
+          .bind(...values)
+          .run();
+      }
+    }
+
+    const sourceRole = await db
+      .prepare(
+        `SELECT user_id, email, display_name, image_url, role
+         FROM user_roles WHERE user_id = ?`,
+      )
+      .bind(sourceUserId)
+      .first<{
+        user_id: string;
+        email: string;
+        display_name?: string;
+        image_url?: string;
+        role: UserRole;
+      }>();
+
+    const targetRole = await db
+      .prepare(
+        `SELECT user_id, email, display_name, image_url, role
+         FROM user_roles WHERE user_id = ?`,
+      )
+      .bind(targetUserId)
+      .first<{
+        user_id: string;
+        email: string;
+        display_name?: string;
+        image_url?: string;
+        role: UserRole;
+      }>();
+
+    if (targetRole) {
+      const updates: string[] = [];
+      const values: Array<string | null> = [];
+      if (sourceRole?.role === 'admin' && targetRole.role !== 'admin') {
+        updates.push('role = ?');
+        values.push('admin');
+      }
+      const roleDisplayName = sourceRole?.display_name || resolvedName;
+      if (!targetRole.display_name && roleDisplayName) {
+        updates.push('display_name = ?');
+        values.push(roleDisplayName);
+      }
+      const roleImage = sourceRole?.image_url || resolvedImage;
+      if (!targetRole.image_url && roleImage) {
+        updates.push('image_url = ?');
+        values.push(roleImage);
+      }
+      if (updates.length > 0) {
+        updates.push('updated_at = ?');
+        values.push(nowIso);
+        values.push(targetUserId);
+        await db
+          .prepare(`UPDATE user_roles SET ${updates.join(', ')} WHERE user_id = ?`)
+          .bind(...values)
+          .run();
+      }
+    } else if (sourceRole) {
+      const roleDisplayName = sourceRole.display_name || resolvedName || null;
+      const roleImage = sourceRole.image_url || resolvedImage || null;
+      const roleEmail = resolvedEmail || sourceRole.email;
+      await db
+        .prepare(
+          `UPDATE user_roles SET user_id = ?, email = ?, display_name = ?, image_url = ?, role = ?, updated_at = ?
+           WHERE user_id = ?`,
+        )
+        .bind(
+          targetUserId,
+          roleEmail,
+          roleDisplayName,
+          roleImage,
+          sourceRole.role,
+          nowIso,
+          sourceUserId,
+        )
+        .run();
+    }
+
+    const mergeTables = [
+      'user_technique_progress',
+      'user_terminology_progress',
+      'user_wordquest_progress',
+      'user_game_state',
+      'user_cards',
+      'user_card_decks',
+      'user_training_sessions',
+      'user_gym_sessions',
+      'user_workout_plans',
+      'user_gym_exercises',
+      'user_gym_equipment',
+      'user_muscle_groups',
+      'user_equipment_categories',
+      'user_feedback',
+      'user_flashcards',
+      'user_flashcard_decks',
+    ];
+
+    for (const tableName of mergeTables) {
+      await mergeUserTableRows(db, tableName, sourceUserId, targetUserId);
+    }
+
+    await db
+      .prepare(`UPDATE identities SET user_id = ? WHERE user_id = ?`)
+      .bind(targetUserId, sourceUserId)
+      .run();
+
+    await db.prepare(`DELETE FROM identities WHERE user_id = ?`).bind(sourceUserId).run();
+    await db.prepare(`DELETE FROM refresh_tokens WHERE user_id = ?`).bind(sourceUserId).run();
+    await db.prepare(`DELETE FROM user_roles WHERE user_id = ?`).bind(sourceUserId).run();
+    await db.prepare(`DELETE FROM user_settings WHERE user_id = ?`).bind(sourceUserId).run();
+
+    const { results: providerResults } = await db
+      .prepare(`SELECT provider FROM identities WHERE user_id = ?`)
+      .bind(targetUserId)
+      .all<{ provider: string }>();
+
+    const providers = providerResults.map((row) => row.provider);
+    if (!providers.includes('google')) {
+      await db
+        .prepare(
+          `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+           VALUES (?, ?, 'google', ?, ?, ?)
+           ON CONFLICT(provider, provider_user_id) DO NOTHING`,
+        )
+        .bind(crypto.randomUUID(), targetUserId, profile.providerUserId, nowUnix, nowUnix)
+        .run();
+      providers.push('google');
+    }
+
+    await finalize();
+
+    const role = await getUserRole(db, { id: targetUserId, email: resolvedEmail }, adminEmail);
+
+    return {
+      user: {
+        id: targetUserId,
+        email: resolvedEmail,
+        name: resolvedName,
+        imageUrl: resolvedImage,
+      },
+      role,
+      providers,
+    };
+  } catch (error) {
+    await finalize(error);
+    throw error;
+  }
+}
+
 function generateRefreshToken(): string {
   // Generate cryptographically secure random token
   const array = new Uint8Array(32);
@@ -4214,6 +5017,7 @@ async function createJWT(
   email: string,
   secret: string,
   expiresIn: number = 3600,
+  provider?: string,
 ): Promise<string> {
   const encoder = new TextEncoder();
   const secretKey = await crypto.subtle.importKey(
@@ -4224,11 +5028,16 @@ async function createJWT(
     ['sign'],
   );
 
-  const jwt = await new SignJWT({
+  const payload: Record<string, string> = {
     sub: userId,
     email,
     type: 'access',
-  })
+  };
+  if (provider) {
+    payload.provider = provider;
+  }
+
+  const jwt = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + expiresIn)
@@ -4247,7 +5056,7 @@ async function createJWT(
 async function verifyJWT(
   token: string,
   secret: string,
-): Promise<{ sub: string; email: string } | null> {
+): Promise<{ sub: string; email: string; provider?: string } | null> {
   try {
     const encoder = new TextEncoder();
     const secretKey = await crypto.subtle.importKey(
@@ -4266,6 +5075,7 @@ async function verifyJWT(
       return {
         sub: String(payload.sub),
         email: String(payload.email),
+        provider: payload.provider ? String(payload.provider) : undefined,
       };
     }
     return null;

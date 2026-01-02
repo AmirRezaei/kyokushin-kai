@@ -9,7 +9,7 @@ export default function FacebookCallbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showSnackbar } = useSnackbar();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const processed = useRef(false);
 
   const collision = searchParams.get('collision') === 'true';
@@ -43,6 +43,7 @@ export default function FacebookCallbackPage() {
           return;
         }
 
+        await refreshProfile(token || undefined);
         showSnackbar('Facebook account linked successfully!', 'success');
         if (data.returnTo) {
           navigate(data.returnTo);
@@ -79,20 +80,25 @@ export default function FacebookCallbackPage() {
         // Don't auto-redirect, show specific message
         return;
       }
-
-      showSnackbar('Please sign in with your existing account to link Facebook.', 'info');
-      // HashRouter: we use location.pathname which corresponds to the route path
-      const currentPath = location.pathname + location.search;
-      navigate(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
-      return;
+      // If NO collision and NO user, it means this is a "Login with Facebook" (New User or Existing FB User) attempt.
+      // We should allow it to proceed to consumeCodeEncoded.
     }
 
     consumeCodeEncoded(code);
-  }, [searchParams, navigate, showSnackbar, user, location.pathname, location.search, collision]);
+  }, [
+    searchParams,
+    navigate,
+    showSnackbar,
+    user,
+    location.pathname,
+    location.search,
+    collision,
+    refreshProfile,
+  ]);
 
   if (collision && !user) {
     const currentPath = location.pathname + location.search;
-    const loginUrl = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+    const loginUrl = `/login?returnUrl=${encodeURIComponent(currentPath)}&provider=google`;
 
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
