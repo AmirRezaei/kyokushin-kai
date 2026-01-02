@@ -13,6 +13,10 @@ Authentication supports Google + Facebook OAuth with custom JWT access tokens an
 - Access token (custom JWT, 1h)
 - Refresh token (30d, stored hashed in D1, issued via httpOnly cookie; refresh/logout use cookie)
 
+## Email Matching
+
+- Emails are normalized to lowercase in `user_settings` for collision detection and merges.
+
 ## Tables
 
 - `identities` (provider links)
@@ -49,6 +53,7 @@ Facebook:
 3. On email collision, backend returns `409` with `{ mergeRequired, code, email }`.
 4. Client routes to `/#/link/google?code=...&collision=true&email=...`.
 5. User signs in with Facebook to prove ownership, then consumes the link.
+6. If Google was previously unlinked but another provider remains, the flow follows the same collision path.
 
 ## Login Flow (Facebook)
 

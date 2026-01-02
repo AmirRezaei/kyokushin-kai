@@ -328,7 +328,7 @@ app.post('/api/v1/auth/login', async (c) => {
     }
 
     const providerUserId = String(googlePayload.sub);
-    const email = String(googlePayload.email);
+    const email = normalizeEmail(String(googlePayload.email));
     const name = googlePayload.name ? String(googlePayload.name) : undefined;
     const picture = googlePayload.picture ? String(googlePayload.picture) : undefined;
     let userId = providerUserId;
@@ -364,8 +364,60 @@ app.post('/api/v1/auth/login', async (c) => {
       }
     }
 
+    if (userId === providerUserId) {
+      const existingById = await c.env.DB.prepare(
+        `SELECT user_id FROM user_settings WHERE user_id = ? LIMIT 1`,
+      )
+        .bind(userId)
+        .first<{ user_id: string }>();
+
+      if (existingById) {
+        const { results: linkedProviders } = await c.env.DB.prepare(
+          `SELECT provider FROM identities WHERE user_id = ?`,
+        )
+          .bind(userId)
+          .all<{ provider: string }>();
+
+        const providers = linkedProviders.map((row) => row.provider).filter(Boolean);
+        const hasGoogleProvider = providers.includes('google');
+        const hasOtherProviders = providers.some((provider) => provider !== 'google');
+
+        if (!hasGoogleProvider && hasOtherProviders) {
+          const pendingCode = crypto.randomUUID();
+          const now = Math.floor(Date.now() / 1000);
+          const requestedReturnTo = payload.returnTo || '/';
+          const returnTo = isValidReturnTo(requestedReturnTo) ? requestedReturnTo : '/';
+
+          await c.env.DB.prepare(
+            `INSERT INTO pending_links (code, provider, provider_user_id, expected_user_id, return_to, expires_at)
+             VALUES (?, 'google', ?, ?, ?, ?)
+             ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
+             DO UPDATE SET
+               code = excluded.code,
+               expected_user_id = excluded.expected_user_id,
+               return_to = excluded.return_to,
+               expires_at = excluded.expires_at`,
+          )
+            .bind(pendingCode, providerUserId, userId, returnTo, now + 600)
+            .run();
+
+          return c.json(
+            {
+              error: 'Google account was unlinked. Verify with your existing provider to relink.',
+              mergeRequired: true,
+              collision: true,
+              code: pendingCode,
+              email,
+              providerHint: providers[0] ?? 'facebook',
+            },
+            409,
+          );
+        }
+      }
+    }
+
     const existingByEmail = await c.env.DB.prepare(
-      `SELECT user_id FROM user_settings WHERE email = ? AND user_id != ? LIMIT 1`,
+      `SELECT user_id FROM user_settings WHERE LOWER(email) = ? AND user_id != ? LIMIT 1`,
     )
       .bind(email, userId)
       .first<{ user_id: string }>();
@@ -877,7 +929,7 @@ app.post('/api/v1/auth/link/google', async (c) => {
         mergeSourceUserId,
         mergeTargetUserId,
         {
-          email: String(googlePayload.email),
+          email: normalizeEmail(String(googlePayload.email)),
           name: googlePayload.name ? String(googlePayload.name) : undefined,
           picture: googlePayload.picture ? String(googlePayload.picture) : undefined,
           providerUserId,
@@ -1327,23 +1379,22 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
           `https://graph.facebook.com/${c.env.FACEBOOK_GRAPH_VERSION}/me?fields=email&access_token=${userAccessToken}&appsecret_proof=${await calculateAppSecretProof(userAccessToken, c.env.FACEBOOK_APP_SECRET)}`,
         );
         const meData = (await meResp.json()) as { email?: string; id: string };
-        const fbEmail = meData.email;
+        const fbEmailRaw = meData.email;
+        const fbEmail = normalizeEmail(fbEmailRaw);
         if (!fbEmail) {
           return c.json({ error: 'Facebook email required' }, 400);
         }
 
         let collision = false;
         let expectedUserId: string | null = null;
-        if (fbEmail) {
-          const existingUser = await c.env.DB.prepare(
-            `SELECT user_id FROM user_settings WHERE email = ?`,
-          )
-            .bind(fbEmail)
-            .first<{ user_id: string }>();
-          if (existingUser) {
-            collision = true;
-            expectedUserId = existingUser.user_id;
-          }
+        const existingUser = await c.env.DB.prepare(
+          `SELECT user_id FROM user_settings WHERE LOWER(email) = ?`,
+        )
+          .bind(fbEmail)
+          .first<{ user_id: string }>();
+        if (existingUser) {
+          collision = true;
+          expectedUserId = existingUser.user_id;
         }
 
         const pendingCode = crypto.randomUUID();
@@ -1366,7 +1417,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
           )
           .run();
 
-        const hashReturn = `/#/link/facebook?code=${pendingCode}${collision ? `&collision=true&email=${encodeURIComponent(fbEmail || '')}` : ''}`;
+        const hashReturn = `/#/link/facebook?code=${pendingCode}${collision ? `&collision=true&email=${encodeURIComponent(fbEmailRaw || fbEmail)}` : ''}`;
         return c.redirect(hashReturn);
       }
 
@@ -1419,7 +1470,8 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         picture?: { data: { url: string } };
       };
 
-      const fbEmail = fbProfile.email;
+      const fbEmailRaw = fbProfile.email;
+      const fbEmail = normalizeEmail(fbEmailRaw);
       if (!fbEmail) {
         return c.json({ error: 'Facebook email required' }, 400);
       }
@@ -1427,16 +1479,14 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
 
       let collision = false;
       let expectedUserId: string | null = null;
-      if (fbEmail) {
-        const existingUser = await c.env.DB.prepare(
-          `SELECT user_id FROM user_settings WHERE email = ?`,
-        )
-          .bind(fbEmail)
-          .first<{ user_id: string }>();
-        if (existingUser) {
-          collision = true;
-          expectedUserId = existingUser.user_id;
-        }
+      const existingUser = await c.env.DB.prepare(
+        `SELECT user_id FROM user_settings WHERE LOWER(email) = ?`,
+      )
+        .bind(fbEmail)
+        .first<{ user_id: string }>();
+      if (existingUser) {
+        collision = true;
+        expectedUserId = existingUser.user_id;
       }
 
       if (!collision) {
@@ -1517,7 +1567,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
           .run();
 
         // Redirect to frontend linking page with collision param
-        const hashReturn = `/#/link/facebook?code=${pendingCode}&collision=true&email=${encodeURIComponent(fbEmail || '')}`;
+        const hashReturn = `/#/link/facebook?code=${pendingCode}&collision=true&email=${encodeURIComponent(fbEmailRaw || fbEmail)}`;
         return c.redirect(hashReturn);
       }
     }
@@ -1919,7 +1969,14 @@ app.patch('/api/v1/settings', async (c) => {
       `INSERT INTO user_settings (user_id, email, display_name, image_url, settings_json, version, updated_at)
          VALUES (?, ?, ?, ?, ?, 1, ?)`,
     )
-      .bind(user.id, user.email, user.name || null, user.picture || null, serialized, now)
+      .bind(
+        user.id,
+        normalizeEmail(user.email),
+        user.name || null,
+        user.picture || null,
+        serialized,
+        now,
+      )
       .run();
 
     return c.json({ settings: sanitized, version: 1, updatedAt: now });
@@ -5043,7 +5100,9 @@ async function mergeUserAccounts(
         version: number;
       }>();
 
-    const resolvedEmail = targetSettings?.email || profile.email || sourceSettings?.email || '';
+    const resolvedEmail = normalizeEmail(
+      targetSettings?.email || profile.email || sourceSettings?.email || '',
+    );
     const resolvedName =
       targetSettings?.display_name ||
       sourceSettings?.display_name ||
@@ -5152,7 +5211,7 @@ async function mergeUserAccounts(
     } else if (sourceRole) {
       const roleDisplayName = sourceRole.display_name || resolvedName || null;
       const roleImage = sourceRole.image_url || resolvedImage || null;
-      const roleEmail = resolvedEmail || sourceRole.email;
+      const roleEmail = resolvedEmail || normalizeEmail(sourceRole.email);
       await db
         .prepare(
           `UPDATE user_roles SET user_id = ?, email = ?, display_name = ?, image_url = ?, role = ?, updated_at = ?
