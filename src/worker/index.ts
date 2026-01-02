@@ -280,7 +280,7 @@ app.post('/api/v1/auth/login', async (c) => {
    * @body {idToken: string} - Google ID token from OAuth flow
    * @returns {accessToken: JWT, refreshToken, expiresIn, user}
    */
-  let payload: { idToken: string };
+  let payload: { idToken: string; returnTo?: string };
   try {
     payload = await c.req.json();
     if (!payload.idToken) throw new Error('Missing idToken');
@@ -337,6 +337,49 @@ app.post('/api/v1/auth/login', async (c) => {
             .bind(providerUserId)
             .run();
         }
+      }
+    }
+
+    const existingByEmail = await c.env.DB.prepare(
+      `SELECT user_id FROM user_settings WHERE email = ? AND user_id != ? LIMIT 1`,
+    )
+      .bind(email, userId)
+      .first<{ user_id: string }>();
+
+    if (existingByEmail) {
+      const { results: existingProviders } = await c.env.DB.prepare(
+        `SELECT provider FROM identities WHERE user_id = ?`,
+      )
+        .bind(existingByEmail.user_id)
+        .all<{ provider: string }>();
+
+      if (existingProviders.length === 0) {
+        userId = existingByEmail.user_id;
+      } else {
+        const pendingCode = crypto.randomUUID();
+        const now = Math.floor(Date.now() / 1000);
+        const returnTo = payload.returnTo || '/';
+
+        await c.env.DB.prepare(
+          `INSERT INTO pending_links (code, provider, provider_user_id, return_to, expires_at)
+           VALUES (?, 'google', ?, ?, ?)
+           ON CONFLICT(provider, provider_user_id) WHERE consumed_at IS NULL
+           DO UPDATE SET code = excluded.code, return_to = excluded.return_to, expires_at = excluded.expires_at`,
+        )
+          .bind(pendingCode, providerUserId, returnTo, now + 600)
+          .run();
+
+        return c.json(
+          {
+            error: 'An account with this email already exists.',
+            mergeRequired: true,
+            collision: true,
+            code: pendingCode,
+            email,
+            providerHint: existingProviders[0] ?? 'facebook',
+          },
+          409,
+        );
       }
     }
     const role = await upsertUserRole(
@@ -1528,6 +1571,60 @@ app.post('/api/v1/auth/link/facebook/consume', async (c) => {
     await c.env.DB.prepare(
       `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
        VALUES (?, ?, 'facebook', ?, ?, ?)`,
+    )
+      .bind(crypto.randomUUID(), user.id, link.provider_user_id, now, now)
+      .run();
+  }
+
+  await c.env.DB.prepare(`UPDATE pending_links SET consumed_at = ? WHERE code = ?`)
+    .bind(now, payload.code)
+    .run();
+
+  return c.json({ ok: true, returnTo: link.return_to });
+});
+
+app.post('/api/v1/auth/link/google/consume', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  let payload: { code: string };
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+  if (!payload.code) {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const link = await c.env.DB.prepare(
+    `SELECT * FROM pending_links WHERE code = ? AND provider = 'google'`,
+  )
+    .bind(payload.code)
+    .first<PendingLinkRow>();
+
+  if (!link) return c.json({ error: 'Invalid code' }, 404);
+  if (link.expires_at < now) return c.json({ error: 'Code expired' }, 400);
+  if (link.consumed_at) return c.json({ error: 'Code already consumed' }, 400);
+
+  const existing = await c.env.DB.prepare(
+    `SELECT * FROM identities WHERE provider = 'google' AND provider_user_id = ?`,
+  )
+    .bind(link.provider_user_id)
+    .first<IdentityRow>();
+
+  if (existing && existing.user_id !== user.id) {
+    await c.env.DB.prepare(`UPDATE pending_links SET consumed_at = ? WHERE code = ?`)
+      .bind(now, payload.code)
+      .run();
+    return c.json({ error: 'Identity already linked to another account' }, 409);
+  }
+
+  if (!existing) {
+    await c.env.DB.prepare(
+      `INSERT INTO identities (id, user_id, provider, provider_user_id, created_at, updated_at)
+       VALUES (?, ?, 'google', ?, ?, ?)`,
     )
       .bind(crypto.randomUUID(), user.id, link.provider_user_id, now, now)
       .run();

@@ -57,6 +57,7 @@ import AdminRolesPage from './app/admin/AdminRolesPage';
 import AccountPage from './app/account/AccountPage';
 import { useCatalogQuery } from '@/hooks/useCatalog';
 import FacebookCallbackPage from './app/auth/FacebookCallbackPage';
+import GoogleLinkPage from './app/auth/GoogleLinkPage';
 import LoginPage from './components/LoginPage';
 
 function AppContent() {
@@ -591,6 +592,7 @@ function AppContent() {
               }
             />
             <Route path="/link/facebook" element={<FacebookCallbackPage />} />
+            <Route path="/link/google" element={<GoogleLinkPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/about" element={<About />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />

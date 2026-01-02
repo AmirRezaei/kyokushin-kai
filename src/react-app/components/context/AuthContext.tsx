@@ -321,15 +321,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: response.credential }),
       });
-
-      if (!res.ok) {
-        throw new Error('Backend authentication failed');
-      }
-
-      const data = (await res.json()) as {
+      const data = (await res.json().catch(() => ({}))) as {
         accessToken: string;
         refreshToken: string;
         expiresIn: number;
+        mergeRequired?: boolean;
+        collision?: boolean;
+        code?: string;
+        email?: string;
+        providerHint?: string;
+        error?: string;
         user: {
           id: string;
           email: string;
@@ -339,6 +340,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           providers?: string[];
         };
       };
+
+      if (!res.ok) {
+        if (res.status === 409 && data.mergeRequired && data.code) {
+          const emailParam = data.email ? `&email=${encodeURIComponent(data.email)}` : '';
+          window.location.href = `/#/link/google?code=${encodeURIComponent(
+            data.code,
+          )}&collision=true${emailParam}`;
+          return;
+        } else {
+          throw new Error(data.error || 'Backend authentication failed');
+        }
+      }
 
       const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
 
