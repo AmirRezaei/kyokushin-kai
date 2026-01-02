@@ -25,7 +25,7 @@
     "VITE_GOOGLE_CLIENT_ID": "115190156784-dkjj5cvdsvoeci7sngiro1bs6gqconhm.apps.googleusercontent.com",
     "ADMIN_EMAIL": "itkompaniet@gmail.com",
     "FACEBOOK_APP_ID": "25114845471551776",
-    "FACEBOOK_REDIRECT_URI": "http://localhost:3000/api/v1/auth/facebook/callback",
+    "FACEBOOK_REDIRECT_URI": "https://kyokushin-kai.com/api/v1/auth/facebook/callback",
     "FACEBOOK_GRAPH_VERSION": "v19.0"
   }
 }
