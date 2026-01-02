@@ -29,6 +29,7 @@ interface AuthContextType {
   login: () => Promise<void>;
   logout: () => void;
   refreshProfile: (overrideToken?: string) => Promise<void>;
+  applyUserSession: (session: User) => void;
   renderGoogleButton: (container: HTMLElement) => Promise<boolean>;
   token: string | null;
 }
@@ -463,6 +464,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
   };
 
+  const applyUserSession = React.useCallback((session: User) => {
+    const normalized: User = {
+      ...session,
+      role: session.role ?? 'user',
+      providers: normalizeProviders(session.providers),
+    };
+    setUser(normalized);
+    localStorage.setItem('user', JSON.stringify(normalized));
+    void syncUserSettings(normalized.token);
+  }, []);
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -477,6 +489,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await refreshUserProfile(tokenToUse);
       }
     },
+    applyUserSession,
     renderGoogleButton: async (container: HTMLElement) => {
       const clientId = await resolveClientId();
       if (!clientId) {

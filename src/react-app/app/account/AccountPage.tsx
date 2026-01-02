@@ -49,7 +49,7 @@ interface PromptNotification {
 }
 
 const AccountPage: React.FC = () => {
-  const { user, logout, login, token, refreshProfile } = useAuth();
+  const { user, logout, login, token, refreshProfile, applyUserSession } = useAuth();
   const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -81,8 +81,8 @@ const AccountPage: React.FC = () => {
       role: login.user.role ?? 'user',
       providers: login.user.providers,
     };
-    localStorage.setItem('user', JSON.stringify(userData));
-    window.location.href = '/#/account';
+    applyUserSession(userData);
+    navigate('/account', { replace: true });
   };
 
   const expiresAtLabel = user?.expiresAt

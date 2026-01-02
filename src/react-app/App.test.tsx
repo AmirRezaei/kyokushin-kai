@@ -25,14 +25,15 @@
 
 // ./src/App.test.tsx
 'use client';
-// ./src/App.test.tsx
-import {render, screen} from '@testing-library/react';
-import '@testing-library/jest-dom';
 
-import App from './App';
+import { expect, test } from 'bun:test';
 
-test('renders learn react link', () => {
-   render(<App />);
-   const linkElement = screen.getByText(/learn react/i);
-   expect(linkElement).toBeInTheDocument();
+const hasDom = typeof document !== 'undefined';
+const runTest = hasDom ? test : test.skip;
+
+runTest('renders learn react link', async () => {
+  const { render, screen } = await import('@testing-library/react');
+  const { default: App } = await import('./App');
+  render(<App />);
+  expect(screen.getByText(/learn react/i)).toBeTruthy();
 });

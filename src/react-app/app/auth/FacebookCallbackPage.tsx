@@ -9,7 +9,7 @@ export default function FacebookCallbackPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showSnackbar } = useSnackbar();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, applyUserSession } = useAuth();
   const processed = useRef(false);
 
   const collision = searchParams.get('collision') === 'true';
@@ -63,7 +63,55 @@ export default function FacebookCallbackPage() {
     const accessToken = searchParams.get('accessToken');
     const refreshToken = searchParams.get('refreshToken');
 
+    const normalizeReturnTo = (value: string | null) => {
+      const fallback = '/';
+      if (!value) return fallback;
+      if (value.startsWith('/#')) return value.replace('/#', '');
+      if (!value.startsWith('/')) return `/${value}`;
+      return value;
+    };
+
+    const parseProviders = (value: string | null) => {
+      if (!value) return undefined;
+      const providers = value
+        .split(',')
+        .map((provider) => provider.trim())
+        .filter(Boolean);
+      return providers.length ? providers : undefined;
+    };
+
     if (accessToken && refreshToken) {
+      const userId = searchParams.get('userId');
+      const email = searchParams.get('email');
+      if (!userId || !email) {
+        showSnackbar('Invalid callback request', 'error');
+        navigate('/login');
+        return;
+      }
+
+      const name = searchParams.get('name') || '';
+      const imageUrl = searchParams.get('imageUrl') || undefined;
+      const roleParam = searchParams.get('role');
+      const expiresInParam = Number(searchParams.get('expiresIn') || '3600');
+      const expiresIn = Number.isFinite(expiresInParam) ? expiresInParam : 3600;
+      const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+      const providers = parseProviders(searchParams.get('providers'));
+
+      applyUserSession({
+        id: userId,
+        name: name || email,
+        email,
+        imageUrl,
+        token: accessToken,
+        refreshToken,
+        expiresAt,
+        role: roleParam === 'admin' ? 'admin' : 'user',
+        providers,
+      });
+
+      processed.current = true;
+      void refreshProfile(accessToken);
+      navigate(normalizeReturnTo(searchParams.get('returnTo')), { replace: true });
       return;
     }
 
@@ -93,6 +141,7 @@ export default function FacebookCallbackPage() {
     location.search,
     collision,
     refreshProfile,
+    applyUserSession,
   ]);
 
   if (collision && !user) {

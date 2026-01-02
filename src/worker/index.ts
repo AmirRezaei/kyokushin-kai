@@ -1222,47 +1222,37 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         'facebook',
       );
 
-      // Return HTML that stores token and redirects
-      // Or redirect to frontend with token in fragment/query?
-      // Security risk to put token in URL.
-      // Better: Return HTML page that posts message or sets local storage?
-      // For now: Just use a simple script to set storage and reload.
-      // NOTE: Using HashRouter, so we need to match that.
-      // Match AuthContext User interface:
-      // interface User { id, name, email, imageUrl?, token, refreshToken?, expiresAt?, role }
-      const html = `
-            <!DOCTYPE html>
-            <html>
-            <body>
-            <script>
-              const now = Math.floor(Date.now() / 1000);
-              const userData = {
-                id: "${user.user_id}",
-                name: "${user.display_name || user.email}",
-                email: "${user.email}",
-                imageUrl: "${user.image_url || ''}",
-                token: "${accessToken}",
-                refreshToken: "${refreshToken}",
-                expiresAt: now + 3600,
-                role: "user" 
-              };
-              localStorage.setItem('user', JSON.stringify(userData));
-              
-              const returnUrl = "${tx.return_to}".startsWith('/') ? "${tx.return_to}" : "/" + "${tx.return_to}";
-               // Check if returnUrl already has hash
-              if (returnUrl.startsWith('/#')) {
-                  window.location.href = returnUrl;
-              } else {
-                  // Assume root if / and convert to /#/
-                  // If it is /somepath, convert to /#/somepath
-                  const cleanPath = returnUrl.startsWith('/') ? returnUrl.substring(1) : returnUrl;
-                  window.location.href = "/#/" + cleanPath;
-              }
-            </script>
-            </body>
-            </html>
-          `;
-      return c.html(html);
+      const { results: providerResults } = await c.env.DB.prepare(
+        `SELECT provider FROM identities WHERE user_id = ?`,
+      )
+        .bind(user.user_id)
+        .all<{ provider: string }>();
+
+      const providers = providerResults.map((row) => row.provider).filter(Boolean);
+      if (!providers.includes('facebook')) {
+        providers.push('facebook');
+      }
+
+      const role = await getUserRole(
+        c.env.DB,
+        { id: user.user_id, email: user.email },
+        normalizeEmail(c.env.ADMIN_EMAIL),
+      );
+
+      const params = new URLSearchParams();
+      params.set('accessToken', accessToken);
+      params.set('refreshToken', refreshToken);
+      params.set('expiresIn', '3600');
+      params.set('userId', user.user_id);
+      params.set('email', user.email);
+      if (user.display_name) params.set('name', user.display_name);
+      if (user.image_url) params.set('imageUrl', user.image_url);
+      params.set('role', role);
+      if (providers.length) params.set('providers', providers.join(','));
+      params.set('returnTo', tx.return_to || '/');
+
+      const hashReturn = `/#/link/facebook?${params.toString()}`;
+      return c.redirect(hashReturn);
     } else {
       // Identity not found. Check for potential account linking via email collision
       // We need user email to check if they already exist
@@ -1362,40 +1352,20 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
 
         const accessToken = await createJWT(fbUserId, fbEmail, c.env.JWT_SECRET, 3600, 'facebook');
 
-        // 5. Return Login HTML
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <body>
-            <script>
-              const now = Math.floor(Date.now() / 1000);
-              const userData = {
-                id: "${fbUserId}",
-                name: "${displayName || fbEmail}",
-                email: "${fbEmail}",
-                imageUrl: "${imageUrl || ''}",
-                token: "${accessToken}",
-                refreshToken: "${refreshToken}",
-                expiresAt: now + 3600,
-                role: "${role}",
-                providers: ['facebook']
-              };
-              localStorage.setItem('user', JSON.stringify(userData));
-              
-              const returnUrl = "${tx.return_to}".startsWith('/') ? "${tx.return_to}" : "/" + "${tx.return_to}";
-               // Check if returnUrl already has hash
-              if (returnUrl.startsWith('/#')) {
-                  window.location.href = returnUrl;
-              } else {
-                  // Assume root if / and convert to /#/
-                  const cleanPath = returnUrl.startsWith('/') ? returnUrl.substring(1) : returnUrl;
-                  window.location.href = "/#/" + cleanPath;
-              }
-            </script>
-            </body>
-            </html>
-          `;
-        return c.html(html);
+        const params = new URLSearchParams();
+        params.set('accessToken', accessToken);
+        params.set('refreshToken', refreshToken);
+        params.set('expiresIn', '3600');
+        params.set('userId', fbUserId);
+        if (fbEmail) params.set('email', fbEmail);
+        if (displayName) params.set('name', displayName);
+        if (imageUrl) params.set('imageUrl', imageUrl);
+        params.set('role', role);
+        params.set('providers', 'facebook');
+        params.set('returnTo', tx.return_to || '/');
+
+        const hashReturn = `/#/link/facebook?${params.toString()}`;
+        return c.redirect(hashReturn);
       } else {
         // --- COLLISION DETECTED (Existing Logic) ---
         const pendingCode = crypto.randomUUID();
@@ -5316,8 +5286,12 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
        WHERE user_feedback.id = ?`,
     )
     .bind(id)
-    .first<FeedbackRowWithEmail>();
+      .first<FeedbackRowWithEmail>();
 }
+
+export const __test__ = {
+  mergeUserAccounts,
+};
 // Explicit export for Workers Assets support
 export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {

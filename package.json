@@ -110,6 +110,7 @@
     "dev": "vite dev --port 3000",
     "lint": "eslint .",
     "preview": "bun run build && vite preview",
+    "test": "bun test",
     "dev:api": "wrangler dev",
     "dev:all": "concurrently \"bun run dev\" \"bun run dev:api\""
   },
