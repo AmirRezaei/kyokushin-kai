@@ -17,6 +17,7 @@ type Bindings = {
   FACEBOOK_REDIRECT_URI: string;
   FACEBOOK_GRAPH_VERSION: string;
   AUTH_COOKIE_SECRET: string;
+  ASSETS: Fetcher;
 };
 
 // Facebook Types
@@ -4413,8 +4414,40 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
 // Explicit export for Workers Assets support
 export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {
-    // Pass to Hono
-    return app.fetch(request, env, ctx);
+    console.log(`[Worker Fetch] ${request.method} ${request.url}`);
+
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) {
+      // Pass to Hono for API routes
+      return app.fetch(request, env, ctx);
+    }
+
+    // For non-API routes, attempt to serve asset
+    try {
+      // First try to serve the exact asset
+      const asset = await env.ASSETS.fetch(request);
+      if (asset.status >= 200 && asset.status < 400) {
+        return asset;
+      }
+
+      // If not found and it's a navigation (HTML), serve index.html (SPA Fallback)
+      // We can infer navigation by checking file extension or Accept header,
+      // but simplistic approach: if it's 404 and not an API call, serve index.html
+      // However, we already filtered API calls above.
+
+      // Check if it's a file request (has extension)
+      const isFile = /\.[a-zA-Z0-9]+$/.test(url.pathname);
+      if (isFile) {
+        return asset; // Return the 404 from assets if it was a file request
+      }
+
+      // SPA Fallback
+      const index = await env.ASSETS.fetch(new URL('/index.html', request.url));
+      return index;
+    } catch (e) {
+      // Fallback to Hono if asset fetch fails completely (shouldn't happen often)
+      return app.fetch(request, env, ctx);
+    }
   },
   async scheduled(_event: any, env: Bindings, _ctx: any) {
     const now = Math.floor(Date.now() / 1000);
