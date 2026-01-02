@@ -9,7 +9,6 @@ import {
   MenuItem,
   ListItemIcon,
   Toolbar,
-  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -205,6 +204,7 @@ function AppContent() {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const [hoveredWords, setHoveredWords] = useState<string[]>([]);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -249,20 +249,26 @@ function AppContent() {
           overflow: 'hidden',
         }}
       >
-        <Toolbar variant="dense" sx={{ minHeight: `${appBarHeight}px`, overflow: 'hidden' }}>
-          {/* Temporary Drawer Icon */}
-          <TemporaryDrawer />
+        <Toolbar
+          variant="dense"
+          sx={{ minHeight: `${appBarHeight}px`, overflow: 'hidden', position: 'relative' }}
+        >
+          {/* Left Section - Drawer */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TemporaryDrawer />
+          </Box>
 
-          {/* App Title */}
+          {/* Center Section - App Title */}
           <Box
             sx={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              ml: { xs: 1, sm: 2 },
               userSelect: 'none',
-              minWidth: 0,
-              flex: '0 1 auto',
+              pointerEvents: 'auto',
             }}
           >
             <Typography
@@ -275,48 +281,48 @@ function AppContent() {
                 fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' },
               }}
             >
-              <Tooltip title="Ultimate Truth">
-                <Box
-                  component="span"
-                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                >
-                  Kyokushin
-                </Box>
-              </Tooltip>
+              <Box
+                component="span"
+                onMouseEnter={() => setHoveredWords(['ultimate', 'truth'])}
+                onMouseLeave={() => setHoveredWords([])}
+                sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+              >
+                Kyokushin
+              </Box>
               -
-              <Tooltip title="Association/Society">
-                <Box
-                  component="span"
-                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                >
-                  Kai
-                </Box>
-              </Tooltip>
+              <Box
+                component="span"
+                onMouseEnter={() => setHoveredWords(['association'])}
+                onMouseLeave={() => setHoveredWords([])}
+                sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+              >
+                Kai
+              </Box>
               {' ('}
-              <Tooltip title="Ultimate">
-                <Box
-                  component="span"
-                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                >
-                  極
-                </Box>
-              </Tooltip>
-              <Tooltip title="Truth">
-                <Box
-                  component="span"
-                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                >
-                  真
-                </Box>
-              </Tooltip>
-              <Tooltip title="Association/Society">
-                <Box
-                  component="span"
-                  sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
-                >
-                  会
-                </Box>
-              </Tooltip>
+              <Box
+                component="span"
+                onMouseEnter={() => setHoveredWords(['ultimate'])}
+                onMouseLeave={() => setHoveredWords([])}
+                sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+              >
+                極
+              </Box>
+              <Box
+                component="span"
+                onMouseEnter={() => setHoveredWords(['truth'])}
+                onMouseLeave={() => setHoveredWords([])}
+                sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+              >
+                真
+              </Box>
+              <Box
+                component="span"
+                onMouseEnter={() => setHoveredWords(['association'])}
+                onMouseLeave={() => setHoveredWords([])}
+                sx={{ '&:hover': { color: 'red' }, cursor: 'help', transition: 'color 0.2s' }}
+              >
+                会
+              </Box>
               )
             </Typography>
             <Typography
@@ -330,13 +336,41 @@ function AppContent() {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              Association of the Ultimate Truth
+              <Box
+                component="span"
+                sx={{
+                  color: hoveredWords.includes('association') ? 'red' : 'inherit',
+                  transition: 'color 0.2s',
+                }}
+              >
+                Association
+              </Box>
+              {' of the '}
+              <Box
+                component="span"
+                sx={{
+                  color: hoveredWords.includes('ultimate') ? 'red' : 'inherit',
+                  transition: 'color 0.2s',
+                }}
+              >
+                Ultimate
+              </Box>{' '}
+              <Box
+                component="span"
+                sx={{
+                  color: hoveredWords.includes('truth') ? 'red' : 'inherit',
+                  transition: 'color 0.2s',
+                }}
+              >
+                Truth
+              </Box>
             </Typography>
           </Box>
 
+          {/* Right Section - Controls */}
           <Box
             sx={{
-              flexGrow: 1,
+              marginLeft: 'auto',
               display: 'flex',
               justifyContent: 'flex-end',
               alignItems: 'center',
