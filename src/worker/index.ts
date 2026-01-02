@@ -228,8 +228,14 @@ app.use(
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
     maxAge: 86400,
+    maxAge: 86400,
   }),
 );
+
+// Explicit 404 for API routes to prevent fallback to SPA index.html
+app.notFound((c) => {
+  return c.json({ error: 'Not Found', path: c.req.path }, 404);
+});
 
 app.get('/api/v1/health', async (c) => {
   const dbOk = await c.env.DB.prepare('SELECT 1 as ok').first<{ ok: number }>();
