@@ -23,6 +23,7 @@ import BugReportIcon from '@mui/icons-material/BugReport';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PolicyIcon from '@mui/icons-material/Policy';
 import GavelIcon from '@mui/icons-material/Gavel';
+import PeopleIcon from '@mui/icons-material/People';
 import Box from '@mui/material/Box';
 import Collapse from '@mui/material/Collapse';
 import Drawer from '@mui/material/Drawer';
@@ -517,12 +518,12 @@ export default function TemporaryDrawer() {
                     theme={theme}
                   />
                   <NavItem
-                    path="/admin/roles"
-                    icon={<AdminPanelSettingsIcon />}
-                    label="Admin Roles"
+                    path="/admin/users"
+                    icon={<PeopleIcon />}
+                    label="Users"
                     nested
                     protected
-                    isActive={isActive('/admin/roles')}
+                    isActive={isActive('/admin/users')}
                     isAuthenticated={isAuthenticated}
                     handleNavigation={handleNavigation}
                     theme={theme}

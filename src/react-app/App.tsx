@@ -53,7 +53,7 @@ import MottoPage from './app/motto/MottoPage';
 import Footer from './components/Footer';
 import FeedbackPage from './app/feedback/FeedbackPage';
 import AdminPage from './app/admin/AdminPage';
-import AdminRolesPage from './app/admin/AdminRolesPage';
+import AdminUsersPage from './app/admin/AdminUsersPage';
 import AccountPage from './app/account/AccountPage';
 import { useCatalogQuery } from '@/hooks/useCatalog';
 import FacebookCallbackPage from './app/auth/FacebookCallbackPage';
@@ -123,7 +123,7 @@ function AppContent() {
       '/spirit-of-osu': 'Spirit of Osu',
       '/feedback': 'Feedback',
       '/admin': 'Admin',
-      '/admin/roles': 'Admin Roles',
+      '/admin/users': 'Users',
       '/admin/feedback': 'Feedback',
       '/account': 'Account',
       '/about': 'About',
@@ -541,10 +541,10 @@ function AppContent() {
               }
             />
             <Route
-              path="/admin/roles"
+              path="/admin/users"
               element={
                 <AdminRoute>
-                  <AdminRolesPage />
+                  <AdminUsersPage />
                 </AdminRoute>
               }
             />

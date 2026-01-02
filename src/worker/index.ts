@@ -609,19 +609,10 @@ app.post('/api/v1/auth/refresh', async (c) => {
 
     await c.env.DB.batch([
       c.env.DB.prepare(`DELETE FROM refresh_tokens WHERE token_hash = ?`).bind(tokenHash),
-      c.env.DB
-        .prepare(
-          `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
+      c.env.DB.prepare(
+        `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
            VALUES (?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(
-          crypto.randomUUID(),
-          row.userId,
-          newTokenHash,
-          expiresAt,
-          now,
-          row.provider,
-        ),
+      ).bind(crypto.randomUUID(), row.userId, newTokenHash, expiresAt, now, row.provider),
     ]);
 
     // Issue new custom JWT token (1 hour expiry)
@@ -647,9 +638,7 @@ app.post('/api/v1/auth/refresh', async (c) => {
     const providers = providerResults.map((r) => r.provider);
     const hasGoogle = providers.includes('google');
     const shouldBackfillGoogle =
-      !hasGoogle &&
-      providerResults.length === 0 &&
-      (row.provider === 'google' || !row.provider);
+      !hasGoogle && providerResults.length === 0 && (row.provider === 'google' || !row.provider);
     if (shouldBackfillGoogle) {
       const nowTimestamp = Math.floor(Date.now() / 1000);
       await c.env.DB.prepare(
@@ -826,8 +815,7 @@ app.delete('/api/v1/auth/link/:provider', async (c) => {
       if (existingGoogle && existingGoogle.user_id !== user.id) {
         return c.json(
           {
-            error:
-              'Google account is linked to another user. Use Link Google to merge accounts.',
+            error: 'Google account is linked to another user. Use Link Google to merge accounts.',
             mergeRequired: true,
           },
           409,
@@ -1725,7 +1713,12 @@ app.post('/api/v1/auth/facebook/consume', async (c) => {
      FROM user_settings WHERE user_id = ? LIMIT 1`,
   )
     .bind(loginCode.user_id)
-    .first<{ userId: string; email: string; displayName?: string | null; imageUrl?: string | null }>();
+    .first<{
+      userId: string;
+      email: string;
+      displayName?: string | null;
+      imageUrl?: string | null;
+    }>();
 
   if (!userRow) {
     return c.json({ error: 'User not found' }, 400);
@@ -1739,8 +1732,8 @@ app.post('/api/v1/auth/facebook/consume', async (c) => {
     `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, last_used_at, provider)
      VALUES (?, ?, ?, ?, strftime('%s', 'now'), ?)`,
   )
-      .bind(crypto.randomUUID(), userRow.userId, tokenHash, expiresAt, 'facebook')
-      .run();
+    .bind(crypto.randomUUID(), userRow.userId, tokenHash, expiresAt, 'facebook')
+    .run();
 
   const accessToken = await createJWT(
     userRow.userId,
@@ -2028,6 +2021,7 @@ app.get('/api/v1/admin/users', async (c) => {
             display_name as displayName,
             image_url as imageUrl,
             role,
+            created_at as createdAt,
             updated_at as updatedAt
      FROM user_roles
      ORDER BY role DESC, email ASC`,
@@ -2037,10 +2031,33 @@ app.get('/api/v1/admin/users', async (c) => {
     displayName: string | null;
     imageUrl: string | null;
     role: UserRole;
+    createdAt: string;
     updatedAt: string;
   }>();
 
-  return c.json({ users: results || [] });
+  // Fetch authentication methods for each user
+  const usersWithAuthMethods = await Promise.all(
+    (results || []).map(async (user) => {
+      const { results: identities } = await c.env.DB.prepare(
+        `SELECT provider FROM identities WHERE user_id = ?`,
+      )
+        .bind(user.userId)
+        .all<{ provider: string }>();
+
+      const providers = identities?.map((i) => i.provider) || [];
+
+      return {
+        ...user,
+        authMethods: {
+          google: providers.includes('google'),
+          facebook: providers.includes('facebook'),
+          email: providers.includes('email'),
+        },
+      };
+    }),
+  );
+
+  return c.json({ users: usersWithAuthMethods });
 });
 
 app.post('/api/v1/admin/roles', async (c) => {
@@ -5104,16 +5121,12 @@ async function mergeUserAccounts(
       targetSettings?.email || profile.email || sourceSettings?.email || '',
     );
     const resolvedName =
-      targetSettings?.display_name ||
-      sourceSettings?.display_name ||
-      profile.name ||
-      resolvedEmail;
+      targetSettings?.display_name || sourceSettings?.display_name || profile.name || resolvedEmail;
     const resolvedImage =
       targetSettings?.image_url || sourceSettings?.image_url || profile.picture || undefined;
 
     if (!targetSettings) {
-      const settingsJson =
-        sourceSettings?.settings_json || JSON.stringify(sanitizeSettings({}));
+      const settingsJson = sourceSettings?.settings_json || JSON.stringify(sanitizeSettings({}));
       const settingsVersion = sourceSettings?.version ?? 1;
       await db
         .prepare(
@@ -5530,7 +5543,7 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
        WHERE user_feedback.id = ?`,
     )
     .bind(id)
-      .first<FeedbackRowWithEmail>();
+    .first<FeedbackRowWithEmail>();
 }
 
 export const __test__ = {
