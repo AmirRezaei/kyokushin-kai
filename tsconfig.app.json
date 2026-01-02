@@ -25,5 +25,6 @@
 			"@/*": ["./src/react-app/*"]
 		}
 	},
-	"include": ["src/react-app", "src/data"]
+	"include": ["src/react-app", "src/data"],
+	"exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
 }

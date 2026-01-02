@@ -126,16 +126,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role?: 'admin' | 'user';
         providers?: string[];
       };
-      if (!data?.user?.id || !data.user.email) return;
+      const userData = data.user;
+      if (!userData?.id || !userData.email) return;
+      const userId = userData.id!;
+      const userEmail = userData.email!;
 
       setUser((current) => {
         const baseProfile = current ?? readStoredUserProfile();
         const incomingProviders = Array.isArray(data.providers) ? data.providers : undefined;
         const updated: User = {
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name ?? baseProfile?.name ?? '',
-          imageUrl: data.user.picture ?? baseProfile?.imageUrl,
+          id: userId,
+          email: userEmail,
+          name: userData.name ?? baseProfile?.name ?? '',
+          imageUrl: userData.picture ?? baseProfile?.imageUrl,
           token,
           expiresAt: current?.expiresAt,
           role: data.role ?? baseProfile?.role ?? current?.role ?? 'user',

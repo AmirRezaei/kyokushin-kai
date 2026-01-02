@@ -1034,7 +1034,7 @@ async function verifyCookieSimple(signedValue: string, secret: string) {
   return expected === signedValue ? value : null;
 }
 
-function getCookieValue(cookieHeader: string | null, name: string): string | null {
+function getCookieValue(cookieHeader: string | null | undefined, name: string): string | null {
   if (!cookieHeader) return null;
   const cookies = cookieHeader.split(';');
   for (const cookie of cookies) {
