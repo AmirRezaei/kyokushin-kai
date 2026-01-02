@@ -4411,4 +4411,10 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
     )
     .bind(id)
     .first<FeedbackRowWithEmail>();
-}
+// Explicit export for Workers Assets support
+export default {
+  async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {
+    // Pass to Hono
+    return app.fetch(request, env, ctx);
+  },
+};
