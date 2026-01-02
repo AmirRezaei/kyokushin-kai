@@ -73,8 +73,6 @@ export default function FacebookCallbackPage() {
       return;
     }
 
-    processed.current = true;
-
     if (!user) {
       if (collision) {
         // Don't auto-redirect, show specific message
@@ -84,6 +82,7 @@ export default function FacebookCallbackPage() {
       // We should allow it to proceed to consumeCodeEncoded.
     }
 
+    processed.current = true;
     consumeCodeEncoded(code);
   }, [
     searchParams,

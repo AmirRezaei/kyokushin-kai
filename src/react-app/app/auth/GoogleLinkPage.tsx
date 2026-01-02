@@ -63,8 +63,6 @@ export default function GoogleLinkPage() {
       return;
     }
 
-    processed.current = true;
-
     const token = localStorage.getItem('user')
       ? JSON.parse(localStorage.getItem('user')!).token
       : null;
@@ -78,6 +76,7 @@ export default function GoogleLinkPage() {
       return;
     }
 
+    processed.current = true;
     consumeCode(code, token);
   }, [searchParams, navigate, showSnackbar, user, collision, refreshProfile]);
 
