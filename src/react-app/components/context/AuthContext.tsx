@@ -29,6 +29,7 @@ interface AuthContextType {
   login: () => Promise<void>;
   logout: () => void;
   refreshProfile: (overrideToken?: string) => Promise<void>;
+  renderGoogleButton: (container: HTMLElement) => Promise<boolean>;
   token: string | null;
 }
 
@@ -399,7 +400,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.google!.accounts!.id.prompt((notification: PromptNotification) => {
       if (notification.isNotDisplayed()) {
         console.warn('Google Sign-In prompt not displayed:', notification.getNotDisplayedReason());
-        setError(`Unable to show Google Login: ${notification.getNotDisplayedReason()}`);
+        const reason = notification.getNotDisplayedReason();
+        setError(`Unable to show Google Login: ${reason}`);
+        if (reason === 'suppressed_by_user' || reason === 'browser_not_supported') {
+          window.location.href = '/#/login?provider=google';
+        }
       } else if (notification.isSkippedMoment()) {
         console.warn('Google Sign-In skipped:', notification.getSkippedReason());
       }
@@ -459,6 +464,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await refreshUserProfile(tokenToUse);
       }
     },
+    renderGoogleButton: async (container: HTMLElement) => {
+      const clientId = await resolveClientId();
+      if (!clientId) {
+        setError('Google Client ID is missing.');
+        return false;
+      }
+      if (!window.google?.accounts?.id?.renderButton) {
+        setError('Google authentication script is not loaded. Please refresh the page.');
+        return false;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleCredentialResponse,
+      });
+
+      container.innerHTML = '';
+      window.google.accounts.id.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+      });
+      return true;
+    },
     token: user?.token || null,
   };
 
@@ -493,6 +522,17 @@ interface GoogleAccounts {
       auto_select?: boolean;
     }) => void;
     prompt: (callback: (notification: PromptNotification) => void) => void;
+    renderButton: (
+      container: HTMLElement,
+      options: {
+        theme?: 'outline' | 'filled_blue' | 'filled_black';
+        size?: 'large' | 'medium' | 'small';
+        text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+        shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+        width?: number;
+        locale?: string;
+      },
+    ) => void;
   };
 }
 
