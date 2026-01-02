@@ -740,7 +740,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
 
     if (identity) {
       // Login user
-      let user = await c.env.DB.prepare(`SELECT * FROM user_settings WHERE user_id = ?`)
+      const user = await c.env.DB.prepare(`SELECT * FROM user_settings WHERE user_id = ?`)
         .bind(identity.user_id)
         .first<{ user_id: string; email: string; display_name?: string; image_url?: string }>();
 
@@ -3278,14 +3278,7 @@ app.onError((err, c) => {
   return c.json({ error: err.message || 'Internal Server Error', stack: err.stack }, 500);
 });
 
-export default {
-  fetch: app.fetch,
-  async scheduled(_event: any, env: Bindings, _ctx: any) {
-    const now = Math.floor(Date.now() / 1000);
-    await env.DB.prepare(`DELETE FROM oauth_transactions WHERE expires_at < ?`).bind(now).run();
-    await env.DB.prepare(`DELETE FROM pending_links WHERE expires_at < ?`).bind(now).run();
-  },
-};
+// Export removed - moved to end of file
 
 /**
  * Verify user authorization from JWT token
@@ -4411,10 +4404,16 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
     )
     .bind(id)
     .first<FeedbackRowWithEmail>();
+}
 // Explicit export for Workers Assets support
 export default {
   async fetch(request: Request, env: Bindings, ctx: ExecutionContext) {
     // Pass to Hono
     return app.fetch(request, env, ctx);
+  },
+  async scheduled(_event: any, env: Bindings, _ctx: any) {
+    const now = Math.floor(Date.now() / 1000);
+    await env.DB.prepare(`DELETE FROM oauth_transactions WHERE expires_at < ?`).bind(now).run();
+    await env.DB.prepare(`DELETE FROM pending_links WHERE expires_at < ?`).bind(now).run();
   },
 };
