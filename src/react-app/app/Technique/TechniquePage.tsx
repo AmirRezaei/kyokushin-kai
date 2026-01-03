@@ -1,7 +1,18 @@
 // Refactored TechniquePage.tsx - Mobile-first with card-based layout
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
-import { Box, Button, Stack, Grid, CircularProgress, Typography } from '@mui/material';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import {
+  Box,
+  Button,
+  Stack,
+  Grid,
+  CircularProgress,
+  Typography,
+  ToggleButtonGroup,
+  ToggleButton,
+} from '@mui/material';
 import React, { useState, useEffect } from 'react';
 
 import { useCatalogMedia, useCurriculumGrades } from '@/hooks/useCatalog';
@@ -13,14 +24,16 @@ import { KataRecord } from '../../../data/model/kata';
 import FilterBar, { FilterType } from './FilterBar';
 import GradeCard from './GradeCard';
 import TechniqueDetailDrawer from './TechniqueDetailDrawer';
+import TechniqueListView from './TechniqueListView';
 
 const TechniquePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<FilterType>('all');
+  const [viewMode, setViewMode] = useState<'rank' | 'list'>('rank');
 
-  const { grades, isLoading, isError, error } = useCurriculumGrades();
+  const { grades, isLoading, isError } = useCurriculumGrades();
   const { mediaById } = useCatalogMedia();
 
   const [ratings, setRatings] = useState<Record<string, number>>({});
@@ -54,34 +67,45 @@ const TechniquePage: React.FC = () => {
         if (res.ok) return res.json();
         throw new Error('Failed to fetch progress');
       })
-      .then((data: any) => {
-        if (data.progress) {
-          const newRatings: Record<string, number> = {};
-          const newNotes: Record<string, string> = {};
-          const newTags: Record<string, string[]> = {};
-          const newYoutubeLinks: Record<string, string[]> = {};
-          const newVersions: Record<string, number> = {};
+      .then(
+        (data: {
+          progress?: Array<{
+            techniqueId: string;
+            rating?: number;
+            notes?: string;
+            tags?: string[];
+            videoLinks?: string[];
+            version?: number;
+          }>;
+        }) => {
+          if (data.progress) {
+            const newRatings: Record<string, number> = {};
+            const newNotes: Record<string, string> = {};
+            const newTags: Record<string, string[]> = {};
+            const newYoutubeLinks: Record<string, string[]> = {};
+            const newVersions: Record<string, number> = {};
 
-          data.progress.forEach((item: any) => {
-            if (item.rating) newRatings[item.techniqueId] = item.rating;
-            if (item.notes) newNotes[item.techniqueId] = item.notes;
-            if (item.tags && item.tags.length) newTags[item.techniqueId] = item.tags;
-            if (item.videoLinks && item.videoLinks.length)
-              newYoutubeLinks[item.techniqueId] = item.videoLinks;
-            if (typeof item.version === 'number') newVersions[item.techniqueId] = item.version;
-          });
+            data.progress.forEach((item) => {
+              if (item.rating) newRatings[item.techniqueId] = item.rating;
+              if (item.notes) newNotes[item.techniqueId] = item.notes;
+              if (item.tags && item.tags.length) newTags[item.techniqueId] = item.tags;
+              if (item.videoLinks && item.videoLinks.length)
+                newYoutubeLinks[item.techniqueId] = item.videoLinks;
+              if (typeof item.version === 'number') newVersions[item.techniqueId] = item.version;
+            });
 
-          setRatings(newRatings);
-          setNotes(newNotes);
-          setTags(newTags);
-          setYoutubeLinks(newYoutubeLinks);
-          setVersions(newVersions);
-        }
-      })
+            setRatings(newRatings);
+            setNotes(newNotes);
+            setTags(newTags);
+            setYoutubeLinks(newYoutubeLinks);
+            setVersions(newVersions);
+          }
+        },
+      )
       .catch((err) => console.error('Error fetching progress:', err));
   }, [token]);
 
-  const handleTechniqueClick = (technique: TechniqueRecord | KataRecord, gradeId: string) => {
+  const handleTechniqueClick = (technique: TechniqueRecord | KataRecord) => {
     setSelectedTechnique(technique);
     setDrawerOpen(true);
 
@@ -282,7 +306,7 @@ const TechniquePage: React.FC = () => {
           Unable to load techniques
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {error instanceof Error ? error.message : 'Please try again later.'}
+          Please try again later.
         </Typography>
       </Box>
     );
@@ -300,25 +324,53 @@ const TechniquePage: React.FC = () => {
 
   return (
     <Box sx={{ pb: 4 }}>
-      {/* Export/Import Buttons */}
-      <Stack direction="row" spacing={1} sx={{ p: 2, pb: 0 }}>
-        <Button startIcon={<DownloadIcon />} onClick={handleExport} size="small">
-          Export
-        </Button>
-        <Button
-          startIcon={<UploadIcon />}
-          onClick={() => document.getElementById('import-file')?.click()}
+      {/* Export/Import and View Mode Buttons */}
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ p: 2, pb: 0, justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}
+      >
+        <Stack direction="row" spacing={1}>
+          <Button startIcon={<DownloadIcon />} onClick={handleExport} size="small">
+            Export
+          </Button>
+          <Button
+            startIcon={<UploadIcon />}
+            onClick={() => document.getElementById('import-file')?.click()}
+            size="small"
+          >
+            Import
+          </Button>
+          <input
+            id="import-file"
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            style={{ display: 'none' }}
+          />
+        </Stack>
+
+        {/* View Mode Toggle */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(_event, newMode) => {
+            if (newMode !== null) {
+              setViewMode(newMode);
+            }
+          }}
           size="small"
+          aria-label="view mode"
         >
-          Import
-        </Button>
-        <input
-          id="import-file"
-          type="file"
-          accept=".json"
-          onChange={handleImport}
-          style={{ display: 'none' }}
-        />
+          <ToggleButton value="rank" aria-label="rank view">
+            <ViewModuleIcon sx={{ mr: 0.5 }} />
+            Rank
+          </ToggleButton>
+          <ToggleButton value="list" aria-label="list view">
+            <ViewListIcon sx={{ mr: 0.5 }} />
+            List
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Stack>
 
       {/* Sticky Filter Bar */}
@@ -331,7 +383,7 @@ const TechniquePage: React.FC = () => {
         onFilterModeChange={setFilterMode}
       />
 
-      {/* Grade Cards */}
+      {/* Content based on view mode */}
       <Box sx={{ p: 2 }}>
         {filteredGrades.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
@@ -343,18 +395,33 @@ const TechniquePage: React.FC = () => {
             </Typography>
           </Box>
         ) : (
-          <Grid container spacing={2}>
-            {filteredGrades.map((grade) => (
-              <Grid item xs={12} sm={6} md={4} key={grade.id}>
-                <GradeCard
-                  grade={grade}
-                  onTechniqueClick={handleTechniqueClick}
-                  ratings={ratings}
-                  tags={tags}
-                />
+          <>
+            {/* Rank View - Grade Cards */}
+            {viewMode === 'rank' && (
+              <Grid container spacing={2}>
+                {filteredGrades.map((grade) => (
+                  <Grid item xs={12} sm={6} md={4} key={grade.id}>
+                    <GradeCard
+                      grade={grade}
+                      onTechniqueClick={handleTechniqueClick}
+                      ratings={ratings}
+                      tags={tags}
+                    />
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
+            )}
+
+            {/* List View - Flat list of all techniques */}
+            {viewMode === 'list' && (
+              <TechniqueListView
+                grades={filteredGrades}
+                onTechniqueClick={handleTechniqueClick}
+                ratings={ratings}
+                tags={tags}
+              />
+            )}
+          </>
         )}
       </Box>
 

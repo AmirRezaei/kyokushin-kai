@@ -4,17 +4,18 @@
 
 import { Theme } from '@emotion/react';
 import Box from '@mui/material/Box';
-import { styled, SxProps } from '@mui/system'; // Corrected import
+import { styled, SxProps } from '@mui/system';
 import React from 'react';
+import { GradeRecord, GradeKind } from '../../../data/model/grade';
+
 export interface KarateBeltProps {
   sx?: SxProps<Theme>;
   thickness: string | number;
   borderWidth?: string;
   borderRadius: string;
-  color: string; // Belt color
-  stripes: number; // Number of dan stripes
-  orientation?: 'horizontal' | 'vertical'; // Belt orientation
-  stripeGap?: string; // Optional gap between stripes
+  grade: GradeRecord; // Now accepts full grade object
+  orientation?: 'horizontal' | 'vertical';
+  stripeGap?: string;
 }
 
 const BeltWrapper = styled(Box)<{ orientation: 'horizontal' | 'vertical' }>(({ orientation }) => ({
@@ -53,7 +54,6 @@ const StripeContainer = styled(Box)<{
   justifyContent: 'flex-end',
   height: '100%',
   width: '100%',
-  // Padding removed as it was using invalid string interpolation and seems unnecessary with flex gap/positioning
   boxSizing: 'border-box',
 }));
 
@@ -71,25 +71,42 @@ const SimpleStripe = styled(Box, {
   width: orientation === 'horizontal' ? thickness : '100%',
   height: orientation === 'horizontal' ? '100%' : thickness,
   backgroundColor: color,
-  // border: '1px solid rgba(0,0,0,0.1)', // simplified border
 }));
+
+/**
+ * Calculate the number of stripes based on grade
+ * - Kyu grades with odd numbers (9, 7, 5, 3, 1) get 1 white stripe
+ * - Dan grades get gold stripes equal to their dan number
+ */
+const calculateStripes = (grade: GradeRecord): number => {
+  if (grade.kind === GradeKind.Dan) {
+    return grade.number; // 1st Dan = 1 stripe, 2nd Dan = 2 stripes, etc.
+  }
+
+  if (grade.kind === GradeKind.Kyu && grade.number % 2 === 1) {
+    return 1; // Odd kyu numbers (9, 7, 5, 3, 1) get 1 stripe
+  }
+
+  return 0; // No stripes for even kyu or mukyu
+};
 
 const KarateBelt: React.FC<KarateBeltProps> = ({
   sx,
-  color,
+  grade,
   thickness,
   borderWidth: borderWidth = '0.1em',
-  stripes,
   borderRadius = '0',
   orientation = 'horizontal',
   stripeGap = '4px',
 }) => {
-  const isBlackBelt = color.toLowerCase() === 'black' || color === '#000000';
+  const color = grade.beltColor;
+  const stripes = calculateStripes(grade);
+  const isBlackBelt = color.toLowerCase() === 'black' || color === 'black';
 
   return (
     <BeltWrapper orientation={orientation}>
       <BeltSegment sx={sx} color={color} borderWidth={borderWidth} borderRadius={borderRadius}>
-        {/* Stripe for intermediate level */}
+        {/* Stripe for intermediate kyu level */}
         {!isBlackBelt && stripes > 0 && (
           <StripeContainer orientation={orientation}>
             <SimpleStripe
@@ -100,7 +117,7 @@ const KarateBelt: React.FC<KarateBeltProps> = ({
             />
           </StripeContainer>
         )}
-        {/* Stripes for black belt */}
+        {/* Stripes for black belt (dan grades) */}
         {isBlackBelt && stripes > 0 && (
           <StripeContainer orientation={orientation}>
             {Array.from({ length: stripes }, (_, i) => (

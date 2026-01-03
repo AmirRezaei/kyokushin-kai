@@ -32,7 +32,7 @@ import { getTagConfig } from './tagConfig';
 
 interface GradeCardProps {
   grade: GradeWithContent;
-  onTechniqueClick: (technique: TechniqueRecord | KataRecord, gradeId: string) => void;
+  onTechniqueClick: (technique: TechniqueRecord | KataRecord) => void;
   ratings: Record<string, number>;
   tags: Record<string, string[]>;
 }
@@ -248,7 +248,7 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
                     return (
                       <ListItemButton
                         key={technique.id}
-                        onClick={() => onTechniqueClick(technique, grade.id)}
+                        onClick={() => onTechniqueClick(technique)}
                         sx={{
                           ml: 1, // Margin to avoid belt color band
                           pl: 2,
@@ -347,7 +347,7 @@ const GradeCard: React.FC<GradeCardProps> = ({ grade, onTechniqueClick, ratings,
                 return (
                   <ListItemButton
                     key={kata.id}
-                    onClick={() => onTechniqueClick(kata, grade.id)}
+                    onClick={() => onTechniqueClick(kata)}
                     sx={{
                       ml: 1, // Margin to avoid belt color band
                       pl: 2,
