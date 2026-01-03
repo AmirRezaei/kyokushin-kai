@@ -176,7 +176,7 @@ const TechniqueListView: React.FC<TechniqueListViewProps> = ({
               </Box>
 
               {/* Grade and Type info */}
-              <Stack direction="row" spacing={0.5} sx={{ mb: itemTags.length > 0 ? 0.5 : 0 }}>
+              {/* <Stack direction="row" spacing={0.5} sx={{ mb: itemTags.length > 0 ? 0.5 : 0 }}>
                 <Chip label={gradeName} size="small" variant="outlined" sx={{ height: 20 }} />
                 <Chip
                   label={type === 'kata' ? 'Kata' : (item as TechniqueRecord).kind}
@@ -185,7 +185,7 @@ const TechniqueListView: React.FC<TechniqueListViewProps> = ({
                   color="primary"
                   sx={{ height: 20 }}
                 />
-              </Stack>
+              </Stack> */}
 
               {/* Tags */}
               {itemTags.length > 0 && (
