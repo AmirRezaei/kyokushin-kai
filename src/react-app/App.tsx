@@ -260,6 +260,7 @@ function AppContent() {
 
           {/* Center Section - App Title */}
           <Box
+            onClick={() => navigate('/')}
             sx={{
               position: 'absolute',
               left: '50%',
@@ -269,6 +270,7 @@ function AppContent() {
               alignItems: 'center',
               userSelect: 'none',
               pointerEvents: 'auto',
+              cursor: 'pointer',
             }}
           >
             <Typography
