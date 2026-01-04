@@ -182,6 +182,7 @@ type QuoteRecord = {
   status: PublishStatus;
   createdAt: string;
   updatedAt: string;
+  sortOrder?: number;
 };
 
 type GradeRow = {
@@ -217,6 +218,7 @@ type QuoteRow = {
   created_at: string;
   updated_at: string;
   version: number;
+  sort_order: number | null;
 };
 
 type MottoRecord = {
@@ -236,6 +238,7 @@ type MottoRow = {
   status: string;
   created_at: string;
   updated_at: string;
+  sort_order: number | null;
   version: number;
 };
 
@@ -2651,10 +2654,11 @@ app.get('/api/v1/quotes', async (c) => {
 
   const query =
     role === 'admin'
-      ? `SELECT id, data_json, author, status, created_at, updated_at, version FROM quotes`
-      : `SELECT id, data_json, author, status, created_at, updated_at, version
+      ? `SELECT id, data_json, author, status, created_at, updated_at, sort_order, version FROM quotes ORDER BY sort_order ASC`
+      : `SELECT id, data_json, author, status, created_at, updated_at, sort_order, version
          FROM quotes
-         WHERE status = 'published'`;
+         WHERE status = 'published'
+         ORDER BY sort_order ASC`;
 
   const { results } = await c.env.DB.prepare(query).all<QuoteRow>();
   const quotes = (results || []).map((row) => quoteFromRow(row));
@@ -2679,8 +2683,8 @@ app.post('/api/v1/quotes', async (c) => {
   }
 
   await c.env.DB.prepare(
-    `INSERT INTO quotes (id, data_json, author, status, created_at, updated_at, version)
-     VALUES (?, ?, ?, ?, ?, ?, 1)`,
+    `INSERT INTO quotes (id, data_json, author, status, created_at, updated_at, sort_order, version)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
   )
     .bind(
       quote.id,
@@ -2689,6 +2693,7 @@ app.post('/api/v1/quotes', async (c) => {
       quote.status,
       quote.createdAt,
       quote.updatedAt,
+      quote.sortOrder,
     )
     .run();
 
@@ -2710,7 +2715,7 @@ app.patch('/api/v1/quotes/:id', async (c) => {
   }
 
   const row = await c.env.DB.prepare(
-    `SELECT id, data_json, author, status, created_at, updated_at, version
+    `SELECT id, data_json, author, status, created_at, updated_at, sort_order, version
      FROM quotes
      WHERE id = ?`,
   )
@@ -2730,10 +2735,17 @@ app.patch('/api/v1/quotes/:id', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE quotes
-     SET data_json = ?, author = ?, status = ?, updated_at = ?, version = version + 1
+     SET data_json = ?, author = ?, status = ?, updated_at = ?, sort_order = ?, version = version + 1
      WHERE id = ?`,
   )
-    .bind(JSON.stringify(updated), updated.author, updated.status, updated.updatedAt, id)
+    .bind(
+      JSON.stringify(updated),
+      updated.author,
+      updated.status,
+      updated.updatedAt,
+      updated.sortOrder,
+      id,
+    )
     .run();
 
   return c.json({ quote: updated });
@@ -2762,11 +2774,11 @@ app.get('/api/v1/mottos', async (c) => {
 
   const query =
     role === 'admin'
-      ? `SELECT id, data_json, status, created_at, updated_at, version FROM mottos ORDER BY CAST(json_extract(data_json, '$.sortOrder') AS REAL) ASC`
-      : `SELECT id, data_json, status, created_at, updated_at, version
+      ? `SELECT id, data_json, status, created_at, updated_at, sort_order, version FROM mottos ORDER BY sort_order ASC`
+      : `SELECT id, data_json, status, created_at, updated_at, sort_order, version
          FROM mottos
          WHERE status = 'published'
-         ORDER BY CAST(json_extract(data_json, '$.sortOrder') AS REAL) ASC`;
+         ORDER BY sort_order ASC`;
 
   const { results } = await c.env.DB.prepare(query).all<MottoRow>();
   const mottos = (results || []).map((row) => mottoFromRow(row));
@@ -2791,10 +2803,17 @@ app.post('/api/v1/mottos', async (c) => {
   }
 
   await c.env.DB.prepare(
-    `INSERT INTO mottos (id, data_json, status, created_at, updated_at, version)
-     VALUES (?, ?, ?, ?, ?, 1)`,
+    `INSERT INTO mottos (id, data_json, status, created_at, updated_at, sort_order, version)
+     VALUES (?, ?, ?, ?, ?, ?, 1)`,
   )
-    .bind(motto.id, JSON.stringify(motto), motto.status, motto.createdAt, motto.updatedAt)
+    .bind(
+      motto.id,
+      JSON.stringify(motto),
+      motto.status,
+      motto.createdAt,
+      motto.updatedAt,
+      motto.sortOrder,
+    )
     .run();
 
   return c.json({ motto }, 201);
@@ -2815,7 +2834,7 @@ app.patch('/api/v1/mottos/:id', async (c) => {
   }
 
   const row = await c.env.DB.prepare(
-    `SELECT id, data_json, status, created_at, updated_at, version
+    `SELECT id, data_json, status, created_at, updated_at, sort_order, version
      FROM mottos
      WHERE id = ?`,
   )
@@ -2835,10 +2854,10 @@ app.patch('/api/v1/mottos/:id', async (c) => {
 
   await c.env.DB.prepare(
     `UPDATE mottos
-     SET data_json = ?, status = ?, updated_at = ?, version = version + 1
+     SET data_json = ?, status = ?, updated_at = ?, sort_order = ?, version = version + 1
      WHERE id = ?`,
   )
-    .bind(JSON.stringify(updated), updated.status, updated.updatedAt, id)
+    .bind(JSON.stringify(updated), updated.status, updated.updatedAt, updated.sortOrder, id)
     .run();
 
   return c.json({ motto: updated });
@@ -4888,6 +4907,8 @@ function buildQuoteForCreate(payload: Partial<QuoteRecord> | null): QuoteRecord 
     ? (payload.status as PublishStatus)
     : 'draft';
 
+  const sortOrder = parseNumberInput(payload.sortOrder);
+
   const now = new Date().toISOString();
   const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
 
@@ -4901,6 +4922,7 @@ function buildQuoteForCreate(payload: Partial<QuoteRecord> | null): QuoteRecord 
     history,
     reference,
     status,
+    sortOrder: sortOrder ?? 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -4969,6 +4991,12 @@ function parseQuotePatch(payload: Partial<QuoteRecord> | null): Partial<QuoteRec
     patch.status = payload.status as PublishStatus;
   }
 
+  if (payload.sortOrder !== undefined) {
+    if (typeof payload.sortOrder === 'number') {
+      patch.sortOrder = payload.sortOrder;
+    }
+  }
+
   if (Object.keys(patch).length === 0) return null;
   return patch;
 }
@@ -5014,6 +5042,12 @@ function quoteFromRow(row: QuoteRow): QuoteRecord {
     status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
       ? (parsed.status as PublishStatus)
       : base.status,
+    sortOrder:
+      row.sort_order !== null && row.sort_order !== undefined
+        ? row.sort_order
+        : typeof parsed.sortOrder === 'number'
+          ? parsed.sortOrder
+          : undefined,
     createdAt: parsed.createdAt || base.createdAt,
     updatedAt: parsed.updatedAt || base.updatedAt,
   };
@@ -5117,7 +5151,12 @@ function mottoFromRow(row: MottoRow): MottoRecord {
     shortTitle: typeof parsed.shortTitle === 'string' ? parsed.shortTitle : base.shortTitle,
     text: typeof parsed.text === 'string' ? parsed.text : base.text,
     details: typeof parsed.details === 'string' ? parsed.details : base.details,
-    sortOrder: typeof parsed.sortOrder === 'number' ? parsed.sortOrder : undefined,
+    sortOrder:
+      row.sort_order !== null && row.sort_order !== undefined
+        ? row.sort_order
+        : typeof parsed.sortOrder === 'number'
+          ? parsed.sortOrder
+          : undefined,
     status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
       ? (parsed.status as PublishStatus)
       : base.status,
