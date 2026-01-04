@@ -1,11 +1,12 @@
-import {ChevronRight, Whatshot} from '@mui/icons-material';
-import {Box, Card, CardContent, Typography, useTheme} from '@mui/material';
+import { ChevronRight, Whatshot } from '@mui/icons-material';
+import { Box, Card, CardContent, Typography, useTheme } from '@mui/material';
 import React from 'react';
 
-import {Motto} from '../types';
+import { Motto } from '../types';
 
 interface MottoCardProps {
   motto: Motto;
+  index: number;
   onClick: (motto: Motto) => void;
 }
 
@@ -14,7 +15,7 @@ const toRoman = (num: number): string => {
   return roman[num] || String(num);
 };
 
-export const MottoCard: React.FC<MottoCardProps> = ({motto, onClick}) => {
+export const MottoCard: React.FC<MottoCardProps> = ({ motto, index, onClick }) => {
   const theme = useTheme();
 
   return (
@@ -68,7 +69,7 @@ export const MottoCard: React.FC<MottoCardProps> = ({motto, onClick}) => {
         }}
       />
 
-      <CardContent sx={{p: 3}}>
+      <CardContent sx={{ p: 3 }}>
         {/* Header */}
         <Box
           display="flex"
@@ -92,7 +93,7 @@ export const MottoCard: React.FC<MottoCardProps> = ({motto, onClick}) => {
                 }),
               }}
             >
-              {toRoman(motto.id)}.
+              {toRoman(index + 1)}.
             </Typography>
             <Typography
               className="motto-title"
@@ -155,10 +156,13 @@ export const MottoCard: React.FC<MottoCardProps> = ({motto, onClick}) => {
             }),
           }}
         >
-          <Typography variant="caption" sx={{textTransform: 'uppercase', letterSpacing: 1, mr: 1}}>
+          <Typography
+            variant="caption"
+            sx={{ textTransform: 'uppercase', letterSpacing: 1, mr: 1 }}
+          >
             Begin Training
           </Typography>
-          <ChevronRight sx={{fontSize: 16}} />
+          <ChevronRight sx={{ fontSize: 16 }} />
         </Box>
       </CardContent>
     </Card>

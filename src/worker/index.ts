@@ -219,6 +219,26 @@ type QuoteRow = {
   version: number;
 };
 
+type MottoRecord = {
+  id: string;
+  shortTitle: string;
+  text: string;
+  details?: string;
+  sortOrder?: number;
+  status: PublishStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type MottoRow = {
+  id: string;
+  data_json: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
 const PUBLISH_STATUSES = new Set<PublishStatus>(['draft', 'published', 'inactive']);
 
 const jwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -2734,6 +2754,111 @@ app.delete('/api/v1/quotes/:id', async (c) => {
   return c.json({ ok: true });
 });
 
+// --- Motto Endpoints ---
+
+app.get('/api/v1/mottos', async (c) => {
+  const user = await requireUser(c);
+  const role = user ? await getUserRole(c.env.DB, user, normalizeEmail(c.env.ADMIN_EMAIL)) : 'user';
+
+  const query =
+    role === 'admin'
+      ? `SELECT id, data_json, status, created_at, updated_at, version FROM mottos ORDER BY CAST(json_extract(data_json, '$.sortOrder') AS REAL) ASC`
+      : `SELECT id, data_json, status, created_at, updated_at, version
+         FROM mottos
+         WHERE status = 'published'
+         ORDER BY CAST(json_extract(data_json, '$.sortOrder') AS REAL) ASC`;
+
+  const { results } = await c.env.DB.prepare(query).all<MottoRow>();
+  const mottos = (results || []).map((row) => mottoFromRow(row));
+
+  return c.json({ mottos });
+});
+
+app.post('/api/v1/mottos', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  let payload: Partial<MottoRecord>;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const motto = buildMottoForCreate(payload);
+  if (!motto) {
+    return c.json({ error: 'Invalid motto payload' }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO mottos (id, data_json, status, created_at, updated_at, version)
+     VALUES (?, ?, ?, ?, ?, 1)`,
+  )
+    .bind(motto.id, JSON.stringify(motto), motto.status, motto.createdAt, motto.updatedAt)
+    .run();
+
+  return c.json({ motto }, 201);
+});
+
+app.patch('/api/v1/mottos/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing motto id' }, 400);
+
+  let payload: Partial<MottoRecord>;
+  try {
+    payload = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid request' }, 400);
+  }
+
+  const row = await c.env.DB.prepare(
+    `SELECT id, data_json, status, created_at, updated_at, version
+     FROM mottos
+     WHERE id = ?`,
+  )
+    .bind(id)
+    .first<MottoRow>();
+
+  if (!row) return c.json({ error: 'Motto not found' }, 404);
+
+  const existing = mottoFromRow(row);
+  const patch = parseMottoPatch(payload);
+  if (!patch) {
+    return c.json({ error: 'Invalid motto patch' }, 400);
+  }
+
+  const updated = mergeMotto(existing, patch);
+  updated.updatedAt = new Date().toISOString();
+
+  await c.env.DB.prepare(
+    `UPDATE mottos
+     SET data_json = ?, status = ?, updated_at = ?, version = version + 1
+     WHERE id = ?`,
+  )
+    .bind(JSON.stringify(updated), updated.status, updated.updatedAt, id)
+    .run();
+
+  return c.json({ motto: updated });
+});
+
+app.delete('/api/v1/mottos/:id', async (c) => {
+  const admin = await requireAdmin(c);
+  if (!admin) return unauthorized(c);
+
+  const id = c.req.param('id');
+  if (!id) return c.json({ error: 'Missing motto id' }, 400);
+
+  const { meta } = await c.env.DB.prepare(`DELETE FROM mottos WHERE id = ?`).bind(id).run();
+  if (meta.changes === 0) {
+    return c.json({ error: 'Motto not found' }, 404);
+  }
+
+  return c.json({ ok: true });
+});
+
 // --- Technique Progress Endpoints ---
 
 interface TechniqueProgressRow {
@@ -4886,6 +5011,113 @@ function quoteFromRow(row: QuoteRow): QuoteRecord {
     date: typeof parsed.date === 'string' ? parsed.date : base.date,
     history: typeof parsed.history === 'string' ? parsed.history : base.history,
     reference: typeof parsed.reference === 'string' ? parsed.reference : base.reference,
+    status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
+      ? (parsed.status as PublishStatus)
+      : base.status,
+    createdAt: parsed.createdAt || base.createdAt,
+    updatedAt: parsed.updatedAt || base.updatedAt,
+  };
+}
+
+function buildMottoForCreate(payload: Partial<MottoRecord> | null): MottoRecord | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const shortTitle = sanitizeStringInput(payload.shortTitle);
+  const text = sanitizeStringInput(payload.text);
+  if (!shortTitle || !text) return null;
+
+  const details = sanitizeStringInput(payload.details);
+  const sortOrder = parseNumberInput(payload.sortOrder);
+  const status = PUBLISH_STATUSES.has(payload.status as PublishStatus)
+    ? (payload.status as PublishStatus)
+    : 'draft';
+
+  const now = new Date().toISOString();
+  const providedId = typeof payload.id === 'string' ? payload.id.trim() : '';
+
+  return {
+    id: providedId || crypto.randomUUID(),
+    shortTitle,
+    text,
+    details,
+    sortOrder: sortOrder ?? 0,
+    status,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function parseMottoPatch(payload: Partial<MottoRecord> | null): Partial<MottoRecord> | null {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const patch: Partial<MottoRecord> = {};
+
+  if (payload.shortTitle !== undefined) {
+    const val = sanitizeStringInput(payload.shortTitle);
+    if (!val) return null;
+    patch.shortTitle = val;
+  }
+
+  if (payload.text !== undefined) {
+    const val = sanitizeStringInput(payload.text);
+    if (!val) return null;
+    patch.text = val;
+  }
+
+  if (payload.details !== undefined) {
+    if (payload.details === null) {
+      patch.details = undefined;
+    } else if (typeof payload.details === 'string') {
+      patch.details = payload.details.trim() || undefined;
+    } else {
+      return null;
+    }
+  }
+
+  if (payload.status && PUBLISH_STATUSES.has(payload.status as PublishStatus)) {
+    patch.status = payload.status as PublishStatus;
+  }
+
+  if (payload.sortOrder !== undefined) {
+    if (typeof payload.sortOrder === 'number') {
+      patch.sortOrder = payload.sortOrder;
+    }
+  }
+
+  if (Object.keys(patch).length === 0) return null;
+  return patch;
+}
+
+function mergeMotto(existing: MottoRecord, patch: Partial<MottoRecord>): MottoRecord {
+  return {
+    ...existing,
+    ...patch,
+  };
+}
+
+function mottoFromRow(row: MottoRow): MottoRecord {
+  const parsed = parseJsonSafely<MottoRecord | null>(row.data_json, null);
+  const base: MottoRecord = {
+    id: row.id,
+    shortTitle: '',
+    text: '',
+    status: PUBLISH_STATUSES.has(row.status as PublishStatus)
+      ? (row.status as PublishStatus)
+      : 'draft',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+
+  if (!parsed || typeof parsed !== 'object') return base;
+
+  return {
+    ...base,
+    ...parsed,
+    id: row.id,
+    shortTitle: typeof parsed.shortTitle === 'string' ? parsed.shortTitle : base.shortTitle,
+    text: typeof parsed.text === 'string' ? parsed.text : base.text,
+    details: typeof parsed.details === 'string' ? parsed.details : base.details,
+    sortOrder: typeof parsed.sortOrder === 'number' ? parsed.sortOrder : undefined,
     status: PUBLISH_STATUSES.has(parsed.status as PublishStatus)
       ? (parsed.status as PublishStatus)
       : base.status,

@@ -7,7 +7,6 @@ import {
   Container,
   Divider,
   FormControl,
-  Grid,
   InputLabel,
   ListItemText,
   MenuItem,
@@ -37,6 +36,7 @@ import { PublishStatus } from '../../../data/model/common';
 import { BeltColor, GradeKind, GradeRecord } from '../../../data/model/grade';
 import { KataRecord } from '../../../data/model/kata';
 import QuoteManagementTab from './QuoteManagementTab';
+import MottoManagementTab from './MottoManagementTab';
 
 type AdminGrade = GradeRecord & {
   techniqueIds: string[];
@@ -872,6 +872,7 @@ const AdminPage: React.FC = () => {
             <Tab label="Grades" {...tabProps(1)} />
             <Tab label="Katas" {...tabProps(2)} />
             <Tab label="Quotes" {...tabProps(3)} />
+            <Tab label="Mottos" {...tabProps(4)} />
           </Tabs>
         </Paper>
 
@@ -2690,6 +2691,16 @@ const AdminPage: React.FC = () => {
           sx={{ display: activeTab === 3 ? 'block' : 'none' }}
         >
           <QuoteManagementTab />
+        </Box>
+
+        <Box
+          role="tabpanel"
+          hidden={activeTab !== 4}
+          id="admin-tabpanel-4"
+          aria-labelledby="admin-tab-4"
+          sx={{ display: activeTab === 4 ? 'block' : 'none' }}
+        >
+          <MottoManagementTab />
         </Box>
       </Stack>
     </Container>

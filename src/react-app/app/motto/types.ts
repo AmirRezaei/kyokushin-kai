@@ -1,7 +1,10 @@
 export interface Motto {
-  id: number;
+  id: string;
   text: string;
-  shortTitle: string; // For card display
+  shortTitle: string;
+  details?: string;
+  sortOrder?: number;
+  status?: 'draft' | 'published' | 'inactive';
 }
 
 export interface MottoAnalysis {
@@ -14,5 +17,19 @@ export interface MottoAnalysis {
 
 export enum ViewState {
   GRID = 'GRID',
-  DETAIL = 'DETAIL'
+  DETAIL = 'DETAIL',
 }
+
+export const MOTTO_TITLES_ORDER = [
+  'Courtesy',
+  'Devotion',
+  'Initiative',
+  'Detachment',
+  'Posture',
+  'Patience',
+  'Wisdom',
+  'Purification',
+  'Principle',
+  'Experience',
+  'Gratitude',
+];

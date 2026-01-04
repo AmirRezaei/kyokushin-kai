@@ -56,12 +56,12 @@ Full details: `docs/auth/README.md`.
 
 - Set `ADMIN_EMAIL` to seed first admin.
 - Admin route: `/#/admin`.
-- Techniques/grades/katas/quotes come from `src/data/repo/catalog.json` and
-  `src/react-app/Quote/quoteData.ts`.
-- Seed scripts live in `package.json` (dev/prod quotes + techniques).
+- Techniques, grades, katas, quotes, and mottos are stored in D1 and managed via the Admin Console.
+- Seed scripts live in `package.json` and `scripts/*.cjs`.
 
 ## Database Notes
 
+- Content tables: `techniques`, `grades`, `katas`, `quotes`, `mottos`, `grade_techniques`, `grade_katas`.
 - Auth tables: `user_settings`, `user_roles`, `identities`, `refresh_tokens`,
   `oauth_transactions`, `oauth_login_codes`, `pending_links`, `rate_limits`.
 - Migrations: `src/worker/migrations/*.sql`.

@@ -52,7 +52,7 @@ const persistUserProfile = (session: User | null) => {
     localStorage.removeItem('user');
     return;
   }
-  const { token, expiresAt, ...profile } = session;
+  const { ...profile } = session;
   localStorage.setItem('user', JSON.stringify(profile));
 };
 
@@ -325,13 +325,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
 
         const expiresAt = Math.floor(Date.now() / 1000) + data.expiresIn;
-        let profileData:
-          | {
-              user?: { id?: string; email?: string; name?: string; picture?: string };
-              role?: 'admin' | 'user';
-              providers?: string[];
-            }
-          | null = null;
+        let profileData: {
+          user?: { id?: string; email?: string; name?: string; picture?: string };
+          role?: 'admin' | 'user';
+          providers?: string[];
+        } | null = null;
 
         try {
           const profileRes = await fetch('/api/v1/auth/me', {
