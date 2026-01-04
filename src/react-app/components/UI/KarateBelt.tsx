@@ -13,7 +13,9 @@ export interface KarateBeltProps {
   thickness: string | number;
   borderWidth?: string;
   borderRadius: string;
-  grade: GradeRecord; // Now accepts full grade object
+  grade?: GradeRecord;
+  color?: string;
+  stripes?: number;
   orientation?: 'horizontal' | 'vertical';
   stripeGap?: string;
 }
@@ -94,15 +96,17 @@ const calculateStripes = (grade: GradeRecord): number => {
 const KarateBelt: React.FC<KarateBeltProps> = ({
   sx,
   grade,
+  color: explicitColor,
+  stripes: explicitStripes,
   thickness,
   borderWidth: borderWidth = '0.1em',
   borderRadius = '0',
   orientation = 'horizontal',
   stripeGap = '4px',
 }) => {
-  const color = grade.beltColor;
-  const stripes = calculateStripes(grade);
-  const isBlackBelt = color.toLowerCase() === 'black' || color === 'black';
+  const color = grade ? grade.beltColor : explicitColor || 'white';
+  const stripes = grade ? calculateStripes(grade) : explicitStripes || 0;
+  const isBlackBelt = color.toLowerCase() === 'black';
 
   return (
     <BeltWrapper orientation={orientation}>
