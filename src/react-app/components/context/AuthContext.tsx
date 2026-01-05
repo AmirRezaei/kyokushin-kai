@@ -301,6 +301,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const bootstrapSession = async () => {
       const storedProfile = readStoredUserProfile();
+      if (!storedProfile) {
+        // Avoid calling /auth/refresh for anonymous visitors (prevents expected 401s on first load).
+        if (isMounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
 
       try {
         const res = await fetch('/api/v1/auth/refresh', {
