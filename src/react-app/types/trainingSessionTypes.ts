@@ -28,3 +28,20 @@ export interface TrainingSessionHandlers {
   onEdit: (index: number, session: TrainingSession) => Promise<void> | void;
   onDelete: (indexOrId: number | string) => Promise<void> | void;
 }
+
+/**
+ * Scheduled recurring training session
+ */
+export interface ScheduledSession {
+  id: string;
+  name: string;
+  startDate: string; // ISO Date YYYY-MM-DD
+  endDate?: string; // Optional ISO Date YYYY-MM-DD
+  startTime: string; // HH:mm
+  durationMinutes: number;
+  recurrence: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  color?: string; // Optional background color for calendar visualization
+  type?: string; // Standard or custom training type
+}
+
+export type ScheduledSessionFormData = Omit<ScheduledSession, 'id'>;

@@ -3,9 +3,12 @@ import { addDays, eachDayOfInterval, endOfYear, format, getDay, startOfYear } fr
 import React, { useMemo } from 'react';
 
 import { Contribution } from '../../types/contribution';
+import { ScheduledSession } from '../../types/trainingSessionTypes';
+import { isSessionScheduledOnDate } from '../../utils/recurrenceUtils';
 
 interface ContributionCalendarProps {
   contributions: Contribution[];
+  scheduledSessions?: ScheduledSession[];
   year?: number;
   weekStartDay?: 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 }
@@ -14,6 +17,8 @@ interface DayData {
   date: string; // ISO date string (YYYY-MM-DD)
   count: number; // Number of contributions
   categoryIds: string[]; // Array of unique category IDs
+  isProjected?: boolean; // True if this day has a scheduled session but no actual log
+  projectedColor?: string; // Background color for projected session
 }
 
 // Constants
@@ -52,6 +57,7 @@ const DAY_CELL_SIZE = {
 
 const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
   contributions,
+  scheduledSessions,
   year = new Date().getFullYear(),
   weekStartDay = 1, // Default to Monday
 }) => {
@@ -64,17 +70,38 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
   const calendarData = useMemo(() => {
     const startDate = startOfYear(new Date(year, 0, 1));
     const endDate = endOfYear(new Date(year, 0, 1));
-    const daysMap: Record<string, { count: number; categoryIds: string[] }> = {};
+    const daysMap: Record<
+      string,
+      { count: number; categoryIds: string[]; isProjected?: boolean; projectedColor?: string }
+    > = {};
 
     eachDayOfInterval({ start: startDate, end: endDate }).forEach((date) => {
       const dateKey = format(date, 'yyyy-MM-dd');
-      daysMap[dateKey] = { count: 0, categoryIds: [] };
+      daysMap[dateKey] = { count: 0, categoryIds: [], isProjected: false };
+
+      // Check for scheduled sessions only if the date is today or in the future
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (date >= today && scheduledSessions && scheduledSessions.length > 0) {
+        // Find the first matching session to get its color
+        const matchingSession = scheduledSessions.find((session) =>
+          isSessionScheduledOnDate(session, date),
+        );
+
+        if (matchingSession) {
+          daysMap[dateKey].isProjected = true;
+          daysMap[dateKey].projectedColor = matchingSession.color;
+        }
+      }
     });
 
     contributions.forEach((contribution) => {
       const contributionDate = format(new Date(contribution.date), 'yyyy-MM-dd');
       if (daysMap[contributionDate]) {
         daysMap[contributionDate].count += 1;
+        // If there's an actual contribution, it's no longer just projected
+        daysMap[contributionDate].isProjected = false;
         if (
           contribution.category &&
           !daysMap[contributionDate].categoryIds.includes(contribution.category)
@@ -85,7 +112,7 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
     });
 
     return daysMap;
-  }, [contributions, year]);
+  }, [contributions, year, scheduledSessions]);
 
   // Calculate monthly contribution counts
   const monthlyContributions = useMemo(() => {
@@ -99,10 +126,13 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
 
   // Determine day color with theme support
   const getDayColor = (day: DayData): string => {
-    const { count, categoryIds } = day;
+    const { count, categoryIds, isProjected } = day;
     const isDark = theme.palette.mode === 'dark';
 
     if (count === 0) {
+      if (isProjected) {
+        return day.projectedColor || 'transparent';
+      }
       // Use consistent color for all empty days
       return isDark ? theme.palette.grey[800] : theme.palette.grey[200];
     }
@@ -149,12 +179,14 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
       let currentDate = monthStart;
       while (currentDate <= monthEnd) {
         const dateKey = format(currentDate, 'yyyy-MM-dd');
-        const dayData = calendarData[dateKey] || { count: 0, categoryIds: [] };
+        const dayData = calendarData[dateKey] || { count: 0, categoryIds: [], isProjected: false };
 
         currentWeek.push({
           date: dateKey,
           count: dayData.count,
           categoryIds: dayData.categoryIds,
+          isProjected: dayData.isProjected,
+          projectedColor: dayData.projectedColor,
         });
 
         // If week is complete, push it and start a new week
@@ -312,8 +344,9 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
                               aspectRatio: '1 / 1',
                               bgcolor: getDayColor(day),
                               borderRadius: { xs: 0.5, sm: 1 },
-                              border:
-                                day.count > 0
+                              border: day.isProjected
+                                ? `1px dashed ${theme.palette.text.secondary}`
+                                : day.count > 0
                                   ? `1px solid ${
                                       theme.palette.mode === 'dark'
                                         ? theme.palette.grey[600]

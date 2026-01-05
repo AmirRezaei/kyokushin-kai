@@ -5817,6 +5817,380 @@ async function selectFeedbackWithEmail(db: D1Database, id: string) {
     .first<FeedbackRowWithEmail>();
 }
 
+// --- Training Sessions (Logged) Endpoints ---
+
+app.get('/api/v1/training-sessions', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM user_training_sessions WHERE user_id = ? ORDER BY date DESC`,
+  )
+    .bind(user.id)
+    .all();
+
+  const camelCaseResults = results.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    date: row.date,
+    type: row.type,
+    duration: row.duration,
+    intensity: row.intensity,
+    notes: row.notes,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    version: row.version,
+  }));
+
+  return c.json(camelCaseResults);
+});
+
+app.post('/api/v1/training-sessions', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const payload = await c.req.json();
+  const id = payload.id || crypto.randomUUID();
+  const now = Date.now();
+
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO user_training_sessions (
+         id, user_id, date, type, duration, intensity, notes, created_at, updated_at, version
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    )
+      .bind(
+        id,
+        user.id,
+        payload.date,
+        payload.type,
+        payload.duration,
+        payload.intensity || null,
+        payload.notes || '',
+        now,
+        now,
+      )
+      .run();
+
+    return c.json({ ok: true, id, version: 1 });
+  } catch (e) {
+    console.error('Create training session error:', e);
+    return c.json({ error: 'Failed to create session' }, 500);
+  }
+});
+
+app.put('/api/v1/training-sessions/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+  const payload = await c.req.json();
+
+  const now = Date.now();
+
+  // Manual update with versioning
+  const current = await c.env.DB.prepare(
+    `SELECT version FROM user_training_sessions WHERE user_id = ? AND id = ?`,
+  )
+    .bind(user.id, id)
+    .first<{ version: number }>();
+
+  if (!current) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  try {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (payload.date !== undefined) {
+      updates.push('date = ?');
+      values.push(payload.date);
+    }
+    if (payload.type !== undefined) {
+      updates.push('type = ?');
+      values.push(payload.type);
+    }
+    if (payload.duration !== undefined) {
+      updates.push('duration = ?');
+      values.push(payload.duration);
+    }
+    if (payload.intensity !== undefined) {
+      updates.push('intensity = ?');
+      values.push(payload.intensity);
+    }
+    if (payload.notes !== undefined) {
+      updates.push('notes = ?');
+      values.push(payload.notes);
+    }
+
+    if (updates.length === 0) return c.json({ ok: true }); // No changes
+
+    updates.push('version = version + 1');
+    updates.push('updated_at = ?');
+    values.push(now);
+
+    // Where clause
+    values.push(user.id);
+    values.push(id);
+
+    // Only check version if provided
+    let versionSql = '';
+    if (payload.version !== undefined) {
+      versionSql = ' AND version = ?';
+      values.push(payload.version);
+    }
+
+    const { meta } = await c.env.DB.prepare(
+      `UPDATE user_training_sessions SET ${updates.join(', ')} WHERE user_id = ? AND id = ?${versionSql}`,
+    )
+      .bind(...values)
+      .run();
+
+    if (meta.changes === 0) {
+      const updatedCurrent = await c.env.DB.prepare(
+        `SELECT * FROM user_training_sessions WHERE user_id = ? AND id = ?`,
+      )
+        .bind(user.id, id)
+        .first();
+      if (updatedCurrent) {
+        return c.json({ error: 'Conflict', latest: updatedCurrent }, 409);
+      }
+      return c.json({ error: 'Not found' }, 404);
+    }
+
+    const updated = await c.env.DB.prepare(
+      `SELECT * FROM user_training_sessions WHERE user_id = ? AND id = ?`,
+    )
+      .bind(user.id, id)
+      .first();
+
+    if (!updated) {
+      throw new Error('Failed to retrieve updated session');
+    }
+
+    const camelUpdated = {
+      id: updated.id,
+      userId: updated.user_id,
+      date: updated.date,
+      type: updated.type,
+      duration: updated.duration,
+      intensity: updated.intensity,
+      notes: updated.notes,
+      createdAt: updated.created_at,
+      updatedAt: updated.updated_at,
+      version: updated.version,
+    };
+
+    return c.json({ ok: true, data: camelUpdated });
+  } catch (e) {
+    console.error('Update training session error:', e);
+    return c.json({ error: 'Update failed' }, 500);
+  }
+});
+
+app.delete('/api/v1/training-sessions/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  await c.env.DB.prepare(`DELETE FROM user_training_sessions WHERE user_id = ? AND id = ?`)
+    .bind(user.id, id)
+    .run();
+
+  return c.json({ ok: true });
+});
+
+// --- Scheduled Sessions Endpoints ---
+
+app.get('/api/v1/scheduled-sessions', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM user_scheduled_sessions WHERE user_id = ?`,
+  )
+    .bind(user.id)
+    .all();
+
+  const camelCaseResults = results.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    type: row.type,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    startTime: row.start_time,
+    durationMinutes: row.duration_minutes,
+    recurrence: row.recurrence,
+    color: row.color,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    version: row.version,
+  }));
+
+  return c.json(camelCaseResults);
+});
+
+app.post('/api/v1/scheduled-sessions', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const payload = await c.req.json();
+  const id = payload.id || crypto.randomUUID();
+  const now = Date.now();
+
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO user_scheduled_sessions (
+         id, user_id, name, type, start_date, end_date, start_time, 
+         duration_minutes, recurrence, color, created_at, updated_at, version
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    )
+      .bind(
+        id,
+        user.id,
+        payload.name,
+        payload.type || null,
+        payload.startDate,
+        payload.endDate || null,
+        payload.startTime,
+        payload.durationMinutes,
+        payload.recurrence,
+        payload.color || null,
+        now,
+        now,
+      )
+      .run();
+
+    return c.json({ ok: true, id, version: 1 });
+  } catch (e) {
+    console.error('Create scheduled session error:', e);
+    return c.json({ error: 'Failed to create session' }, 500);
+  }
+});
+
+app.put('/api/v1/scheduled-sessions/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+  const payload = await c.req.json();
+  const now = Date.now();
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (payload.name !== undefined) {
+    updates.push('name = ?');
+    values.push(payload.name);
+  }
+  if (payload.type !== undefined) {
+    updates.push('type = ?');
+    values.push(payload.type);
+  }
+  if (payload.startDate !== undefined) {
+    updates.push('start_date = ?');
+    values.push(payload.startDate);
+  }
+  if (payload.endDate !== undefined) {
+    updates.push('end_date = ?');
+    values.push(payload.endDate);
+  }
+  if (payload.startTime !== undefined) {
+    updates.push('start_time = ?');
+    values.push(payload.startTime);
+  }
+  if (payload.durationMinutes !== undefined) {
+    updates.push('duration_minutes = ?');
+    values.push(payload.durationMinutes);
+  }
+  if (payload.recurrence !== undefined) {
+    updates.push('recurrence = ?');
+    values.push(payload.recurrence);
+  }
+  if (payload.color !== undefined) {
+    updates.push('color = ?');
+    values.push(payload.color);
+  }
+
+  if (updates.length === 0) return c.json({ ok: true });
+
+  updates.push('version = version + 1');
+  updates.push('updated_at = ?');
+  values.push(now);
+
+  values.push(user.id);
+  values.push(id);
+
+  let versionSql = '';
+  if (payload.version !== undefined) {
+    versionSql = ' AND version = ?';
+    values.push(payload.version);
+  }
+
+  try {
+    const { meta } = await c.env.DB.prepare(
+      `UPDATE user_scheduled_sessions SET ${updates.join(', ')} WHERE user_id = ? AND id = ?${versionSql}`,
+    )
+      .bind(...values)
+      .run();
+
+    if (meta.changes === 0) {
+      const updatedCurrent = await c.env.DB.prepare(
+        `SELECT * FROM user_scheduled_sessions WHERE user_id = ? AND id = ?`,
+      )
+        .bind(user.id, id)
+        .first();
+      if (updatedCurrent) {
+        return c.json({ error: 'Conflict', latest: updatedCurrent }, 409);
+      }
+      return c.json({ error: 'Not found' }, 404);
+    }
+
+    const updated = await c.env.DB.prepare(
+      `SELECT * FROM user_scheduled_sessions WHERE user_id = ? AND id = ?`,
+    )
+      .bind(user.id, id)
+      .first();
+
+    if (!updated) {
+      throw new Error('Failed to retrieve updated scheduled session');
+    }
+
+    const camelUpdated = {
+      id: updated.id,
+      userId: updated.user_id,
+      name: updated.name,
+      type: updated.type,
+      startDate: updated.start_date,
+      endDate: updated.end_date,
+      startTime: updated.start_time,
+      durationMinutes: updated.duration_minutes,
+      recurrence: updated.recurrence,
+      color: updated.color,
+      createdAt: updated.created_at,
+      updatedAt: updated.updated_at,
+      version: updated.version,
+    };
+
+    return c.json({ ok: true, data: camelUpdated });
+  } catch (e) {
+    console.error('Update scheduled session error:', e);
+    return c.json({ error: 'Update failed' }, 500);
+  }
+});
+
+app.delete('/api/v1/scheduled-sessions/:id', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+  const id = c.req.param('id');
+
+  await c.env.DB.prepare(`DELETE FROM user_scheduled_sessions WHERE user_id = ? AND id = ?`)
+    .bind(user.id, id)
+    .run();
+
+  return c.json({ ok: true });
+});
+
 export const __test__ = {
   mergeUserAccounts,
 };

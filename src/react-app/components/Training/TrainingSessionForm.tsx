@@ -1,19 +1,30 @@
-import { Box, Button, MenuItem, Paper, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  MenuItem,
+  Paper,
+  TextField,
+  Typography,
+  Chip,
+  Stack,
+  Autocomplete,
+} from '@mui/material';
 import React, { useState } from 'react';
-import { UserTrainingSession } from '../../../data/model/trainingSession';
-
-export type TrainingSession = UserTrainingSession;
+import { TrainingSession, ScheduledSession } from '../../types/trainingSessionTypes';
+import { isSessionScheduledOnDate } from '../../utils/recurrenceUtils';
 
 interface TrainingSessionFormProps {
   onAddSession: (session: TrainingSession) => void;
   initialData?: TrainingSession;
   isEditMode?: boolean;
+  scheduledSessions?: ScheduledSession[];
 }
 
 const TrainingSessionForm: React.FC<TrainingSessionFormProps> = ({
   onAddSession,
   initialData,
   isEditMode = false,
+  scheduledSessions = [],
 }) => {
   const [formData, setFormData] = useState<TrainingSession>(() => {
     if (initialData) return initialData;
@@ -79,21 +90,61 @@ const TrainingSessionForm: React.FC<TrainingSessionFormProps> = ({
           InputLabelProps={{ shrink: true }}
           sx={{ mb: 2 }}
         />
-        <TextField
-          label="Type"
-          select
+
+        {scheduledSessions.length > 0 && (
+          <Box mb={2}>
+            {(() => {
+              const dateObj = new Date(formData.date);
+              const matchingSessions = scheduledSessions.filter((session) =>
+                isSessionScheduledOnDate(session, dateObj),
+              );
+
+              if (matchingSessions.length === 0) return null;
+
+              return (
+                <Box sx={{ p: 1, border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+                    Scheduled for this day:
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {matchingSessions.map((session) => (
+                      <Chip
+                        key={session.id}
+                        label={session.name}
+                        size="small"
+                        onClick={() => {
+                          setFormData((prev: TrainingSession) => ({
+                            ...prev,
+                            notes: session.name,
+                            duration: session.durationMinutes,
+                            type: session.type || prev.type, // Use session type if valid, otherwise keep previous
+                          }));
+                        }}
+                        sx={{
+                          bgcolor: session.color,
+                          // Ensure text contrast if needed, for now default
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              );
+            })()}
+          </Box>
+        )}
+        <Autocomplete
+          freeSolo
+          options={['Kata', 'Kumite', 'Kihon', 'Conditioning']}
           value={formData.type}
-          onChange={handleChange('type')}
-          fullWidth
-          required
-          sx={{ mb: 2 }}
-        >
-          {['Kata', 'Kumite', 'Kihon', 'Conditioning'].map((type) => (
-            <MenuItem key={type} value={type}>
-              {type}
-            </MenuItem>
-          ))}
-        </TextField>
+          onInputChange={(_, newValue) => {
+            // Handle both selection and typing
+            // When typing, newValue is the string input
+            setFormData({ ...formData, type: newValue });
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Type" fullWidth required sx={{ mb: 2 }} />
+          )}
+        />
         <TextField
           label="Duration (minutes)"
           type="number"

@@ -27,7 +27,7 @@ export const TrainingSessionRepository = {
       }
 
       const data = await res.json();
-      return data.sessions || null;
+      return Array.isArray(data) ? data : data.sessions || null;
     } catch (error) {
       console.error('Error fetching training sessions:', error);
       return null;
@@ -71,22 +71,20 @@ export const TrainingSessionRepository = {
    */
   updateSession: async (token: string, session: UserTrainingSession): Promise<boolean> => {
     try {
-      const expectedVersion = session.version ?? 0;
+      // Use PUT semantics as implemented in worker
       const res = await fetch(`${API_BASE}/${session.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          expectedVersion,
-          patch: {
-            date: session.date,
-            type: session.type,
-            duration: session.duration,
-            intensity: session.intensity,
-            notes: session.notes,
-          },
+          version: session.version ?? 0,
+          date: session.date,
+          type: session.type,
+          duration: session.duration,
+          intensity: session.intensity,
+          notes: session.notes,
         }),
       });
 

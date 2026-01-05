@@ -1,9 +1,9 @@
-import React from 'react';
-import { TrainingSessionFormData } from '../../types/trainingSessionTypes';
+import { ScheduledSession, TrainingSessionFormData } from '../../types/trainingSessionTypes';
 import TrainingSessionForm from './TrainingSessionForm';
 
 interface TrainingSessionFormSectionProps {
   onAddSession: (session: TrainingSessionFormData) => Promise<void> | void;
+  scheduledSessions?: ScheduledSession[];
 }
 
 /**
@@ -12,8 +12,9 @@ interface TrainingSessionFormSectionProps {
  */
 const TrainingSessionFormSection: React.FC<TrainingSessionFormSectionProps> = ({
   onAddSession,
+  scheduledSessions,
 }) => {
-  return <TrainingSessionForm onAddSession={onAddSession} />;
+  return <TrainingSessionForm onAddSession={onAddSession} scheduledSessions={scheduledSessions} />;
 };
 
 export default TrainingSessionFormSection;

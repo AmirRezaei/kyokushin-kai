@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import EventIcon from '@mui/icons-material/Event';
 import HistoryIcon from '@mui/icons-material/History';
 import { Box, Container, Tab, Tabs } from '@mui/material';
 import React, { useState, useEffect } from 'react';
@@ -10,7 +11,9 @@ import TrainingSessionFormSection from '@/components/Training/TrainingSessionFor
 import TrainingSessionHeader from '@/components/Training/TrainingSessionHeader';
 import TrainingSessionListSection from '@/components/Training/TrainingSessionListSection';
 import TrainingSessionStatsSection from '@/components/Training/TrainingSessionStatsSection';
+import { useScheduledSessions } from '@/hooks/useScheduledSessions';
 import { useTrainingSessions } from '@/hooks/useTrainingSessions';
+import ScheduledSessionManager from './ScheduledSessionManager';
 
 /**
  * Training Session Page
@@ -30,6 +33,8 @@ const TrainingSessionPage: React.FC = () => {
   // Custom hook handles all data management and CRUD operations
   const { sessions, handleAddSession, handleEditSession, handleDeleteSession } =
     useTrainingSessions(token);
+  const { scheduledSessions, addScheduledSession, updateScheduledSession, deleteScheduledSession } =
+    useScheduledSessions(token);
 
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState(() => {
@@ -76,20 +81,33 @@ const TrainingSessionPage: React.FC = () => {
           }}
         >
           <Tab icon={<AddIcon />} iconPosition="start" label="Log Session" {...a11yProps(0)} />
-          <Tab icon={<BarChartIcon />} iconPosition="start" label="Statistics" {...a11yProps(1)} />
-          <Tab icon={<HistoryIcon />} iconPosition="start" label="History" {...a11yProps(2)} />
+          <Tab icon={<EventIcon />} iconPosition="start" label="Schedule" {...a11yProps(1)} />
+          <Tab icon={<BarChartIcon />} iconPosition="start" label="Statistics" {...a11yProps(2)} />
+          <Tab icon={<HistoryIcon />} iconPosition="start" label="History" {...a11yProps(3)} />
         </Tabs>
       </Box>
 
       <TabPanel value={activeTab} index={0}>
-        <TrainingSessionFormSection onAddSession={handleAddSession} />
+        <TrainingSessionFormSection
+          onAddSession={handleAddSession}
+          scheduledSessions={scheduledSessions}
+        />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <TrainingSessionStatsSection sessions={sessions} />
+        <ScheduledSessionManager
+          scheduledSessions={scheduledSessions}
+          onAdd={addScheduledSession}
+          onUpdate={updateScheduledSession}
+          onDelete={deleteScheduledSession}
+        />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
+        <TrainingSessionStatsSection sessions={sessions} scheduledSessions={scheduledSessions} />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
         <TrainingSessionListSection
           sessions={sessions}
           onDeleteSession={handleDeleteSession}
