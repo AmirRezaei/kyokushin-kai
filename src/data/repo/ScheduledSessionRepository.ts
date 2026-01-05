@@ -60,7 +60,10 @@ export const ScheduledSessionRepository = {
   /**
    * Update an existing scheduled session
    */
-  updateSession: async (token: string, session: ScheduledSession): Promise<boolean> => {
+  updateSession: async (
+    token: string,
+    session: ScheduledSession,
+  ): Promise<ScheduledSession | null> => {
     try {
       const res = await fetch(`${API_BASE}/${session.id}`, {
         method: 'PUT',
@@ -69,32 +72,33 @@ export const ScheduledSessionRepository = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          // Assuming version property might exist on session or defaulting to 0 if not typed yet
-          version: (session as any).version ?? 0,
+          version: session.version,
           name: session.name,
-          type: session.type, // Custom or standard type
+          type: session.type,
           startDate: session.startDate,
           endDate: session.endDate,
           startTime: session.startTime,
           durationMinutes: session.durationMinutes,
           recurrence: session.recurrence,
           color: session.color,
+          selectedWeekdays: session.selectedWeekdays,
         }),
       });
 
       if (!res.ok) {
         if (res.status === 409) {
           console.warn('Scheduled session conflict detected.');
-          return false;
+          return null;
         }
         console.error(`Failed to update scheduled session: ${res.status} ${res.statusText}`);
-        return false;
+        return null;
       }
 
-      return true;
+      const data = await res.json();
+      return data.data ? data.data : null;
     } catch (error) {
       console.error('Error updating scheduled session:', error);
-      return false;
+      return null;
     }
   },
 

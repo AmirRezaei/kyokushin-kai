@@ -6007,26 +6007,41 @@ app.get('/api/v1/scheduled-sessions', async (c) => {
   if (!user) return unauthorized(c);
 
   const { results } = await c.env.DB.prepare(
-    `SELECT * FROM user_scheduled_sessions WHERE user_id = ?`,
+    `SELECT id, user_id, name, type, start_date, end_date, start_time, duration_minutes, recurrence, color, created_at, updated_at, version, selected_weekdays FROM user_scheduled_sessions WHERE user_id = ?`,
   )
     .bind(user.id)
     .all();
 
-  const camelCaseResults = results.map((row) => ({
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    type: row.type,
-    startDate: row.start_date,
-    endDate: row.end_date,
-    startTime: row.start_time,
-    durationMinutes: row.duration_minutes,
-    recurrence: row.recurrence,
-    color: row.color,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    version: row.version,
-  }));
+  const camelCaseResults = results.map((row) => {
+    let selectedWeekdays: number[] | undefined = undefined;
+    if (row.selected_weekdays) {
+      try {
+        const parsed = JSON.parse(String(row.selected_weekdays));
+        if (Array.isArray(parsed)) {
+          selectedWeekdays = parsed;
+        }
+      } catch (e) {
+        console.warn('Failed to parse selected_weekdays', e);
+      }
+    }
+
+    return {
+      id: row.id,
+      userId: row.user_id,
+      name: row.name,
+      type: row.type,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      startTime: row.start_time,
+      durationMinutes: row.duration_minutes,
+      recurrence: row.recurrence,
+      color: row.color,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      version: row.version,
+      selectedWeekdays,
+    };
+  });
 
   return c.json(camelCaseResults);
 });
@@ -6043,8 +6058,8 @@ app.post('/api/v1/scheduled-sessions', async (c) => {
     await c.env.DB.prepare(
       `INSERT INTO user_scheduled_sessions (
          id, user_id, name, type, start_date, end_date, start_time, 
-         duration_minutes, recurrence, color, created_at, updated_at, version
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+         duration_minutes, recurrence, color, created_at, updated_at, version, selected_weekdays
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
     )
       .bind(
         id,
@@ -6059,6 +6074,7 @@ app.post('/api/v1/scheduled-sessions', async (c) => {
         payload.color || null,
         now,
         now,
+        payload.selectedWeekdays ? JSON.stringify(payload.selectedWeekdays) : null,
       )
       .run();
 
@@ -6110,6 +6126,10 @@ app.put('/api/v1/scheduled-sessions/:id', async (c) => {
   if (payload.color !== undefined) {
     updates.push('color = ?');
     values.push(payload.color);
+  }
+  if (payload.selectedWeekdays !== undefined) {
+    updates.push('selected_weekdays = ?');
+    values.push(payload.selectedWeekdays ? JSON.stringify(payload.selectedWeekdays) : null);
   }
 
   if (updates.length === 0) return c.json({ ok: true });

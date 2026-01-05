@@ -42,6 +42,8 @@ export interface ScheduledSession {
   recurrence: 'daily' | 'weekly' | 'monthly' | 'yearly';
   color?: string; // Optional background color for calendar visualization
   type?: string; // Standard or custom training type
+  selectedWeekdays?: number[]; // Array of day indices (0=Sunday, 1=Monday, etc.) for 'weekly' recurrence
+  version?: number; // Optimistic concurrency version
 }
 
 export type ScheduledSessionFormData = Omit<ScheduledSession, 'id'>;

@@ -36,6 +36,9 @@ export const isSessionScheduledOnDate = (session: ScheduledSession, date: Date):
   // Check recurrence
   if (session.recurrence === 'daily') return true;
   if (session.recurrence === 'weekly') {
+    if (session.selectedWeekdays && session.selectedWeekdays.length > 0) {
+      return session.selectedWeekdays.includes(getDay(compareDate));
+    }
     return getDay(compareDate) === getDay(sessionStart);
   }
   if (session.recurrence === 'monthly') {

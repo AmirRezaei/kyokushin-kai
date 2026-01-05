@@ -23,6 +23,8 @@ import {
   Typography,
   Autocomplete,
   Divider,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import { format } from 'date-fns';
 import React, { useState } from 'react';
@@ -52,6 +54,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
     recurrence: 'weekly',
     color: '#e3f2fd',
     type: 'Kihon',
+    selectedWeekdays: [],
   });
 
   const handleOpenDialog = (session?: ScheduledSession) => {
@@ -66,6 +69,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
         recurrence: session.recurrence,
         color: session.color || '#e3f2fd',
         type: session.type || '',
+        selectedWeekdays: session.selectedWeekdays || [],
       });
     } else {
       setEditingId(null);
@@ -77,6 +81,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
         recurrence: 'weekly',
         color: '#e3f2fd',
         type: 'Kihon',
+        selectedWeekdays: [],
       });
     }
     setIsDialogOpen(true);
@@ -100,8 +105,19 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
     handleCloseDialog();
   };
 
-  const getRecurrenceLabel = (recurrence: string) => {
-    switch (recurrence) {
+  const getRecurrenceLabel = (session: ScheduledSession) => {
+    if (
+      session.recurrence === 'weekly' &&
+      session.selectedWeekdays &&
+      session.selectedWeekdays.length > 0
+    ) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      // Sort weekdays to be in order
+      const sorted = [...session.selectedWeekdays].sort((a, b) => a - b);
+      return `Weekly on ${sorted.map((d) => days[d]).join(', ')}`;
+    }
+
+    switch (session.recurrence) {
       case 'daily':
         return 'Every Day';
       case 'weekly':
@@ -111,7 +127,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
       case 'yearly':
         return 'Every Year';
       default:
-        return recurrence;
+        return session.recurrence;
     }
   };
 
@@ -124,6 +140,10 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
   const archivedSessions = scheduledSessions.filter(
     (session) => session.endDate && session.endDate < today,
   );
+
+  const handleWeekdaysChange = (_event: React.MouseEvent<HTMLElement>, newWeekdays: number[]) => {
+    setFormData({ ...formData, selectedWeekdays: newWeekdays });
+  };
 
   const renderSessionCard = (session: ScheduledSession) => (
     <Card key={session.id} variant="outlined">
@@ -142,7 +162,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
             <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
               <Chip
                 icon={<EventIcon sx={{ fontSize: '1rem !important' }} />}
-                label={`${getRecurrenceLabel(session.recurrence)} at ${session.startTime}`}
+                label={`${getRecurrenceLabel(session)} at ${session.startTime}`}
                 size="small"
                 variant="outlined"
               />
@@ -241,7 +261,7 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
       )}
 
       <Dialog open={isDialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle>{editingId ? 'Edit Schedule' : 'New Schedule'}</DialogTitle>
+        <DialogTitle>{editingId ? 'aaaEdit Schedule' : 'New Schedule'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
             <Grid item xs={12}>
@@ -278,12 +298,91 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
                   }
                 >
                   <MenuItem value="daily">Daily</MenuItem>
-                  <MenuItem value="weekly">Weekly</MenuItem>
+                  <MenuItem value="weekly">Weekly / Specific Days</MenuItem>
                   <MenuItem value="monthly">Monthly</MenuItem>
                   <MenuItem value="yearly">Yearly</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
+
+            {formData.recurrence === 'weekly' && (
+              <Grid item xs={12}>
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Select Days
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" mb={1}>
+                    Leave empty for "Every Week" (or select all 7 days).
+                  </Typography>
+
+                  <ToggleButtonGroup
+                    value={formData.selectedWeekdays}
+                    onChange={handleWeekdaysChange}
+                    aria-label="weekdays"
+                    fullWidth
+                    size="small"
+                    sx={{ mb: 1.5 }}
+                  >
+                    <ToggleButton value={1} aria-label="Monday">
+                      M
+                    </ToggleButton>
+                    <ToggleButton value={2} aria-label="Tuesday">
+                      T
+                    </ToggleButton>
+                    <ToggleButton value={3} aria-label="Wednesday">
+                      W
+                    </ToggleButton>
+                    <ToggleButton value={4} aria-label="Thursday">
+                      T
+                    </ToggleButton>
+                    <ToggleButton value={5} aria-label="Friday">
+                      F
+                    </ToggleButton>
+                    <ToggleButton value={6} aria-label="Saturday">
+                      S
+                    </ToggleButton>
+                    <ToggleButton value={0} aria-label="Sunday">
+                      S
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+
+                  <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 1 }}>
+                    <Chip
+                      label="Weekdays"
+                      onClick={() =>
+                        setFormData({ ...formData, selectedWeekdays: [1, 2, 3, 4, 5] })
+                      }
+                      size="small"
+                      variant="outlined"
+                      clickable
+                    />
+                    <Chip
+                      label="Weekend"
+                      onClick={() => setFormData({ ...formData, selectedWeekdays: [6, 0] })}
+                      size="small"
+                      variant="outlined"
+                      clickable
+                    />
+                    <Chip
+                      label="MWF"
+                      onClick={() => setFormData({ ...formData, selectedWeekdays: [1, 3, 5] })}
+                      size="small"
+                      variant="outlined"
+                      clickable
+                    />
+                    <Chip
+                      label="Clear"
+                      onClick={() => setFormData({ ...formData, selectedWeekdays: [] })}
+                      size="small"
+                      variant="outlined"
+                      clickable
+                      color="warning"
+                    />
+                  </Stack>
+                </Box>
+              </Grid>
+            )}
+
             <Grid item xs={6}>
               <TextField
                 label="Duration (minutes)"

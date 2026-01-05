@@ -17,8 +17,8 @@ export const useScheduledSessionApi = (token: string | null) => {
   );
 
   const updateSession = useCallback(
-    async (session: ScheduledSession): Promise<boolean> => {
-      if (!token) return false;
+    async (session: ScheduledSession): Promise<ScheduledSession | null> => {
+      if (!token) return null;
       return await ScheduledSessionRepository.updateSession(token, session);
     },
     [token],

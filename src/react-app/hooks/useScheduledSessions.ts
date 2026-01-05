@@ -86,12 +86,14 @@ export const useScheduledSessions = (token: string | null) => {
       setScheduledSessions((prev) => prev.map((s) => (s.id === id ? updatedSession : s)));
 
       if (token) {
-        const success = await updateSession(updatedSession);
-        if (!success) {
+        const updatedFromApi = await updateSession(updatedSession);
+        if (!updatedFromApi) {
           // Rollback
           setScheduledSessions((prev) => prev.map((s) => (s.id === id ? originalSession : s)));
           showSnackbar('Failed to update schedule remotely', 'error');
         } else {
+          // Update with server version (crucial for optimistic concurrency)
+          setScheduledSessions((prev) => prev.map((s) => (s.id === id ? updatedFromApi : s)));
           showSnackbar('Schedule updated', 'success');
         }
       } else {
