@@ -11,6 +11,7 @@ import {
   Toolbar,
   Typography,
   useTheme,
+  Chip,
 } from '@mui/material';
 import {
   AccountCircle,
@@ -29,7 +30,7 @@ import { useAuth } from './components/context/AuthContext';
 
 import About from './About';
 import TrainingManagerPage from './app/TrainingManager/TrainingManagerPage';
-
+import Home from './Home';
 import KihonPage from './app/kihon/kihonPage';
 import SettingsPage from './app/settings/settingsPage';
 import TechniquePage from './app/Technique/TechniquePage';
@@ -56,7 +57,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import DarkModeToggle from './components/UI/DarkModeToggle';
 import LanguageSelector from './components/UI/LanguageSelector';
-import Home from './Home';
 import MottoPage from './app/motto/MottoPage';
 import Footer from './components/Footer';
 import FeedbackPage from './app/feedback/FeedbackPage';
@@ -257,7 +257,7 @@ function AppContent() {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TemporaryDrawer />
           </Box>
-
+          {import.meta.env.DEV && <Chip label="#DEV" color="error" size="small" />}
           {/* Center Section - App Title */}
           <Box
             onClick={() => navigate('/')}
@@ -368,7 +368,6 @@ function AppContent() {
               </Box>
             </Typography>
           </Box>
-
           {/* Right Section - Controls */}
           <Box
             sx={{
