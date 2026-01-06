@@ -1256,13 +1256,23 @@ app.post('/api/v1/auth/facebook/start', async (c) => {
 });
 
 app.get('/api/v1/auth/facebook/callback', async (c) => {
+  const clearTxCookie = () => {
+    c.header('Set-Cookie', `__Host-fb_oauth_tx=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`);
+  };
+
+  const redirectAuthError = (errorCode: string, returnTo?: string) => {
+    // Callback is user-facing; redirect errors so mobile app-switch flows don't strand users on JSON.
+    clearTxCookie();
+    const params = new URLSearchParams({ error: errorCode });
+    if (returnTo) {
+      params.set('returnUrl', returnTo);
+    }
+    return c.redirect(`/login?${params.toString()}`);
+  };
+
   const error = c.req.query('error');
   if (error) {
-    c.header(
-      'Set-Cookie',
-      `__Host-fb_oauth_tx=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`,
-    );
-    return c.redirect('/login?error=facebook_cancel');
+    return redirectAuthError('facebook_cancel');
   }
 
   const code = c.req.query('code');
@@ -1270,7 +1280,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   const cookieHeader = c.req.header('Cookie');
 
   if (!code || !state) {
-    return c.json({ error: 'Invalid request' }, 400);
+    return redirectAuthError('facebook_invalid_request');
   }
 
   let txId: string | null = null;
@@ -1284,7 +1294,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         const txCookieVal = parts[1];
         txId = await verifyCookieSimple(txCookieVal, c.env.AUTH_COOKIE_SECRET);
         if (!txId) {
-          return c.json({ error: 'Invalid cookie signature' }, 400);
+          return redirectAuthError('facebook_invalid_cookie');
         }
         break;
       }
@@ -1306,10 +1316,10 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       .first<OAuthTransactionRow>();
   }
 
-  if (!tx) return c.json({ error: 'Transaction not found' }, 400);
-  if (tx.expires_at < now) return c.json({ error: 'Transaction expired' }, 400);
-  if (tx.consumed_at) return c.json({ error: 'Transaction consumed' }, 400);
-  if (tx.state !== state) return c.json({ error: 'State mismatch' }, 400);
+  if (!tx) return redirectAuthError('facebook_tx_not_found');
+  if (tx.expires_at < now) return redirectAuthError('facebook_tx_expired', tx.return_to);
+  if (tx.consumed_at) return redirectAuthError('facebook_tx_consumed', tx.return_to);
+  if (tx.state !== state) return redirectAuthError('facebook_state_mismatch', tx.return_to);
 
   // Consume by tx.id to handle app-switch flows where the tx cookie is missing.
   const { meta } = await c.env.DB.prepare(
@@ -1318,7 +1328,9 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
     .bind(now, tx.id)
     .run();
 
-  if (meta.changes === 0) return c.json({ error: 'Transaction consumption failed' }, 400);
+  if (meta.changes === 0) {
+    return redirectAuthError('facebook_tx_consumption_failed', tx.return_to);
+  }
 
   // Exchange code for token
   const tokenParams = new URLSearchParams({
@@ -1335,7 +1347,8 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   const tokenData = (await tokenResp.json()) as FacebookTokenResponse;
 
   if (tokenData.error) {
-    return c.json({ error: 'Token exchange failed', details: tokenData.error }, 400);
+    console.warn('Facebook token exchange failed', tokenData.error);
+    return redirectAuthError('facebook_token_exchange_failed', tx.return_to);
   }
 
   const userAccessToken = tokenData.access_token;
@@ -1358,16 +1371,16 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   const debugData = (await debugResp.json()) as FacebookDebugTokenResponse;
 
   if (!debugData.data || !debugData.data.is_valid) {
-    return c.json({ error: 'Invalid token' }, 400);
+    return redirectAuthError('facebook_invalid_token', tx.return_to);
   }
   if (debugData.data.app_id !== c.env.FACEBOOK_APP_ID) {
-    return c.json({ error: 'Token app mismatch' }, 400);
+    return redirectAuthError('facebook_token_app_mismatch', tx.return_to);
   }
 
   const fbUserId = debugData.data.user_id;
 
   // Clear cookie
-  c.header('Set-Cookie', `__Host-fb_oauth_tx=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`);
+  clearTxCookie();
 
   // Logic based on Mode
   if (tx.mode === 'login') {
@@ -1402,7 +1415,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         const fbEmailRaw = meData.email;
         const fbEmail = normalizeEmail(fbEmailRaw);
         if (!fbEmail) {
-          return c.json({ error: 'Facebook email required' }, 400);
+          return redirectAuthError('facebook_email_required', tx.return_to);
         }
 
         let collision = false;
@@ -1454,7 +1467,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
         picture?: { data: { url: string } };
       };
       if (!fbProfile.email) {
-        return c.json({ error: 'Facebook email required' }, 400);
+        return redirectAuthError('facebook_email_required', tx.return_to);
       }
 
       // Update user settings with latest info
@@ -1493,7 +1506,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
       const fbEmailRaw = fbProfile.email;
       const fbEmail = normalizeEmail(fbEmailRaw);
       if (!fbEmail) {
-        return c.json({ error: 'Facebook email required' }, 400);
+        return redirectAuthError('facebook_email_required', tx.return_to);
       }
       console.log('FB Collision Check:', fbEmail);
 
@@ -1593,7 +1606,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
     }
   } else if (tx.mode === 'link') {
     if (!tx.user_id) {
-      return c.json({ error: 'Link session missing user' }, 400);
+      return redirectAuthError('facebook_link_missing_user', tx.return_to);
     }
     // Link mode uses the stored user_id to bind the pending link to the initiator.
 
@@ -1623,7 +1636,7 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
     return c.redirect(`/#/link/facebook?code=${pendingCode}`);
   }
 
-  return c.json({ error: 'Invalid mode' }, 500);
+  return redirectAuthError('facebook_invalid_mode', tx.return_to);
 });
 
 app.post('/api/v1/auth/link/facebook/consume', async (c) => {
