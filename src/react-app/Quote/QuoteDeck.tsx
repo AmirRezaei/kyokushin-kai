@@ -23,14 +23,7 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
-import {
-  AnimatePresence,
-  motion,
-  useAnimation,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from 'framer-motion';
+import { AnimatePresence, motion, useAnimation } from 'framer-motion';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '../components/context/AuthContext';
@@ -201,7 +194,6 @@ const QuoteCardInner: React.FC<QuoteCardInnerProps> = ({ quote, isPlaying, onCom
               px: 2,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              transform: 'translateZ(40px)',
             }}
           >
             {quote.author}
@@ -222,7 +214,6 @@ const QuoteCardInner: React.FC<QuoteCardInnerProps> = ({ quote, isPlaying, onCom
               fontSize: { xs: '1.2rem', sm: '1.4rem' },
               lineHeight: 1.5,
               px: 3,
-              transform: 'translateZ(30px)',
             }}
           >
             "{quote.text}"
@@ -426,27 +417,7 @@ const QuoteDeck: React.FC<QuoteProps> = ({ quotes: initialQuotes, sx }) => {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // 3D Tilt Logic
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const mouseX = useSpring(x, { stiffness: 150, damping: 15 });
-  const mouseY = useSpring(y, { stiffness: 150, damping: 15 });
-  const rotateX = useTransform(mouseY, [-0.5, 0.5], [4, -4]);
-  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-4, 4]);
-  const shineX = useTransform(mouseX, [-0.5, 0.5], ['0%', '100%']);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const normalizedX = (e.clientX - rect.left) / rect.width - 0.5;
-    const normalizedY = (e.clientY - rect.top) / rect.height - 0.5;
-    x.set(normalizedX);
-    y.set(normalizedY);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  // 3D Tilt Logic removed
 
   if (!currentQuote) return null;
 
@@ -461,245 +432,218 @@ const QuoteDeck: React.FC<QuoteProps> = ({ quotes: initialQuotes, sx }) => {
         ...sx,
       }}
     >
-      <motion.div
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: 'preserve-3d',
+      <Card
+        elevation={24}
+        sx={{
+          background:
+            theme.palette.mode === 'dark'
+              ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.default, 0.9)} 100%)`
+              : `linear-gradient(135deg, ${alpha('#ffffff', 0.98)} 0%, ${alpha('#f5f5f5', 0.95)} 100%)`,
+          backdropFilter: 'blur(20px)',
+          borderRadius: 4,
+          overflow: 'hidden',
+          position: 'relative',
+          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          height: { xs: '600px', sm: '650px' }, // Fixed height to prevent resizing
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <Card
-          elevation={24}
+        {/* Decorative Top Bar */}
+        <Box
           sx={{
-            background:
-              theme.palette.mode === 'dark'
-                ? `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.95)} 0%, ${alpha(theme.palette.background.default, 0.9)} 100%)`
-                : `linear-gradient(135deg, ${alpha('#ffffff', 0.98)} 0%, ${alpha('#f5f5f5', 0.95)} 100%)`,
-            backdropFilter: 'blur(20px)',
-            borderRadius: 4,
-            overflow: 'visible', // Changed from hidden to visible
+            height: 6,
+            background: `linear-gradient(90deg, ${theme.palette.error.main} 0%, ${theme.palette.warning.main} 50%, ${theme.palette.error.main} 100%)`,
+            backgroundSize: '200% 100%',
+            animation: 'gradientShift 3s ease infinite',
+            '@keyframes gradientShift': {
+              '0%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' },
+              '100%': { backgroundPosition: '0% 50%' },
+            },
+            zIndex: 2,
+            borderTopLeftRadius: 'inherit',
+            borderTopRightRadius: 'inherit',
+          }}
+        />
+
+        {/* Top Controls */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1.5, zIndex: 20 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title={currentQuote.isFavorited ? 'Unfavorite' : 'Favorite'}>
+              <IconButton
+                onClick={handleToggleFavorite}
+                size="small"
+                sx={{
+                  color: currentQuote.isFavorited
+                    ? theme.palette.error.main
+                    : theme.palette.text.secondary,
+                  bgcolor: alpha(theme.palette.background.paper, 0.5),
+                  backdropFilter: 'blur(4px)',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.error.main, 0.1),
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s',
+                }}
+              >
+                {currentQuote.isFavorited ? (
+                  <Favorite fontSize="small" />
+                ) : (
+                  <FavoriteBorder fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title={isCopied ? 'Copied!' : 'Copy Quote'}>
+              <IconButton
+                onClick={handleShare}
+                size="small"
+                sx={{
+                  color: isCopied ? theme.palette.success.main : theme.palette.text.secondary,
+                  bgcolor: alpha(theme.palette.background.paper, 0.5),
+                  backdropFilter: 'blur(4px)',
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.success.main, 0.1),
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s',
+                }}
+              >
+                <ContentCopy fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Content Area */}
+        <CardContent
+          sx={{
+            flex: 1,
             position: 'relative',
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            transformStyle: 'preserve-3d',
-            height: { xs: '600px', sm: '650px' }, // Fixed height to prevent resizing
+            padding: 0,
+            '&:last-child': { paddingBottom: 0 },
+            overflow: 'visible',
             display: 'flex',
             flexDirection: 'column',
+            minHeight: 0, // Critical for nested scrolling
           }}
         >
-          {/* Shine Effect */}
-          <motion.div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: `linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 40%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0) 100%)`,
-              backgroundSize: '200% 200%',
-              backgroundPositionX: shineX,
-              zIndex: 10,
-              pointerEvents: 'none',
-              mixBlendMode: 'overlay',
-            }}
-          />
+          <AnimatePresence mode="wait">
+            <QuoteCardInner
+              key={currentIndex}
+              quote={currentQuote}
+              isPlaying={isPlaying}
+              onComplete={handleNext}
+            />
+          </AnimatePresence>
+        </CardContent>
 
-          {/* Decorative Top Bar */}
-          <Box
-            sx={{
-              height: 6,
-              background: `linear-gradient(90deg, ${theme.palette.error.main} 0%, ${theme.palette.warning.main} 50%, ${theme.palette.error.main} 100%)`,
-              backgroundSize: '200% 100%',
-              animation: 'gradientShift 3s ease infinite',
-              '@keyframes gradientShift': {
-                '0%': { backgroundPosition: '0% 50%' },
-                '50%': { backgroundPosition: '100% 50%' },
-                '100%': { backgroundPosition: '0% 50%' },
-              },
-              zIndex: 2,
-            }}
-          />
+        {/* Footer Controls */}
+        <Box
+          sx={{
+            padding: 2,
+            gap: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: alpha(theme.palette.background.default, 0.5),
+            backdropFilter: 'blur(10px)',
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
 
-          {/* Top Controls */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1.5, zIndex: 20 }}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Tooltip title={currentQuote.isFavorited ? 'Unfavorite' : 'Favorite'}>
-                <IconButton
-                  onClick={handleToggleFavorite}
-                  size="small"
-                  sx={{
-                    color: currentQuote.isFavorited
-                      ? theme.palette.error.main
-                      : theme.palette.text.secondary,
-                    bgcolor: alpha(theme.palette.background.paper, 0.5),
-                    backdropFilter: 'blur(4px)',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.error.main, 0.1),
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {currentQuote.isFavorited ? (
-                    <Favorite fontSize="small" />
-                  ) : (
-                    <FavoriteBorder fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title={isCopied ? 'Copied!' : 'Copy Quote'}>
-                <IconButton
-                  onClick={handleShare}
-                  size="small"
-                  sx={{
-                    color: isCopied ? theme.palette.success.main : theme.palette.text.secondary,
-                    bgcolor: alpha(theme.palette.background.paper, 0.5),
-                    backdropFilter: 'blur(4px)',
-                    '&:hover': {
-                      bgcolor: alpha(theme.palette.success.main, 0.1),
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <ContentCopy fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          </Box>
-
-          {/* Content Area */}
-          <CardContent
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            sx={{
-              flex: 1,
-              position: 'relative',
-              padding: 0,
-              '&:last-child': { paddingBottom: 0 },
-              overflow: 'visible',
-              transformStyle: 'preserve-3d',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0, // Critical for nested scrolling
-            }}
-          >
-            <AnimatePresence mode="wait">
-              <QuoteCardInner
-                key={currentIndex}
-                quote={currentQuote}
-                isPlaying={isPlaying}
-                onComplete={handleNext}
+            zIndex: 1,
+          }}
+        >
+          {/* Progress */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                color: theme.palette.text.secondary,
+                minWidth: '40px',
+                textAlign: 'center',
+              }}
+            >
+              {currentIndex + 1} / {quotes.length}
+            </Typography>
+            <Box
+              sx={{
+                width: '100%',
+                height: 4,
+                backgroundColor: alpha(theme.palette.divider, 0.3),
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <motion.div
+                animate={{ width: `${((currentIndex + 1) / quotes.length) * 100}%` }}
+                transition={{ duration: 0.3 }}
+                style={{ height: '100%', backgroundColor: theme.palette.error.main }}
               />
-            </AnimatePresence>
-          </CardContent>
-
-          {/* Footer Controls */}
-          <Box
-            sx={{
-              padding: 2,
-              gap: 2,
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: alpha(theme.palette.background.default, 0.5),
-              backdropFilter: 'blur(10px)',
-              borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              transform: 'translateZ(20px)',
-              zIndex: 1,
-            }}
-          >
-            {/* Progress */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: theme.palette.text.secondary,
-                  minWidth: '40px',
-                  textAlign: 'center',
-                }}
-              >
-                {currentIndex + 1} / {quotes.length}
-              </Typography>
-              <Box
-                sx={{
-                  width: '100%',
-                  height: 4,
-                  backgroundColor: alpha(theme.palette.divider, 0.3),
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                }}
-              >
-                <motion.div
-                  animate={{ width: `${((currentIndex + 1) / quotes.length) * 100}%` }}
-                  transition={{ duration: 0.3 }}
-                  style={{ height: '100%', backgroundColor: theme.palette.error.main }}
-                />
-              </Box>
-            </Box>
-
-            {/* Nav Buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3 }}>
-              <IconButton
-                onClick={handlePrev}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  bgcolor: alpha(theme.palette.error.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                  '&:hover': {
-                    bgcolor: theme.palette.error.main,
-                    color: 'white',
-                    borderColor: theme.palette.error.main,
-                  },
-                  transition: 'all 0.2s',
-                }}
-              >
-                <ArrowBackIos fontSize="small" sx={{ ml: 1 }} />
-              </IconButton>
-
-              <Tooltip title={isPlaying ? 'Pause' : 'Auto-Play'}>
-                <IconButton
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  sx={{
-                    width: 48,
-                    height: 48,
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    color: isPlaying ? theme.palette.primary.main : theme.palette.text.secondary,
-                    border: `1px solid ${isPlaying ? alpha(theme.palette.primary.main, 0.5) : alpha(theme.palette.divider, 0.2)}`,
-                    '&:hover': {
-                      bgcolor: theme.palette.primary.main,
-                      color: 'white',
-                      transform: 'scale(1.1)',
-                    },
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {isPlaying ? <Pause /> : <PlayArrow />}
-                </IconButton>
-              </Tooltip>
-
-              <IconButton
-                onClick={handleNext}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  bgcolor: alpha(theme.palette.error.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-                  '&:hover': {
-                    bgcolor: theme.palette.error.main,
-                    color: 'white',
-                    borderColor: theme.palette.error.main,
-                  },
-                  transition: 'all 0.2s',
-                }}
-              >
-                <ArrowForwardIos fontSize="small" />
-              </IconButton>
             </Box>
           </Box>
-        </Card>
-      </motion.div>
+
+          {/* Nav Buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 3 }}>
+            <IconButton
+              onClick={handlePrev}
+              sx={{
+                width: 48,
+                height: 48,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                '&:hover': {
+                  bgcolor: theme.palette.error.main,
+                  color: 'white',
+                  borderColor: theme.palette.error.main,
+                },
+                transition: 'all 0.2s',
+              }}
+            >
+              <ArrowBackIos fontSize="small" sx={{ ml: 1 }} />
+            </IconButton>
+
+            <Tooltip title={isPlaying ? 'Pause' : 'Auto-Play'}>
+              <IconButton
+                onClick={() => setIsPlaying(!isPlaying)}
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: isPlaying ? theme.palette.primary.main : theme.palette.text.secondary,
+                  border: `1px solid ${isPlaying ? alpha(theme.palette.primary.main, 0.5) : alpha(theme.palette.divider, 0.2)}`,
+                  '&:hover': {
+                    bgcolor: theme.palette.primary.main,
+                    color: 'white',
+                    transform: 'scale(1.1)',
+                  },
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isPlaying ? <Pause /> : <PlayArrow />}
+              </IconButton>
+            </Tooltip>
+
+            <IconButton
+              onClick={handleNext}
+              sx={{
+                width: 48,
+                height: 48,
+                bgcolor: alpha(theme.palette.error.main, 0.1),
+                border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                '&:hover': {
+                  bgcolor: theme.palette.error.main,
+                  color: 'white',
+                  borderColor: theme.palette.error.main,
+                },
+                transition: 'all 0.2s',
+              }}
+            >
+              <ArrowForwardIos fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+      </Card>
     </Box>
   );
 };
