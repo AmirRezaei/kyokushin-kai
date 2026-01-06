@@ -1268,34 +1268,43 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   const code = c.req.query('code');
   const state = c.req.query('state');
   const cookieHeader = c.req.header('Cookie');
-  const txCookieStart = cookieHeader?.indexOf('__Host-fb_oauth_tx=');
 
-  if (!code || !state || txCookieStart === undefined || txCookieStart === -1) {
+  if (!code || !state) {
     return c.json({ error: 'Invalid request' }, 400);
   }
 
-  // Parse cookie properly
-  let txCookieVal = '';
-  const cookies = cookieHeader?.split(';') || [];
-  for (const cookie of cookies) {
-    const parts = cookie.trim().split('=');
-    if (parts[0] === '__Host-fb_oauth_tx') {
-      txCookieVal = parts[1];
-      break;
+  let txId: string | null = null;
+  let tx: OAuthTransactionRow | null = null;
+  if (cookieHeader) {
+    // Prefer tx cookie, but allow state fallback for mobile app-switch flows.
+    const cookies = cookieHeader.split(';');
+    for (const cookie of cookies) {
+      const parts = cookie.trim().split('=');
+      if (parts[0] === '__Host-fb_oauth_tx') {
+        const txCookieVal = parts[1];
+        txId = await verifyCookieSimple(txCookieVal, c.env.AUTH_COOKIE_SECRET);
+        if (!txId) {
+          return c.json({ error: 'Invalid cookie signature' }, 400);
+        }
+        break;
+      }
     }
   }
 
-  const txId = await verifyCookieSimple(txCookieVal, c.env.AUTH_COOKIE_SECRET);
-  if (!txId) {
-    return c.json({ error: 'Invalid cookie signature' }, 400);
-  }
-
   const now = Math.floor(Date.now() / 1000);
-  const tx = await c.env.DB.prepare(
-    `SELECT * FROM oauth_transactions WHERE id = ? AND provider = 'facebook'`,
-  )
-    .bind(txId)
-    .first<OAuthTransactionRow>();
+  if (txId) {
+    tx = await c.env.DB.prepare(
+      `SELECT * FROM oauth_transactions WHERE id = ? AND provider = 'facebook'`,
+    )
+      .bind(txId)
+      .first<OAuthTransactionRow>();
+  } else {
+    tx = await c.env.DB.prepare(
+      `SELECT * FROM oauth_transactions WHERE state = ? AND provider = 'facebook' LIMIT 1`,
+    )
+      .bind(state)
+      .first<OAuthTransactionRow>();
+  }
 
   if (!tx) return c.json({ error: 'Transaction not found' }, 400);
   if (tx.expires_at < now) return c.json({ error: 'Transaction expired' }, 400);

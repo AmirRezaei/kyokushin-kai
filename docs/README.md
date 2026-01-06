@@ -44,6 +44,7 @@ Key files: `src/react-app/App.tsx`, `src/react-app/components/context/AuthContex
 
 - Google login: ID token -> custom JWT (1h) + refresh token (30d).
 - Facebook login: OAuth code + PKCE, server-side token exchange.
+- Facebook mobile app switching can drop the OAuth tx cookie; callback falls back to the OAuth `state`.
 - Providers stored in `identities` with `pending_links` for collisions and `oauth_transactions`
   for Facebook.
 - Linking/unlinking: `/api/v1/auth/link/:provider` + consume endpoints.

@@ -62,6 +62,8 @@ Facebook:
 3. Worker redirects to `/#/link/facebook?loginCode=...`.
 4. `FacebookCallbackPage` calls `POST /api/v1/auth/facebook/consume` with `{ code }`.
 5. Worker returns tokens + returnTo; client stores the session and navigates to `returnTo`.
+6. If the Facebook app switches browsers on mobile and drops the tx cookie, the callback falls back to
+   matching by OAuth `state` to complete the flow.
 
 ## Linking Flow
 
