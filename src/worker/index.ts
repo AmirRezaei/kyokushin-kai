@@ -1936,6 +1936,27 @@ app.delete('/api/v1/account', async (c) => {
   return c.json({ ok: true });
 });
 
+app.get('/api/v1/account/sessions', async (c) => {
+  const user = await requireUser(c);
+  if (!user) return unauthorized(c);
+
+  const now = Math.floor(Date.now() / 1000);
+  const row = await c.env.DB.prepare(
+    `SELECT COUNT(*) as activeSessions,
+            MAX(COALESCE(last_used_at, created_at)) as lastActiveAt
+     FROM refresh_tokens
+     WHERE user_id = ? AND expires_at > ?`,
+  )
+    // lastActiveAt reflects last refresh activity; fall back to created_at for newly issued tokens.
+    .bind(user.id, now)
+    .first<{ activeSessions: number | string; lastActiveAt: number | string | null }>();
+
+  const activeSessions = row ? Number(row.activeSessions) : 0;
+  const lastActiveAt = row?.lastActiveAt ? Number(row.lastActiveAt) : null;
+
+  return c.json({ activeSessions, lastActiveAt });
+});
+
 app.get('/api/v1/settings', async (c) => {
   const user = await requireUser(c);
   if (!user) return unauthorized(c);

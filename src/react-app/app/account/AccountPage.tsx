@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { Facebook } from '@mui/icons-material';
 import { getClientConfigSnapshot } from '../../config/clientConfig';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/context/AuthContext';
@@ -54,6 +54,11 @@ const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<{
+    activeSessions: number;
+    lastActiveAt: number | null;
+  } | null>(null);
+  const [sessionInfoError, setSessionInfoError] = useState(false);
 
   const displayName = user?.name || user?.email || 'User';
   const secondaryLabel = user?.email || 'Signed in';
@@ -84,9 +89,63 @@ const AccountPage: React.FC = () => {
     navigate('/account', { replace: true });
   };
 
-  const expiresAtLabel = user?.expiresAt
-    ? new Date(user.expiresAt * 1000).toLocaleString()
-    : 'Unknown';
+  useEffect(() => {
+    if (!token) {
+      setSessionInfo(null);
+      setSessionInfoError(false);
+      return;
+    }
+    let cancelled = false;
+    const loadSessionInfo = async () => {
+      try {
+        const res = await fetch('/api/v1/account/sessions', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load session info');
+        }
+        const data = (await res.json()) as {
+          activeSessions: number;
+          lastActiveAt: number | null;
+        };
+        if (!cancelled) {
+          setSessionInfo({
+            activeSessions: Number(data.activeSessions ?? 0),
+            lastActiveAt:
+              typeof data.lastActiveAt === 'number' ? data.lastActiveAt : null,
+          });
+          setSessionInfoError(false);
+        }
+      } catch (error) {
+        console.warn('Failed to load session info', error);
+        if (!cancelled) {
+          setSessionInfo(null);
+          setSessionInfoError(true);
+        }
+      }
+    };
+    loadSessionInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const lastActiveLabel = sessionInfo?.lastActiveAt
+    ? new Date(sessionInfo.lastActiveAt * 1000).toLocaleString()
+    : sessionInfoError
+      ? 'Unavailable'
+      : token
+        ? 'Loading...'
+        : 'Unknown';
+
+  const activeSessionsLabel =
+    sessionInfo?.activeSessions !== undefined
+      ? String(sessionInfo.activeSessions)
+      : sessionInfoError
+        ? 'Unavailable'
+        : token
+          ? 'Loading...'
+          : 'Unknown';
 
   const handleDeleteAccount = async () => {
     if (!token) {
@@ -154,12 +213,24 @@ const AccountPage: React.FC = () => {
 
         <Divider sx={{ my: 3 }} />
 
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" color="text.secondary">
-            Session Expires
-          </Typography>
-          <Typography variant="body1">{expiresAtLabel}</Typography>
-        </Box>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={3}
+          sx={{ mb: 2 }}
+        >
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Last Active
+            </Typography>
+            <Typography variant="body1">{lastActiveLabel}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Active Sessions
+            </Typography>
+            <Typography variant="body1">{activeSessionsLabel}</Typography>
+          </Box>
+        </Stack>
 
         <Divider sx={{ my: 3 }} />
 
