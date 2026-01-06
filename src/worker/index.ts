@@ -1311,11 +1311,11 @@ app.get('/api/v1/auth/facebook/callback', async (c) => {
   if (tx.consumed_at) return c.json({ error: 'Transaction consumed' }, 400);
   if (tx.state !== state) return c.json({ error: 'State mismatch' }, 400);
 
-  // Consume transaction immediately to prevent replay
+  // Consume by tx.id to handle app-switch flows where the tx cookie is missing.
   const { meta } = await c.env.DB.prepare(
     `UPDATE oauth_transactions SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL`,
   )
-    .bind(now, txId)
+    .bind(now, tx.id)
     .run();
 
   if (meta.changes === 0) return c.json({ error: 'Transaction consumption failed' }, 400);
