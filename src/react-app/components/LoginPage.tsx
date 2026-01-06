@@ -3,6 +3,7 @@ import { Box, Button, Typography, Paper, Container } from '@mui/material';
 import { Facebook } from '@mui/icons-material';
 import { useAuth } from './context/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { isLikelyInAppBrowser } from '@/components/utils/inAppBrowser';
 
 export default function LoginPage() {
   const { login, isAuthenticated, renderGoogleButton } = useAuth();
@@ -46,8 +47,17 @@ export default function LoginPage() {
   };
 
   const handleFacebookLogin = () => {
+    if (isLikelyInAppBrowser()) {
+      alert(
+        'Facebook login must complete in your device browser (Chrome/Safari). ' +
+          'In-app browsers can open a separate session and will not return to this page. ' +
+          'Please open this site in your browser and try again.',
+      );
+      return;
+    }
     // Redirect to backend start endpoint
-    window.location.href = '/api/v1/auth/facebook/start?mode=login';
+    const returnTo = encodeURIComponent(returnUrl || '/');
+    window.location.href = `/api/v1/auth/facebook/start?mode=login&returnTo=${returnTo}`;
   };
 
   return (

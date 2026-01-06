@@ -4,6 +4,7 @@ import { Box, Typography, CircularProgress, Paper } from '@mui/material';
 
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
+import { isLikelyInAppBrowser } from '@/components/utils/inAppBrowser';
 
 export default function GoogleLinkPage() {
   const [searchParams] = useSearchParams();
@@ -102,6 +103,16 @@ export default function GoogleLinkPage() {
             <Typography
               component="a"
               href={facebookLoginUrl}
+              onClick={(event) => {
+                if (isLikelyInAppBrowser()) {
+                  event.preventDefault();
+                  alert(
+                    'Facebook login must complete in your device browser (Chrome/Safari). ' +
+                      'In-app browsers can open a separate session and will not return to this page. ' +
+                      'Please open this site in your browser and try again.',
+                  );
+                }
+              }}
               sx={{
                 display: 'inline-block',
                 textDecoration: 'none',

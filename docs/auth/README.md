@@ -65,6 +65,18 @@ Facebook:
 6. If the Facebook app switches browsers on mobile and drops the tx cookie, the callback falls back to
    matching by OAuth `state` to complete the flow.
 
+## Mobile Webview Caveat (Facebook)
+
+- Meta's manual Login Dialog flow redirects back to the same user agent via `redirect_uri` and
+  requires the URI to be registered in **Valid OAuth Redirect URIs**. The same `redirect_uri` must
+  be used during the token exchange.
+- If the flow runs inside an in-app browser (Facebook/Instagram), the redirect can land in a
+  separate webview session and the original tab will not receive the callback. For web use, require
+  the system browser (Safari/Chrome). For embedded webviews, Meta notes that `redirect_uri` must be
+  `https://www.facebook.com/connect/login_success.html` and the container app must capture the
+  result.
+- Reference: https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow/
+
 ## Linking Flow
 
 - Google link: use Google Identity token, `POST /api/v1/auth/link/google`.

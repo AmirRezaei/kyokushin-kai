@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/components/context/AuthContext';
 import { useSnackbar } from '@/components/context/SnackbarContext';
+import { isLikelyInAppBrowser } from '@/components/utils/inAppBrowser';
 
 interface GoogleCredentialResponse {
   credential: string;
@@ -192,6 +193,14 @@ const AccountPage: React.FC = () => {
                     }
                   }
                 } else {
+                  if (isLikelyInAppBrowser()) {
+                    alert(
+                      'Facebook linking must complete in your device browser (Chrome/Safari). ' +
+                        'In-app browsers can open a separate session and will not return to this page. ' +
+                        'Please open this site in your browser and try again.',
+                    );
+                    return;
+                  }
                   const returnTo = '/account';
                   try {
                     const res = await fetch('/api/v1/auth/facebook/start', {

@@ -53,6 +53,15 @@ Key files: `src/react-app/App.tsx`, `src/react-app/components/context/AuthContex
 
 Full details: `docs/auth/README.md`.
 
+## Mobile Webview Note (Facebook)
+
+Meta's manual login flow redirects back to the same user agent via `redirect_uri`. If the flow
+starts inside an in-app browser (Facebook/Instagram), the redirect can land in a separate webview
+session and the original tab will not receive the callback. For web use, require the system
+browser (Safari/Chrome). For embedded webviews, Meta notes that `redirect_uri` must be
+`https://www.facebook.com/connect/login_success.html` and the container app must capture the
+result. See: https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow/
+
 ## Admin + Catalog Seeding
 
 - Set `ADMIN_EMAIL` to seed first admin.
