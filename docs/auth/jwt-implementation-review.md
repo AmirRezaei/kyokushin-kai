@@ -178,7 +178,7 @@ None remaining after fixes
 
 ### Low
 
-1. **No Multi-Device Management**: Can't see/revoke sessions
+1. **No Per-Device Management**: Only a summary view; cannot see/revoke specific sessions
 2. **No Retry Logic**: Network failures = logout
 
 ---

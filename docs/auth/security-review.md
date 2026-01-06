@@ -119,11 +119,11 @@ httpOnly refresh cookie + rotation, and rate limiting). Remaining items are kept
 
 ### 9. **Missing Session/Device Tracking**
 
-**Problem**: No way to see active sessions or revoke specific devices
+**Problem**: No per-device session management (only a summary view)
 
-**Impact**: LOW - Security feature for user control
+**Impact**: LOW - Limited user control over multi-device sessions
 
-**Enhancement**: Store device info, allow multi-session management
+**Enhancement**: Store device info, allow multi-session management and targeted revocation
 
 ---
 

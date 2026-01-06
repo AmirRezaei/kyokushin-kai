@@ -50,6 +50,7 @@ Key files: `src/react-app/App.tsx`, `src/react-app/components/context/AuthContex
 - Linking/unlinking: `/api/v1/auth/link/:provider` + consume endpoints.
 - Merge: `/api/v1/auth/link/google` with `merge: true` returns new login tokens and merges data.
 - Unlink is blocked when the provider is the last remaining identity.
+- Account UI shows last activity + active session count via `/api/v1/account/sessions` (refresh tokens).
 
 Full details: `docs/auth/README.md`.
 

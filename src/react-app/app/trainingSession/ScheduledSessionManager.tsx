@@ -385,18 +385,6 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
 
             <Grid item xs={6}>
               <TextField
-                label="Duration (minutes)"
-                type="number"
-                fullWidth
-                value={formData.durationMinutes}
-                onChange={(e) =>
-                  setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 0 })
-                }
-                helperText={`~ ${calculateHours(formData.durationMinutes)}`}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
                 label="Start Date"
                 type="date"
                 fullWidth
@@ -423,6 +411,18 @@ const ScheduledSessionManager: React.FC<ScheduledSessionManagerProps> = ({
                 InputLabelProps={{ shrink: true }}
                 value={formData.startTime}
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+              />
+            </Grid>
+            <Grid item xs={6}>
+              <TextField
+                label="Duration (minutes)"
+                type="number"
+                fullWidth
+                value={formData.durationMinutes}
+                onChange={(e) =>
+                  setFormData({ ...formData, durationMinutes: parseInt(e.target.value) || 0 })
+                }
+                helperText={`~ ${calculateHours(formData.durationMinutes)}`}
               />
             </Grid>
             <Grid item xs={6}>

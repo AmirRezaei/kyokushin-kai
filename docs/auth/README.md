@@ -46,6 +46,9 @@ Facebook:
 - `POST /api/v1/auth/link/facebook/consume`
 - `DELETE /api/v1/auth/link/facebook`
 
+Account:
+- `GET /api/v1/account/sessions` (summary of refresh-token sessions for UI)
+
 ## Login Flow (Google)
 
 1. Client gets Google ID token.
@@ -103,6 +106,12 @@ Facebook:
 - `/#/link/google` (collision/consume)
 - `/#/link/facebook` (collision/consume + token redirect)
 - `/#/account` (link/unlink UI)
+
+## Session Summary (Account Page)
+
+- The account page shows "Last Active" and "Active Sessions".
+- Values are derived from `refresh_tokens`. "Last Active" uses `last_used_at` with a `created_at`
+  fallback, and the session count reflects unexpired refresh tokens.
 
 ## Environment (API)
 
