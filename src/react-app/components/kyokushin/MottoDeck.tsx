@@ -17,14 +17,7 @@ import {
   alpha,
   useTheme,
 } from '@mui/material';
-import {
-  AnimatePresence,
-  motion,
-  useAnimation,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from 'framer-motion';
+import { AnimatePresence, motion, useAnimation } from 'framer-motion';
 import React, { useEffect, useState, useRef } from 'react';
 
 import { useAuth } from '../context/AuthContext';
@@ -162,7 +155,6 @@ const MottoCardInner: React.FC<MottoCardInnerProps> = ({ motto, isPlaying, onCom
             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
             letterSpacing: '0.02em',
             textTransform: 'uppercase',
-            transform: 'translateZ(40px)', // Pop out in 3D
           }}
         >
           {motto.shortTitle}
@@ -179,7 +171,6 @@ const MottoCardInner: React.FC<MottoCardInnerProps> = ({ motto, isPlaying, onCom
             background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}, transparent)`,
             marginBottom: 3,
             borderRadius: 2,
-            transform: 'translateZ(20px)',
             flexShrink: 0,
           }}
         />
@@ -229,7 +220,6 @@ const MottoCardInner: React.FC<MottoCardInnerProps> = ({ motto, isPlaying, onCom
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               sx={{
-                transform: 'translateZ(30px)',
                 textShadow: theme.palette.mode === 'dark' ? '0 2px 4px rgba(0,0,0,0.5)' : 'none',
                 mb: 3,
                 fontWeight: 500,
@@ -248,7 +238,6 @@ const MottoCardInner: React.FC<MottoCardInnerProps> = ({ motto, isPlaying, onCom
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
                 sx={{
-                  transform: 'translateZ(20px)',
                   fontStyle: 'italic',
                   lineHeight: 1.6,
                 }}
@@ -298,18 +287,6 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
     fetchMottos();
   }, [token]);
 
-  // 3D Tilt Mapped Values
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  // Smooth springs for tilt
-  const mouseX = useSpring(x, { stiffness: 150, damping: 15 });
-  const mouseY = useSpring(y, { stiffness: 150, damping: 15 });
-
-  const rotateX = useTransform(mouseY, [-0.5, 0.5], [4, -4]);
-  const rotateY = useTransform(mouseX, [-0.5, 0.5], [-4, 4]);
-  const shineX = useTransform(mouseX, [-0.5, 0.5], ['0%', '100%']);
-
   const handleNext = React.useCallback(() => {
     if (mottos.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % mottos.length);
@@ -319,24 +296,6 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
     if (mottos.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + mottos.length) % mottos.length);
   }, [mottos.length]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-
-    // Calculate normalized mouse position (-0.5 to 0.5)
-    const normalizedX = (e.clientX - rect.left) / width - 0.5;
-    const normalizedY = (e.clientY - rect.top) / height - 0.5;
-
-    x.set(normalizedX);
-    y.set(normalizedY);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
 
   const currentMotto = mottos[currentIndex];
 
@@ -352,19 +311,12 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
   return (
     <Box
       sx={{
-        perspective: 1000, // Essential for 3D effect
         width: { xs: '90vw', sm: '500px', md: '600px' },
         maxWidth: '95vw',
-        py: 4, // Add some vertical space for the tilt to not clip
+        py: 4,
       }}
     >
-      <motion.div
-        style={{
-          rotateX,
-          rotateY,
-          transformStyle: 'preserve-3d',
-        }}
-      >
+      <motion.div>
         {/* Main Card */}
         <Card
           elevation={24}
@@ -378,33 +330,8 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
             overflow: 'hidden',
             position: 'relative',
             border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-            transformStyle: 'preserve-3d', // Ensure children can float in 3D
           }}
         >
-          {/* Dynamic Glare/Shine Effect */}
-          <motion.div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: `linear-gradient(
-                135deg,
-                rgba(255,255,255,0) 0%,
-                rgba(255,255,255,0.05) 40%,
-                rgba(255,255,255,0.2) 50%,
-                rgba(255,255,255,0.05) 60%,
-                rgba(255,255,255,0) 100%
-              )`,
-              backgroundSize: '200% 200%',
-              backgroundPositionX: shineX,
-              zIndex: 10,
-              pointerEvents: 'none',
-              mixBlendMode: 'overlay',
-            }}
-          />
-
           {/* Decorative Top Bar */}
           <Box
             sx={{
@@ -509,15 +436,12 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
 
           {/* Content Area */}
           <CardContent
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
             sx={{
               minHeight: { xs: '400px', sm: '450px' },
               position: 'relative',
               padding: 0,
               '&:last-child': { paddingBottom: 0 },
               overflow: 'hidden',
-              transformStyle: 'preserve-3d',
             }}
           >
             <AnimatePresence mode="popLayout">
@@ -545,7 +469,6 @@ const MottoDeck: React.FC<MottoDeckProps> = ({ onClose }) => {
               borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
               position: 'relative',
               zIndex: 1,
-              transform: 'translateZ(20px)', // Separate layer
             }}
           >
             {/* Progress Indicator */}
