@@ -114,7 +114,7 @@ const TechniqueListView: React.FC<TechniqueListViewProps> = ({
 
   return (
     <List sx={{ width: '100%' }}>
-      {allItems.map(({ item, grade, gradeName, type }, index) => {
+      {allItems.map(({ item, grade }, index) => {
         const rating = ratings[item.id] || 0;
         const isMastered = rating >= 4;
         const itemTags = tags[item.id] || [];
@@ -139,11 +139,11 @@ const TechniqueListView: React.FC<TechniqueListViewProps> = ({
                 {/* Belt indicator */}
                 <KarateBelt
                   grade={grade}
-                  thickness="0.2rem"
+                  thickness="0.25rem"
                   borderRadius="4px"
                   borderWidth="1px"
                   orientation="horizontal"
-                  sx={{ mr: 2, flexShrink: 0, width: '3rem', height: '1.4rem' }}
+                  sx={{ mr: 2, flexShrink: 0, width: '3rem', height: '1.2rem' }}
                 />
 
                 <ListItemText

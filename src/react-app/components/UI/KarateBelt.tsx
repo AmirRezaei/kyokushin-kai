@@ -50,7 +50,7 @@ const StripeContainer = styled(Box)<{
   display: 'flex',
   flexDirection: orientation === 'horizontal' ? 'row' : 'column',
   position: 'absolute',
-  right: orientation === 'horizontal' ? '12%' : undefined, // Adjusted margin for stripe
+  right: orientation === 'horizontal' ? '15%' : undefined, // Adjusted margin for stripe
   bottom: orientation === 'horizontal' ? undefined : '0',
   alignItems: 'center',
   justifyContent: 'flex-end',
@@ -73,7 +73,7 @@ const SimpleStripe = styled(Box, {
   width: orientation === 'horizontal' ? thickness : '100%',
   height: orientation === 'horizontal' ? '100%' : thickness,
   backgroundColor: color,
-  boxShadow: '0 0 0.8rem 0.1rem rgba(0, 0, 0, 0.8)',
+  boxShadow: '0 0 0.05rem 0.07rem rgba(0, 0, 0, 0.8)',
 }));
 
 /**

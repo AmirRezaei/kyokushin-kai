@@ -220,7 +220,7 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
   }, [monthlyData]);
 
   return (
-    <Box sx={{ mt: 3 }}>
+    <Box>
       <Typography variant="h6" sx={{ color: theme.palette.text.primary, mb: 2 }}>
         Contribution Calendar {year}
       </Typography>
