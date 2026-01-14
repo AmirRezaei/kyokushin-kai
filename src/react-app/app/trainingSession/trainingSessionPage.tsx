@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/context/AuthContext';
 import TabPanel from '@/components/Training/TabPanel';
-import TrainingSessionFormSection from '@/components/Training/TrainingSessionFormSection';
+import TrainingSessionManager from '@/components/Training/TrainingSessionManager';
 import TrainingSessionHeader from '@/components/Training/TrainingSessionHeader';
 import TrainingSessionListSection from '@/components/Training/TrainingSessionListSection';
 import TrainingSessionStatsSection from '@/components/Training/TrainingSessionStatsSection';
@@ -88,9 +88,12 @@ const TrainingSessionPage: React.FC = () => {
       </Box>
 
       <TabPanel value={activeTab} index={0}>
-        <TrainingSessionFormSection
+        <TrainingSessionManager
           onAddSession={handleAddSession}
           scheduledSessions={scheduledSessions}
+          sessions={sessions}
+          onDeleteSession={handleDeleteSession}
+          onEditSession={handleEditSession}
         />
       </TabPanel>
 
