@@ -216,7 +216,12 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
 
   // Calculate maximum number of weeks across all months for consistent width
   const maxWeeksInMonth = useMemo(() => {
-    return Math.max(...monthlyData.map((m) => m.weeks.length));
+    return Math.max(
+      ...monthlyData.map((m) => {
+        const daysInMonth = m.weeks.reduce((acc, week) => acc + week.length, 0);
+        return Math.ceil((m.startOffset + daysInMonth) / 7);
+      }),
+    );
   }, [monthlyData]);
 
   return (
@@ -452,7 +457,7 @@ const ContributionCalendar: React.FC<ContributionCalendarProps> = ({
           <Typography
             variant="body2"
             sx={{
-              mt: 1.5,
+              my: 1.5,
               color: theme.palette.text.secondary,
               fontSize: { xs: '0.75rem', sm: '0.875rem' },
               textAlign: { xs: 'center', sm: 'left' },

@@ -1257,7 +1257,10 @@ app.post('/api/v1/auth/facebook/start', async (c) => {
 
 app.get('/api/v1/auth/facebook/callback', async (c) => {
   const clearTxCookie = () => {
-    c.header('Set-Cookie', `__Host-fb_oauth_tx=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`);
+    c.header(
+      'Set-Cookie',
+      `__Host-fb_oauth_tx=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`,
+    );
   };
 
   const redirectAuthError = (errorCode: string, returnTo?: string) => {
@@ -6046,6 +6049,9 @@ app.delete('/api/v1/training-sessions/:id', async (c) => {
 // --- Scheduled Sessions Endpoints ---
 
 app.get('/api/v1/scheduled-sessions', async (c) => {
+  const ts = new Date().toISOString();
+  console.log(`[${ts}] GET /api/v1/scheduled-sessions called`);
+
   const user = await requireUser(c);
   if (!user) return unauthorized(c);
 
@@ -6059,12 +6065,13 @@ app.get('/api/v1/scheduled-sessions', async (c) => {
     let selectedWeekdays: number[] | undefined = undefined;
     if (row.selected_weekdays) {
       try {
-        const parsed = JSON.parse(String(row.selected_weekdays));
-        if (Array.isArray(parsed)) {
-          selectedWeekdays = parsed;
+        if (typeof row.selected_weekdays === 'string') {
+          selectedWeekdays = JSON.parse(row.selected_weekdays);
+        } else if (typeof row.selected_weekdays === 'object') {
+          selectedWeekdays = row.selected_weekdays as number[];
         }
       } catch (e) {
-        console.warn('Failed to parse selected_weekdays', e);
+        console.error('Failed to parse selected_weekdays for ' + row.id, e);
       }
     }
 
@@ -6219,6 +6226,19 @@ app.put('/api/v1/scheduled-sessions/:id', async (c) => {
       throw new Error('Failed to retrieve updated scheduled session');
     }
 
+    let selectedWeekdays: number[] | undefined = undefined;
+    if (updated.selected_weekdays) {
+      try {
+        if (typeof updated.selected_weekdays === 'string') {
+          selectedWeekdays = JSON.parse(updated.selected_weekdays);
+        } else if (typeof updated.selected_weekdays === 'object') {
+          selectedWeekdays = updated.selected_weekdays as number[];
+        }
+      } catch (e) {
+        console.error('Failed to parse selected_weekdays for ' + updated.id, e);
+      }
+    }
+
     const camelUpdated = {
       id: updated.id,
       userId: updated.user_id,
@@ -6233,6 +6253,7 @@ app.put('/api/v1/scheduled-sessions/:id', async (c) => {
       createdAt: updated.created_at,
       updatedAt: updated.updated_at,
       version: updated.version,
+      selectedWeekdays,
     };
 
     return c.json({ ok: true, data: camelUpdated });

@@ -26,7 +26,7 @@ const TrainingSessionStatsSection: React.FC<TrainingSessionStatsSectionProps> = 
   return (
     <>
       <ContributionCalendar contributions={contributions} scheduledSessions={scheduledSessions} />
-      <TrainingStatistics sessions={sessions} />
+      <TrainingStatistics sessions={sessions} scheduledSessions={scheduledSessions} />
       <TrainingTypeBreakdownChart sessions={sessions} />
     </>
   );
